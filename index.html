@@ -234,6 +234,7 @@ function fresh(){return {v:1, lib:DEF.map(function(n){return{id:uid(),name:n};})
 
 var D=loadStore()||fresh();
 if(!D.lib)D.lib=[]; if(!D.matches)D.matches=[]; if(!D.journal)D.journal=[]; if(!D.micro)D.micro=[]; if(!D.tictac)D.tictac=[];
+if(!D.onboarded && (D.matches.length||D.journal.length||D.micro.length||D.tictac.length)) D.onboarded=1;
 
 /* ========================== LOGIQUE SCORE ========================= */
 function winners(r,roster,rule){
@@ -300,6 +301,7 @@ function render(){
     ? '<div class="warn" style="background:#fffbeb;border-color:#fde68a;color:#92400e;display:flex;gap:10px;align-items:center"><span style="flex:1"><b>📌 Pour garder l\'historique :</b> ouvre-moi dans <b>Safari</b> → Partager → <b>Sur l\'écran d\'accueil</b>, et lance-moi depuis l\'icône 🏆.</span><button class="sm" onclick="S.tipOff=1;render()">OK</button></div>' : '';
 
   if(S.view==='home'){
+    if(!D.onboarded) setTimeout(obDraw,50);
     hd.innerHTML='<span style="width:38px"></span><h1>En Jeux<span class="sub">Le kit de jeux de la famille</span></h1>'+
       '<button class="icobtn" onclick="go(\'save\')">⚙︎</button>';
     app.innerHTML=banner+
@@ -768,6 +770,13 @@ function renderChampions(hd,app,banner){
     '<div style="margin:6px 0 2px">'+av(champ.name,'big')+'</div>'+
     '<h2 style="font-size:28px;margin:2px 0">👑 '+esc(champ.name)+'</h2>'+
     '<p style="margin:0;font-size:13px;opacity:.92">'+pl(champ.crowns,'couronne')+' au total</p></div>';
+  if(list.length>=2 && list[0].crowns>0){
+    var gap=list[0].crowns-list[1].crowns;
+    var rival = gap===0
+      ? '⚡️ Égalité parfaite au sommet entre <b>'+esc(list[0].name)+'</b> et <b>'+esc(list[1].name)+'</b> — la prochaine partie départage !'
+      : '💥 <b>'+esc(list[1].name)+'</b> n\'est qu\'à '+pl(gap,'couronne')+' de <b>'+esc(list[0].name)+'</b> — ça se joue à rien !';
+    if(gap<=3) h+='<div class="card" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border-color:#fde68a"><p style="margin:0;font-size:13.5px;color:#92400e;line-height:1.5">'+rival+'</p></div>';
+  }
   h+='<div class="card"><h2>Classement général (couronnes)</h2>';
   list.forEach(function(p,i){
     var open=S.detail==='champ'+fp(p.name);
@@ -808,7 +817,9 @@ function renderSave(hd,app,banner){
       '<button class="sm r" onclick="delLib(\''+p.id+'\')">Retirer</button></div>';});
   h+='<div class="row" style="margin-top:8px"><input id="nl" placeholder="Nom du joueur"><button class="sm g" onclick="addLib()">Ajouter</button></div>'+
      '<p class="mini" style="margin-top:8px">Retirer un joueur ici ne touche pas aux parties déjà jouées.</p></div>';
-  h+='<div class="card"><h2>Options</h2><div class="row">'+
+  h+='<div class="card"><h2>Options</h2>'+
+     '<button class="sm" style="width:100%;margin-bottom:10px" onclick="obReplay()">🎬 Revoir la présentation de bienvenue</button>'+
+     '<div class="row">'+
      '<button class="chip'+(D.voice?' on':'')+'" style="flex:1;text-align:center" onclick="setVoice(true)">🔊 Annonce vocale</button>'+
      '<button class="chip'+(!D.voice?' on':'')+'" style="flex:1;text-align:center" onclick="setVoice(false)">🔇 Silencieux</button></div>'+
      '<p class="mini" style="margin-top:8px">Quand elle est activée, l\'app annonce à voix haute qui doit jouer et qui gagne (Tic-Tac, tirage au sort). Pratique en voiture ou en balade.</p></div>';
@@ -821,6 +832,45 @@ function renderSave(hd,app,banner){
      '<button class="sm" style="width:100%;margin-top:8px" onclick="restore()">Restaurer (remplace tout)</button></div>';
   app.innerHTML=h;
 }
+/* ---- ONBOARDING : bienvenue en 30 secondes ---- */
+function obDraw(){
+  if(document.getElementById('obsh')) return;
+  var el=document.createElement('div'); el.className='sheet'; el.id='obsh';
+  var chips=D.lib.map(function(p){
+    return '<span style="display:inline-flex;align-items:center;gap:6px;background:var(--gr-l);border:1px solid var(--gr-b);border-radius:99px;padding:5px 6px 5px 10px;font-size:13px;font-weight:600">'+esc(p.name)+
+      '<button style="border:0;background:#fff;border-radius:99px;width:20px;height:20px;line-height:1;cursor:pointer;color:#9f1239" onclick="obDel(\''+p.id+'\')">✕</button></span>';
+  }).join(' ');
+  el.innerHTML='<div class="in" onclick="event.stopPropagation()"><div class="grab"></div>'+
+    '<div style="text-align:center;font-size:44px;margin:2px 0 6px">🎲</div>'+
+    '<h2 style="margin:0 0 4px;font-size:21px;text-align:center">Bienvenue dans En Jeux !</h2>'+
+    '<p class="mini" style="text-align:center;margin:0 0 14px">30 secondes et vous jouez.</p>'+
+    '<div style="display:flex;flex-direction:column;gap:9px;margin-bottom:14px">'+
+      '<div class="row" style="gap:10px"><span style="font-size:22px">1️⃣</span><span style="font-size:13.5px"><b>Ton équipe</b> — mets les prénoms de ta famille ou de tes amis juste en dessous.</span></div>'+
+      '<div class="row" style="gap:10px"><span style="font-size:22px">2️⃣</span><span style="font-size:13.5px"><b>Lance un jeu</b> — quiz animé 🎙️, duel de chrono ⏱️ ou décompte de points 🏆.</span></div>'+
+      '<div class="row" style="gap:10px"><span style="font-size:22px">3️⃣</span><span style="font-size:13.5px"><b>Les couronnes s\'accumulent</b> — chaque victoire nourrit le Mur des champions 👑.</span></div>'+
+    '</div>'+
+    '<label class="lb">Ton équipe ('+D.lib.length+')</label>'+
+    '<div id="obchips" style="display:flex;flex-wrap:wrap;gap:7px;margin:8px 0 10px">'+(chips||'<span class="mini">Ajoute au moins un prénom 👇</span>')+'</div>'+
+    '<div class="row"><input id="obn" placeholder="Prénom (ex. Léa)" onkeydown="if(event.key===\'Enter\')obAdd()"><button class="sm g" onclick="obAdd()">Ajouter</button></div>'+
+    '<button class="btn" style="margin-top:16px" onclick="obDone()">C\'est parti 🎉</button></div>';
+  document.body.appendChild(el);
+}
+function obAdd(){
+  var i=document.getElementById('obn'); var n=(i.value||'').trim(); if(!n){toast('Écris un prénom');return;}
+  if(D.lib.some(function(p){return fp(p.name)===fp(n);})){toast(n+' est déjà dans l\'équipe');i.value='';return;}
+  D.lib.push({id:uid(),name:n}); persist();
+  var e=document.getElementById('obsh'); if(e)e.remove(); obDraw();
+  var i2=document.getElementById('obn'); if(i2)i2.focus();
+}
+function obDel(id){ D.lib=D.lib.filter(function(p){return p.id!==id;}); persist(); var e=document.getElementById('obsh'); if(e)e.remove(); obDraw(); }
+function obDone(){
+  if(!D.lib.length){toast('Ajoute au moins un joueur');return;}
+  D.onboarded=1; persist();
+  var e; while((e=document.getElementById('obsh'))) e.remove();
+  toast('Bon jeu ! 🎲');
+}
+function obReplay(){ var e; while((e=document.getElementById('obsh'))) e.remove(); obDraw(); }
+
 /* ---- « Qui commence ? » : tirage au sort universel (sert n'importe quel jeu) ---- */
 var WHO={picked:null, roster:null};
 function whoStart(){
