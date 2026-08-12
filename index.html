@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Jeux">
-<title>Jeux — famille</title>
+<meta name="apple-mobile-web-app-title" content="En Jeux">
+<title>En Jeux — votre kit de jeux</title>
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#059669">
-<meta name="description" content="Compteur de points, quizz et chrono pour jouer en famille.">
+<meta name="description" content="En Jeux : trois jeux dans votre poche — scores, duel de temps et quiz animé. En famille, entre amis, en voiture.">
 <style>
   :root{
     --bg:#f5f5f4; --card:#fff; --line:#e7e5e4; --ink:#1c1917; --mut:#78716c; --soft:#a8a29e;
@@ -31,11 +31,25 @@
   .icobtn{background:none;border:0;font-size:22px;padding:6px 10px;color:var(--mut);cursor:pointer;line-height:1}
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:0 1px 2px rgba(0,0,0,.04);margin-bottom:12px}
   .card h2{font-size:13px;margin:0 0 8px;color:var(--mut);font-weight:600}
+  .hero{border-radius:20px;padding:22px 18px;margin-bottom:16px;color:#fff;position:relative;overflow:hidden;
+    background:linear-gradient(135deg,#065f46 0%,#059669 55%,#34d399 130%)}
+  .hero h2{margin:0;font-size:26px;font-weight:800;letter-spacing:-.02em}
+  .hero p{margin:4px 0 0;font-size:13.5px;opacity:.92}
+  .hero .dice{position:absolute;right:10px;top:6px;font-size:64px;opacity:.22;transform:rotate(12deg)}
   .tool{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:16px;margin-bottom:12px;
-    border-radius:16px;border:1px solid var(--line);background:#fff;cursor:pointer;font-family:inherit}
+    border-radius:18px;border:1px solid var(--line);background:#fff;cursor:pointer;font-family:inherit;position:relative;overflow:hidden}
+  .tool .em{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;background:#f5f5f4;flex-shrink:0;color:#fff}
+  .tool.t-coupe{border-color:#a7f3d0;background:linear-gradient(135deg,#ecfdf5,#d1fae5)}
+  .tool.t-coupe .em{background:linear-gradient(135deg,#059669,#34d399)}
+  .tool.t-tictac{border-color:#fde68a;background:linear-gradient(135deg,#fffbeb,#fef3c7)}
+  .tool.t-tictac .em{background:linear-gradient(135deg,#d97706,#fbbf24)}
+  .tool.t-micro{border-color:#ddd6fe;background:linear-gradient(135deg,#f5f3ff,#ede9fe)}
+  .tool.t-micro .em{background:linear-gradient(135deg,#7c3aed,#a78bfa)}
   .tool.on{border-color:var(--gr-b);background:var(--gr-l)}
-  .tool .em{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;background:#f5f5f4;flex-shrink:0}
-  .tool.on .em{background:var(--gr);}
+  .tool.on .em{background:var(--gr)}
+  @keyframes fall{0%{transform:translateY(-30px) rotate(0)}100%{transform:translateY(320px) rotate(340deg);opacity:0}}
+  .confetti span{position:absolute;top:0;font-size:22px;animation:fall 2.6s linear infinite}
+  .medal{font-size:17px;margin-right:2px}
   .tool b{font-size:16px;display:block}
   .tool small{color:var(--mut);font-size:13px;display:block;margin-top:2px;line-height:1.35}
   .tag{display:inline-block;background:#e7e5e4;color:var(--mut);border-radius:99px;padding:2px 8px;font-size:10px;font-weight:700;text-transform:uppercase;margin-left:6px;vertical-align:middle}
@@ -196,15 +210,16 @@ function render(){
   var banner = !canSave ? '<div class="warn"><b>Sauvegarde impossible ici.</b> Ouvre ce fichier via Safari (ou ajoute-le à l\'écran d\'accueil) pour que l\'historique soit conservé. En attendant, utilise Sauvegarde → Copier avant de fermer.</div>' : '';
 
   if(S.view==='home'){
-    hd.innerHTML='<span style="width:38px"></span><h1>Jeux<span class="sub">3 outils indépendants</span></h1>'+
+    hd.innerHTML='<span style="width:38px"></span><h1>En Jeux<span class="sub">Votre kit de jeux</span></h1>'+
       '<button class="icobtn" onclick="go(\'save\')">⚙︎</button>';
     app.innerHTML=banner+
-      tool('points','🧮','Décompte de points','Compter les points d\'un jeu : cumul, victoires, classement.',true,
+      '<div class="hero"><span class="dice">🎲</span><h2>En Jeux</h2><p>Trois jeux dans votre poche — à table, en voiture, partout.</p></div>'+
+      tool('points','🏆','La Coupe','Comptez les points, cumulez sur l\'année, sacrez vos champions.','t-coupe',
         D.matches.length?pl(D.matches.length,'partie')+' en mémoire':'')+
-      tool('quizz','🎙️','Quizz présentateur','Quiz de culture générale animé à l\'oral par Claude. Journal des questions déjà posées.',true,
+      tool('chrono','⏱️','Tic-Tac','Duel de temps : chacun défend son chrono, le dernier debout gagne.','t-tictac','')+
+      tool('quizz','🎙️','Le Micro','Quiz animé par votre IA : questions à l\'oral, jamais deux fois la même.','t-micro',
         D.journal.length?pl(D.journal.length,'question')+' au journal':'')+
-      tool('chrono','⏱️','Chrono','Duel de temps façon « 12 coups de midi ». Chacun défend son chrono.',true,'')+
-      '<p class="mini" style="margin-top:16px">Chaque outil a sa propre logique. Le chrono ne gère pas de score ; le quizz a son propre décompte, séparé du décompte de points.</p>'+
+      '<p class="mini" style="margin-top:16px">Trois jeux indépendants : La Coupe garde vos scores, Tic-Tac ne gère que le temps, Le Micro a son propre décompte.</p>'+
       (canSave?'<p class="mini" style="margin-top:10px;color:#059669">✓ Sauvegardé sur cet iPhone</p>':'');
     return;
   }
@@ -215,15 +230,15 @@ function render(){
   if(S.view==='match') return renderMatch(hd,app,nav,banner);
 }
 function back(){return '<button class="icobtn" onclick="go(\''+(S.view==='match'?'points':'home')+'\')">‹</button>';}
-function tool(k,em,t,d,on,note){
-  return '<button class="tool'+(on?' on':'')+'" onclick="go(\''+k+'\')"><span class="em">'+em+'</span>'+
-   '<span style="flex:1;min-width:0"><b>'+t+(on?'':'<span class="tag">à venir</span>')+'</b><small>'+d+'</small>'+
-   (note?'<small style="color:#059669;margin-top:3px">'+note+'</small>':'')+'</span><span style="color:#d6d3d1">›</span></button>';
+function tool(k,em,t,d,cls,note){
+  return '<button class="tool '+cls+'" onclick="go(\''+k+'\')"><span class="em">'+em+'</span>'+
+   '<span style="flex:1;min-width:0"><b>'+t+'</b><small>'+d+'</small>'+
+   (note?'<small style="color:#059669;margin-top:3px;font-weight:600">'+note+'</small>':'')+'</span><span style="color:#d6d3d1">›</span></button>';
 }
 
 /* -------------------------- DÉCOMPTE POINTS ----------------------- */
 function renderPoints(hd,app,banner){
-  hd.innerHTML=back()+'<h1>Décompte de points<span class="sub">Tes parties</span></h1><span style="width:38px"></span>';
+  hd.innerHTML=back()+'<h1>🏆 La Coupe<span class="sub">Vos parties</span></h1><span style="width:38px"></span>';
   var act=D.matches.filter(function(m){return m.status!=='done';}),dn=D.matches.filter(function(m){return m.status==='done';});
   var h=banner;
   if(!D.matches.length){
@@ -323,7 +338,7 @@ function tabRank(m){
   h+='<div class="card"><h2>🏅 Classement'+(m.winRule==='low'?' (le moins de points gagne)':'')+'</h2>';
   r.byCumul.forEach(function(p,i){
     var tp=lp.indexOf(p.id)>=0,tw=lw.indexOf(p.id)>=0;
-    h+='<div class="rank'+(tp?' lead':'')+(i===0?' first':'')+'"><div class="pos">'+(i+1)+'</div>'+
+    h+='<div class="rank'+(tp?' lead':'')+(i===0?' first':'')+'"><div class="pos">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1))+'</div>'+
       '<div class="nm"><b>'+esc(p.name)+(tp?' 🏆':'')+(tw?' 👑':'')+'</b>'+
       '<small>'+pl(p.played,'manche')+' · '+pl(p.wins,'victoire')+(p.played?' · moy. '+nf(p.points/p.played):'')+'</small></div>'+
       '<div class="pts"><b>'+nf(p.points)+'</b><small>points</small></div></div>';
@@ -434,7 +449,7 @@ function fallbackCopy(t,msg){
 
 /* ------------------------------- QUIZZ ---------------------------- */
 function renderQuizz(hd,app,banner){
-  hd.innerHTML=back()+'<h1>Quizz présentateur<span class="sub">Jeu vocal — animé par Claude</span></h1><span style="width:38px"></span>';
+  hd.innerHTML=back()+'<h1>🎙️ Le Micro<span class="sub">Quiz animé à la voix</span></h1><span style="width:38px"></span>';
   var h=banner;
   if(S.qtab==='play'){
     h+='<div class="card" style="background:var(--gr-l);border-color:var(--gr-b);text-align:center">'+
@@ -527,7 +542,7 @@ function restore(){
 }
 
 /* =============================== CHRONO ===========================
-   Duel de temps « 12 coups de midi » : chaque joueur a son compte à rebours,
+   Duel de temps : chaque joueur a son compte à rebours,
    en pause quand ce n'est pas son tour. Bon = il garde la main ; Faux = au
    suivant. À zéro = éliminé. L'animateur pilote. Rien n'est persisté : une
    manche de chrono est éphémère (mais les réglages, eux, sont mémorisés). */
@@ -551,7 +566,7 @@ function chSettings(){
 }
 function renderChrono(hd,app,nav,banner){
   chSettings();
-  hd.innerHTML=back()+'<h1>Chrono<span class="sub">Duel de temps</span></h1><span style="width:38px"></span>';
+  hd.innerHTML=back()+'<h1>⏱️ Tic-Tac<span class="sub">Duel de temps</span></h1><span style="width:38px"></span>';
   nav.innerHTML='';
   app.innerHTML = banner + (CH ? chGame() : chConfig());
 }
@@ -650,7 +665,9 @@ function chGame(){
 
   if(CH.winner!==null || chAlive().length<=1){
     var w = CH.winner!==null ? CH.winner : (chAlive()[0]&&chAlive()[0].name);
-    return '<div class="card" style="text-align:center;padding:28px 16px">'+
+    var conf='<div class="confetti" style="position:absolute;inset:0;pointer-events:none;overflow:hidden">'+
+      ['🎉','🏆','⭐️','🎊','✨','🥇'].map(function(e,i){return '<span style="left:'+(8+i*15)+'%;animation-delay:'+(i*.35)+'s">'+e+'</span>';}).join('')+'</div>';
+    return '<div class="card" style="text-align:center;padding:28px 16px;position:relative;overflow:hidden">'+conf+
       '<div style="font-size:46px">🏆</div><h2 style="font-size:22px;margin:8px 0 2px">'+esc(w||'—')+'</h2>'+
       '<p class="mini">dernier joueur en course</p></div>'+
       '<button class="btn" onclick="chStart()">Rejouer (mêmes réglages)</button>'+
