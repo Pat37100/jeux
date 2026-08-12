@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="En Jeux">
-<title>En Jeux — votre kit de jeux</title>
+<title>En Jeux — votre maître du jeu de poche</title>
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -302,10 +302,10 @@ function render(){
 
   if(S.view==='home'){
     if(!D.onboarded) setTimeout(obDraw,50);
-    hd.innerHTML='<span style="width:38px"></span><h1>En Jeux<span class="sub">Le kit de jeux de la famille</span></h1>'+
+    hd.innerHTML='<span style="width:38px"></span><h1>En Jeux<span class="sub">Votre maître du jeu de poche</span></h1>'+
       '<button class="icobtn" onclick="go(\'save\')">⚙︎</button>';
     app.innerHTML=banner+
-      '<div class="hero"><span class="dice">🎲</span><h2>En Jeux</h2><p>Le kit de jeux de la famille et des amis. Un animateur de quiz, un duel de chrono et un compteur de points — toujours dans ta poche, prêts à dégainer <b>n\'importe où, n\'importe quand</b>.</p>'+
+      '<div class="hero"><span class="dice">🎲</span><h2>En Jeux</h2><p><b>Votre maître du jeu de poche.</b> Il anime, il compte, il arbitre — et il retient qui gagne. Sortez les jeux, pas les écrans ! <b>Alors, qui est le plus nul ? 😏</b></p>'+
         '<div class="pills"><span>🍿 Soirées</span><span>🍽️ À table</span><span>🌳 En balade</span><span>🚗 En voiture</span><span>🏖️ En vacances</span></div></div>'+tip+
       '<div class="trust"><span><b>🚫</b>Sans pub</span><span><b>📶</b>Hors-ligne</span><span><b>🆓</b>Gratuit</span></div>'+
       tool('points','🏆','La Coupe','Le compteur qui n\'oublie jamais. Chaque partie, chaque manche, et vos champions couronnés saison après saison.','t-coupe',
