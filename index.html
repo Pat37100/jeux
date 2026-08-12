@@ -227,20 +227,20 @@ function render(){
   nav.innerHTML='';
   var standalone = (window.navigator.standalone===true) || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
   var banner = !canSave ? '<div class="warn"><b>Sauvegarde impossible ici.</b> Ce navigateur ne garde pas la mémoire. Ouvre le lien dans <b>Safari</b>, puis Partager → Sur l\'écran d\'accueil, et lance l\'app depuis l\'icône.</div>' : '';
-  if(canSave && !standalone && S.view==='home')
-    banner += '<div class="warn" style="background:#fffbeb;border-color:#fde68a;color:#92400e"><b>📌 Pour garder l\'historique à coup sûr :</b> ouvre ce lien dans <b>Safari</b> → Partager → <b>Sur l\'écran d\'accueil</b>, puis lance toujours l\'app depuis l\'icône 🏆. Les navigateurs intégrés (Claude, WhatsApp…) peuvent effacer la mémoire en se fermant.</div>';
+  var tip = (canSave && !standalone && S.view==='home' && !S.tipOff)
+    ? '<div class="warn" style="background:#fffbeb;border-color:#fde68a;color:#92400e;display:flex;gap:10px;align-items:center"><span style="flex:1"><b>📌 Pour garder l\'historique :</b> ouvre-moi dans <b>Safari</b> → Partager → <b>Sur l\'écran d\'accueil</b>, et lance-moi depuis l\'icône 🏆.</span><button class="sm" onclick="S.tipOff=1;render()">OK</button></div>' : '';
 
   if(S.view==='home'){
-    hd.innerHTML='<span style="width:38px"></span><h1>En Jeux<span class="sub">Votre kit de jeux</span></h1>'+
+    hd.innerHTML='<span style="width:38px"></span><h1>En Jeux<span class="sub">Ton kit de jeux</span></h1>'+
       '<button class="icobtn" onclick="go(\'save\')">⚙︎</button>';
     app.innerHTML=banner+
-      '<div class="hero"><span class="dice">🎲</span><h2>En Jeux</h2><p>Trois jeux dans votre poche — à table, en voiture, partout.</p></div>'+
-      tool('points','🏆','La Coupe','Comptez les points, cumulez sur l\'année, sacrez vos champions.','t-coupe',
+      '<div class="hero"><span class="dice">🎲</span><h2>En Jeux</h2><p>Trois jeux dans ta poche — à table, en voiture, partout.</p></div>'+tip+
+      tool('points','🏆','La Coupe','Compte les points, cumule sur l\'année, sacre tes champions.','t-coupe',
         D.matches.length?pl(D.matches.length,'partie')+' en mémoire':'')+
       tool('chrono','⏱️','Tic-Tac','Duel de temps : chacun défend son chrono, le dernier debout gagne.','t-tictac','')+
-      tool('quizz','🎙️','Le Micro','Quiz animé par votre IA : questions à l\'oral, jamais deux fois la même.','t-micro',
+      tool('quizz','🎙️','Le Micro','Quiz animé par ton IA : des questions à l\'oral, jamais deux fois la même.','t-micro',
         D.journal.length?pl(D.journal.length,'question')+' au journal':'')+
-      '<p class="mini" style="margin-top:16px">Trois jeux indépendants : La Coupe garde vos scores, Tic-Tac ne gère que le temps, Le Micro a son propre décompte.</p>'+
+      '<p class="mini" style="margin-top:16px">Trois jeux indépendants : La Coupe garde tes scores, Tic-Tac ne gère que le temps, Le Micro a son propre décompte.</p>'+
       (canSave?'<p class="mini" style="margin-top:10px;color:#059669">✓ Sauvegardé sur cet iPhone</p>':'');
     return;
   }
@@ -260,11 +260,11 @@ function tool(k,em,t,d,cls,note){
 
 /* -------------------------- DÉCOMPTE POINTS ----------------------- */
 function renderPoints(hd,app,banner){
-  hd.innerHTML=back()+'<h1>🏆 La Coupe<span class="sub">Vos parties</span></h1><span style="width:38px"></span>';
+  hd.innerHTML=back()+'<h1>🏆 La Coupe<span class="sub">Tes parties</span></h1><span style="width:38px"></span>';
   var act=D.matches.filter(function(m){return m.status!=='done';}),dn=D.matches.filter(function(m){return m.status==='done';});
   var h=banner;
   if(!D.matches.length){
-    h+='<div class="empty"><div class="e">🏆</div><h3>Aucune partie</h3><p>Crée une partie pour compter les points.</p></div>';
+    h+='<div class="empty"><div class="e">🏆</div><h3>Aucune partie</h3><p>Crée ta première partie avec le bouton ci-dessous 👇</p></div>';
   }else{
     if(D.matches.some(function(m){return m.rounds.length;}))
       h+='<button class="tool t-coupe" style="padding:12px 16px" onclick="go(\'palmares\')"><span class="em" style="width:44px;height:44px;font-size:22px">🏅</span>'+
@@ -481,7 +481,7 @@ function renderQuizz(hd,app,banner){
     h+='<div class="card" style="background:var(--gr-l);border-color:var(--gr-b);text-align:center">'+
       '<div class="l" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#047857">Pour lancer</div>'+
       '<div style="font-size:18px;font-weight:800;color:#064e3b;margin:4px 0">« On fait un quiz »</div>'+
-      '<p class="mini" style="color:#047857">Dis-le à Claude en mode voix. Il demande qui joue, puis enchaîne.</p></div>';
+      '<p class="mini" style="color:#047857">Dis-le à ton assistant IA (Claude) en mode voix. Il demande qui joue, puis enchaîne.</p></div>';
     h+='<div class="card"><h2>Éviter les questions déjà posées</h2>'+
       (D.journal.length?
         '<p class="mini" style="margin-bottom:10px">Envoie ce brief à Claude au début de la partie : il saura quoi éviter ('+
