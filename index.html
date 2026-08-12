@@ -61,9 +61,10 @@
   @keyframes updin{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
   /* Apparition douce des écrans et des cartes : l'app respire */
   @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-  #app>.card,#app>.hero,#app>.tool,#app>.empty,#app>.trust,#app>.row{animation:fadeUp .28s ease both}
-  #app>*:nth-child(2){animation-delay:.03s} #app>*:nth-child(3){animation-delay:.06s}
-  #app>*:nth-child(4){animation-delay:.09s} #app>*:nth-child(5){animation-delay:.12s}
+  /* l'animation ne joue QUE lors d'un changement d'écran (sinon le chrono ferait trembler l'app) */
+  #app.anim>.card,#app.anim>.hero,#app.anim>.tool,#app.anim>.empty,#app.anim>.trust,#app.anim>.row{animation:fadeUp .28s ease both}
+  #app.anim>*:nth-child(2){animation-delay:.03s} #app.anim>*:nth-child(3){animation-delay:.06s}
+  #app.anim>*:nth-child(4){animation-delay:.09s} #app.anim>*:nth-child(5){animation-delay:.12s}
   @media (prefers-reduced-motion:reduce){#app>*{animation:none !important}}
   /* Écran de victoire : pulsation du trophée */
   @keyframes trophy{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.12) rotate(3deg)}}
@@ -95,6 +96,17 @@
   .hero h2{text-shadow:0 1px 2px rgba(0,0,0,.12)}
   .whowheel{font-size:56px;text-align:center;padding:8px 0}
   .whoname{font-size:30px;font-weight:800;text-align:center;letter-spacing:-.02em}
+  .gridwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .gtab{border-collapse:separate;border-spacing:0;font-size:13px;width:max-content;min-width:100%}
+  .gtab th,.gtab td{padding:7px 9px;text-align:center;white-space:nowrap;border-bottom:1px solid #f0efee}
+  .gtab th{font-size:11px;color:var(--mut);font-weight:700;background:#fafaf9}
+  .gtab .stick{position:sticky;left:0;background:#fff;text-align:left;font-weight:700;z-index:2;box-shadow:1px 0 0 #e7e5e4;max-width:120px;overflow:hidden;text-overflow:ellipsis}
+  .gtab thead .stick{background:#fafaf9}
+  .gtab .nmcell{font-size:13px}
+  .gtab .win{color:#059669;font-weight:800}
+  .gtab .win::after{content:" 👑";font-size:10px}
+  .gtab .tot{background:#f0fdf4;font-weight:800;color:#065f46;position:sticky;right:0;box-shadow:-1px 0 0 #e7e5e4}
+  .gtab tbody tr:first-child .stick{color:#b45309}
   .tool{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:16px;margin-bottom:12px;
     border-radius:18px;border:1px solid var(--line);background:#fff;cursor:pointer;font-family:inherit;position:relative;overflow:hidden}
   .tool .em{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;background:#f5f5f4;flex-shrink:0;color:#fff}
@@ -252,7 +264,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='25';
+var APP_VERSION='26';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -342,7 +354,18 @@ function toast(t){var d=document.createElement('div');d.className='toast';d.text
   setTimeout(function(){d.remove();},2000);}
 
 /* ============================== RENDU ============================= */
+var __lastView=null;
 function render(){
+  try{
+    var appEl=document.getElementById('app');
+    if(appEl){
+      var key=S.view+'|'+S.tab+'|'+S.qtab+'|'+(S.chTab||'');
+      if(key!==__lastView){ appEl.classList.add('anim'); __lastView=key; }
+      else appEl.classList.remove('anim');
+    }
+  }catch(e){}
+  return render_(); }
+function render_(){
   var hd=document.getElementById('hd'),app=document.getElementById('app'),nav=document.getElementById('nav');
   nav.innerHTML='';
   var standalone = (window.navigator.standalone===true) || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
@@ -355,7 +378,7 @@ function render(){
     hd.innerHTML='<span style="width:38px"></span><h1>En Jeux<span class="sub">Votre maître du jeu de poche</span></h1>'+
       '<button class="icobtn" onclick="go(\'save\')">⚙︎</button>';
     app.innerHTML=banner+
-      '<div class="hero"><span class="dice">🎲</span><h2>En Jeux</h2><p><b>Votre maître du jeu de poche.</b> Il anime, il compte, il arbitre — et il retient qui gagne. Sortez les jeux, pas les écrans ! <b>Alors, qui est le plus nul ? 😏</b></p>'+
+      '<div class="hero"><span class="dice">🎲</span><h2>En Jeux</h2><p><b>Votre maître du jeu de poche.</b> Il anime, il compte, il arbitre — et il retient qui gagne. Posez le téléphone au milieu de la table, et que le meilleur gagne. <b>Alors, qui décroche la couronne ? 👑</b></p>'+
         '<div class="pills"><span>🍿 Soirées</span><span>🍽️ À table</span><span>🌳 En balade</span><span>🚗 En voiture</span><span>🏖️ En vacances</span></div></div>'+tip+
       '<div class="trust"><span><b>🚫</b>Sans pub</span><span><b>📶</b>Hors-ligne</span><span><b>🆓</b>Gratuit</span></div>'+
       (function(){
@@ -569,11 +592,32 @@ function saveRound(){
   m.rounds.unshift({id:uid(),date:S.date||today(),scores:sc});
   persist();S.inputs={};S.date=today();S.tab='rank';toast('Manche enregistrée ✓');window.scrollTo(0,0);render();
 }
+function histGrid(m){
+  if(!m.rounds.length) return '<div class="empty"><div class="e">▦</div><h3>Aucune manche</h3></div>';
+  var r=rank(m,function(){return true;});
+  var order=r.byCumul; // meilleurs en haut
+  var head='<tr><th class="stick">Joueur</th>'+m.rounds.map(function(rd,i){return '<th title="'+fr(rd.date)+'">M'+(i+1)+'</th>';}).join('')+'<th class="tot">Total</th></tr>';
+  var body=order.map(function(p){
+    var cells=m.rounds.map(function(rd){
+      var v=rd.scores[p.id];
+      var w=winners(rd,m.players,m.winRule).indexOf(p.id)>=0;
+      return '<td'+(w?' class="win"':'')+'>'+(v===undefined?'·':nf(v))+'</td>';
+    }).join('');
+    return '<tr><td class="stick nmcell">'+esc(p.name)+'</td>'+cells+'<td class="tot"><b>'+nf(p.points)+'</b></td></tr>';
+  }).join('');
+  return '<div class="card" style="padding:10px 0 6px"><div class="gridwrap"><table class="gtab"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>'+
+    '<p class="mini" style="text-align:center;margin:8px 12px 0">Fais glisser le tableau horizontalement · 👑 = manche gagnée · classement par cumul.</p></div>';
+}
 function tabHist(m){
   if(!m.rounds.length) return '<div class="empty"><div class="e">📋</div><h3>Aucune manche</h3><p>Rien d\'enregistré pour l\'instant.</p></div>';
   var all=m.rounds, LIMIT=20, truncated=(!S.histAll && all.length>LIMIT);
   var shown=truncated? all.slice(-LIMIT) : all;
-  var out=(truncated?'<button class="sm" style="width:100%;margin-bottom:10px" onclick="S.histAll=true;render()">Afficher les '+all.length+' manches (les '+LIMIT+' dernières sont ci-dessous)</button>':'')+
+  // bascule Liste / Grille (grille = tableau récapitulatif comme le PDF)
+  var out='<div class="row" style="gap:8px;margin-bottom:10px">'+
+    '<button class="chip'+(S.histGrid?'':' on')+'" style="flex:1;text-align:center" onclick="S.histGrid=false;render()">☰ Liste</button>'+
+    '<button class="chip'+(S.histGrid?' on':'')+'" style="flex:1;text-align:center" onclick="S.histGrid=true;render()">▦ Grille</button></div>';
+  if(S.histGrid) return out+histGrid(m);
+  out+=(truncated?'<button class="sm" style="width:100%;margin-bottom:10px" onclick="S.histAll=true;render()">Afficher les '+all.length+' manches (les '+LIMIT+' dernières sont ci-dessous)</button>':'')+
     (all.length>LIMIT?'<p class="mini" style="margin:0 0 8px;text-align:center">💡 Pour une vue complète et lisible : <b>Classement → 📄 Exporter en PDF</b>.</p>':'');
   return out + shown.map(function(r){
     var w=winners(r,m.players,m.winRule);
@@ -585,7 +629,7 @@ function tabHist(m){
       (wn?'<span class="w">👑 '+esc(wn)+'</span>':'')+
       '<button class="icobtn" style="font-size:16px;padding:2px 6px" onclick="S.confirm=\''+r.id+'\';render()">🗑</button></span></div>'+
       '<div class="sc">'+sc+'</div>'+
-      (cf?'<div class="row" style="margin-top:9px;background:var(--ro-l);padding:8px;border-radius:10px"><span style="flex:1;font-size:12px;color:#9f1239">Supprimer cette manche ?</span><button class="sm r" onclick="delRound(\''+r.id+'\')">Supprimer</button><button class="sm" onclick="S.confirm=null;render()">Annuler</button></div>':'')+
+      (cf?'<div style="margin-top:9px;background:var(--ro-l);padding:10px;border-radius:10px"><p style="margin:0 0 8px;font-size:12.5px;color:#9f1239;font-weight:600">Supprimer cette manche ?</p><div class="row" style="gap:8px"><button class="sm r" style="flex:1" onclick="delRound(\''+r.id+'\')">Supprimer</button><button class="sm" style="flex:1" onclick="S.confirm=null;render()">Annuler</button></div></div>':'')+
       '</div>';
   }).join('');
 }
@@ -610,7 +654,7 @@ function tabSet(m){
      '<button class="sm g" onclick="setStatus(\'active\')">▶ Reprendre la partie</button>':
      '<button class="btn" style="background:linear-gradient(135deg,#d97706,#f59e0b)" onclick="finishMatch()">🏁 Terminer & couronner le champion</button>')+'</div>';
   h+='<div class="card">'+(S.confirm==='delm'?
-     '<p style="font-size:14px;margin:0 0 8px">Supprimer définitivement cette partie et son historique ?</p><div class="row"><button class="btn red" onclick="delMatch()">Oui, supprimer</button><button class="btn grey" onclick="S.confirm=null;render()">Annuler</button></div>':
+     '<p style="font-size:14px;margin:0 0 8px">Supprimer définitivement cette partie et son historique ?</p><div class="row"><button class="btn red" onclick="delMatch()">Oui, supprimer</button><button class="btn grey" onclick="S.confirm=null;render()">Annuler</button></div></div>':
      '<button class="sm r" onclick="S.confirm=\'delm\';render()">🗑 Supprimer la partie</button>')+'</div>';
   return h;
 }
@@ -855,7 +899,7 @@ function microPalmares(){
         '<span style="display:flex;gap:8px;align-items:center"><span class="w">👑 '+esc(g.players[0].name)+'</span>'+
         '<button class="icobtn" style="font-size:16px;padding:2px 6px" onclick="S.confirm=\'mq'+g.id+'\';render()">🗑</button></span></div>'+
         '<div class="sc">'+g.players.map(function(p){return '<span>'+esc(p.name)+(p.score!==null?' <b>'+nf(p.score)+'</b>':'')+'</span>';}).join('')+'</div>'+
-        (cf?'<div class="row" style="margin-top:9px;background:var(--ro-l);padding:8px;border-radius:10px"><span style="flex:1;font-size:12px;color:#9f1239">Supprimer ce résultat ?</span><button class="sm r" onclick="microDel(\''+g.id+'\')">Supprimer</button><button class="sm" onclick="S.confirm=null;render()">Annuler</button></div>':'')+
+        (cf?'<div class="row" style="margin-top:9px;background:var(--ro-l);padding:8px;border-radius:10px"><span style="flex:1;font-size:12px;color:#9f1239">Supprimer ce résultat ?</span><button class="sm r" onclick="microDel(\''+g.id+'\')">Supprimer</button><button class="sm" style="flex:1" onclick="S.confirm=null;render()">Annuler</button></div></div>':'')+
       '</div>';
     }).join('')+'</div>';
   return h;
@@ -948,7 +992,7 @@ function renderSave(hd,app,banner){
       '<button class="sm" onclick="openAv(\''+p.id+'\')">Avatar</button>'+
       '<button class="sm r" onclick="delLib(\''+p.id+'\')">Retirer</button></div>';});
   h+='<div class="row" style="margin-top:8px"><input id="nl" placeholder="Prénom ou nom d\'équipe"><button class="sm g" onclick="addLib()">Ajouter</button></div>'+
-     '<p class="mini" style="margin-top:8px">Un participant peut être une personne <b>ou une équipe</b> (ex. « Les Bleus »). Le retirer ici ne touche pas aux parties déjà jouées.</p></div>';
+     '<p class="mini" style="margin-top:8px">Touche <b>Avatar</b> pour mettre une <b>photo</b> 📷 ou un personnage. Un participant peut être une personne <b>ou une équipe</b> (ex. « Les Bleus »). Le retirer ici ne touche pas aux parties déjà jouées.</p></div>';
   h+='<div class="card"><h2>Options</h2>'+
      '<button class="sm" style="width:100%;margin-bottom:10px" onclick="obReplay()">🎬 Revoir la présentation de bienvenue</button>'+
      '<button class="sm" style="width:100%;margin-bottom:10px" onclick="location.reload()">🔄 Recharger l\'app (récupérer la dernière version)</button>'+
@@ -963,8 +1007,9 @@ function renderSave(hd,app,banner){
        ? '<div class="warn" style="background:#fffbeb;border-color:#fde68a;color:#92400e;margin-bottom:10px"><b>💾 Pense à sauvegarder</b> — '+pl(nb,'partie')+' en mémoire'+(lastB?' · dernière sauvegarde le '+lastB:' · jamais sauvegardé')+'.</div>'
        : (lastB?'<p class="mini" style="margin-bottom:8px;color:#059669">✓ Dernière sauvegarde le '+lastB+'</p>':''))+
      '<button class="btn dark" style="margin-bottom:8px" onclick="backupFile()">💾 Télécharger le fichier de sauvegarde</button>'+
-     '<label class="sm" style="display:block;width:100%;text-align:center;margin-bottom:12px;cursor:pointer">📂 Restaurer depuis un fichier'+
-       '<input type="file" accept="application/json,.json" style="display:none" onchange="restoreFile(this)"></label>'+
+     '<label class="sm" for="rstf" style="display:block;width:100%;text-align:center;margin-bottom:12px;cursor:pointer;position:relative;overflow:hidden">📂 Restaurer depuis un fichier'+
+       '<input id="rstf" type="file" accept="application/json,.json" onchange="restoreFile(this)" '+
+         'style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:0"></label>'+
      '<p class="mini" style="margin-bottom:10px">Envoie-toi cette sauvegarde par WhatsApp ou Notes de temps en temps. C\'est ton filet si tu changes de téléphone.</p>'+
      '<button class="btn dark" onclick="shareBackup()">📤 Envoyer la sauvegarde</button>'+
      '<button class="sm" style="width:100%;margin-top:8px" onclick="copy(JSON.stringify(D),\'Sauvegarde copiée\')">Copier</button>'+
@@ -1073,8 +1118,9 @@ function drawAvSheet(){
     '<h2 style="margin:0 0 4px;font-size:18px">Avatar de '+esc(p.name)+'</h2>'+
     '<p class="mini" style="margin:0 0 10px">Ta photo (elle reste sur cet iPhone) ou un personnage.</p>'+
     '<div class="row" style="margin-bottom:12px">'+
-      '<label class="btn" style="flex:1;text-align:center;margin:0">📷 Choisir ma photo'+
-      '<input id="avf" type="file" accept="image/*" style="display:none" onchange="avPhoto(this)"></label>'+
+      '<label class="btn" for="avf" style="flex:1;text-align:center;margin:0;position:relative;overflow:hidden;display:block">📷 Choisir ma photo'+
+      '<input id="avf" type="file" accept="image/*" onchange="avPhoto(this)" '+
+        'style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:0"></label>'+
       (p.photo?'<button class="sm r" style="margin-left:8px" onclick="avDelPhoto()">🗑 Retirer</button>':'')+'</div>'+
     '<div class="avgrid">'+AV_POOL.map(function(e){
       return '<button class="'+(p.emoji===e&&!p.photo?'on':'')+'" onclick="chooseAv(\''+e+'\')">'+e+'</button>';}).join('')+
@@ -1105,10 +1151,19 @@ function avPhoto(inp){
         var p=D.lib.filter(function(q){return q.id===S.avPick;})[0];
         if(p){p.photo=c.toDataURL('image/jpeg',.72);persist();}
         closeAv();render();toast('Photo enregistrée ✓');
-      }catch(e){toast('Photo impossible ici — choisis un personnage');}
+      }catch(e){
+        // dernier recours : garder l'image telle quelle si elle est raisonnable
+        try{
+          var p2=D.lib.filter(function(q){return q.id===S.avPick;})[0];
+          if(p2 && rd.result && rd.result.length<400000){ p2.photo=rd.result; persist(); closeAv(); render(); toast('Photo enregistrée ✓'); }
+          else toast('Photo trop lourde — essaie une image plus petite');
+        }catch(e2){ toast('Photo impossible — choisis un personnage'); }
+      }
     };
+    img.onerror=function(){ toast('Image illisible — essaie une autre photo'); };
     img.src=rd.result;
   };
+  rd.onerror=function(){ toast('Lecture impossible — réessaie'); };
   rd.readAsDataURL(f);
 }
 function addLib(){var v=document.getElementById('nl').value.trim();if(!v)return;
@@ -1364,6 +1419,15 @@ function renderChrono(hd,app,nav,banner){
     '</div></nav>';
 }
 /* ---- Historique optionnel des duels Tic-Tac ---- */
+function chFinishNow(){
+  if(!CH||CH.winner!==null) return;
+  chStopTick(); CH.running=false;
+  var alive=chAlive();
+  var best=alive.slice().sort(function(a,b){ return b.good-a.good || b.left-a.left; })[0];
+  CH.winner = best ? best.name : ((CH.players[0]&&CH.players[0].name)||null);
+  if(CH.winner){ fanfare(); speak(CH.winner+' remporte la manche'); }
+  render();
+}
 function chSaveDuel(){
   if(!CH||CH.saved) return;
   var w = CH.winner!==null ? CH.winner : (chAlive()[0]&&chAlive()[0].name);
@@ -1417,7 +1481,7 @@ function chPalmares(){
         '<span style="display:flex;gap:8px;align-items:center"><span class="w">👑 '+esc(d.winner||'—')+'</span>'+
         '<button class="icobtn" style="font-size:16px;padding:2px 6px" onclick="S.confirm=\'ct'+d.id+'\';render()">🗑</button></span></div>'+
         '<div class="sc">'+d.players.slice().sort(function(a,b){return b.good-a.good;}).map(function(p){return '<span>'+esc(p.name)+' <b>✓'+p.good+'</b></span>';}).join('')+'</div>'+
-        (cf?'<div class="row" style="margin-top:9px;background:var(--ro-l);padding:8px;border-radius:10px"><span style="flex:1;font-size:12px;color:#9f1239">Supprimer ce duel ?</span><button class="sm r" onclick="chDelDuel(\''+d.id+'\')">Supprimer</button><button class="sm" onclick="S.confirm=null;render()">Annuler</button></div>':'')+
+        (cf?'<div style="margin-top:9px;background:var(--ro-l);padding:10px;border-radius:10px"><p style="margin:0 0 8px;font-size:12.5px;color:#9f1239;font-weight:600">Supprimer ce duel ?</p><div class="row" style="gap:8px"><button class="sm r" style="flex:1" onclick="chDelDuel(\''+d.id+'\')">Supprimer</button><button class="sm" style="flex:1" onclick="S.confirm=null;render()">Annuler</button></div></div>':'')+
       '</div>';
     }).join('')+'</div>';
   return h;
@@ -1515,8 +1579,11 @@ function chWrong(){ chStopTick(); CH.running=false; chAdvance(false);
   if(!CH.winner) chRun(); else render(); }
 function chJump(i){
   if(!CH||CH.winner!==null) return;
-  if(CH.players[i].out||i===CH.active) return;
-  chStopTick(); CH.running=false; CH.active=i; render();
+  if(!CH.players[i]||CH.players[i].out||i===CH.active) return;
+  var wasRunning=CH.running;
+  chStopTick(); CH.running=false; CH.active=i;
+  speak('À toi '+CH.players[i].name);
+  if(wasRunning) chRun(); else render();
 }
 function chReset(){ chStopTick(); CH=null; render(); }
 
@@ -1584,6 +1651,7 @@ function chGame(){
   // boutons animateur : 2 actions seulement (benchmark pendule d'échecs / party games)
   h+='<button class="btn" style="margin-top:10px" onclick="chGood()">✓ Bonne réponse — garde la main</button>'+
      '<button class="btn red" style="margin-top:8px" onclick="chWrong()">⏭ Au suivant</button>'+
+     '<button class="sm" style="width:100%;margin-top:8px" onclick="chFinishNow()">🏁 Terminer la manche maintenant</button>'+
      '<p class="mini" style="text-align:center;margin-top:6px">Bonne réponse : '+esc(p.name)+' continue et son ✓ grimpe. Sinon : la main passe, son chrono se fige.</p>';
 
   // barre de comparaison des bonnes réponses
