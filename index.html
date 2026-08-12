@@ -235,7 +235,7 @@ function leaders(sorted,key,rule){
 }
 
 /* ============================== ÉTAT UI =========================== */
-var S={view:'home',matchId:null,tab:'rank',qtab:'play',period:'all',from:'',to:'',inputs:{},date:today(),sheet:false,confirm:null};
+var S={view:'home',matchId:null,tab:'rank',qtab:'play',period:'all',from:'',to:'',inputs:{},date:today(),sheet:false,confirm:null,detail:null,avPick:null,tipOff:0};
 function go(v){S.view=v;S.tab='rank';S.qtab='play';window.scrollTo(0,0);render();}
 function cur(){return D.matches.filter(function(m){return m.id===S.matchId;})[0];}
 function toast(t){var d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);
@@ -251,16 +251,16 @@ function render(){
     ? '<div class="warn" style="background:#fffbeb;border-color:#fde68a;color:#92400e;display:flex;gap:10px;align-items:center"><span style="flex:1"><b>📌 Pour garder l\'historique :</b> ouvre-moi dans <b>Safari</b> → Partager → <b>Sur l\'écran d\'accueil</b>, et lance-moi depuis l\'icône 🏆.</span><button class="sm" onclick="S.tipOff=1;render()">OK</button></div>' : '';
 
   if(S.view==='home'){
-    hd.innerHTML='<span style="width:38px"></span><h1>En Jeux<span class="sub">Ton kit de jeux</span></h1>'+
+    hd.innerHTML='<span style="width:38px"></span><h1>En Jeux<span class="sub">Le kit de jeux de la famille</span></h1>'+
       '<button class="icobtn" onclick="go(\'save\')">⚙︎</button>';
     app.innerHTML=banner+
-      '<div class="hero"><span class="dice">🎲</span><h2>En Jeux</h2><p>Trois jeux dans ta poche — à table, en voiture, partout.</p></div>'+tip+
-      tool('points','🏆','La Coupe','Compte les points, cumule sur l\'année, sacre tes champions.','t-coupe',
+      '<div class="hero"><span class="dice">🎲</span><h2>En Jeux</h2><p>Le kit de jeux de toute la famille. Un animateur, un chrono et un compteur de points — dans ta poche, même en voiture.</p></div>'+tip+
+      tool('points','🏆','La Coupe','Le compteur qui n\'oublie jamais. Chaque partie, chaque manche, et vos champions couronnés saison après saison.','t-coupe',
         D.matches.length?pl(D.matches.length,'partie')+' en mémoire':'')+
-      tool('chrono','⏱️','Tic-Tac','Duel de temps : chacun défend son chrono, le dernier debout gagne.','t-tictac','')+
-      tool('quizz','🎙️','Le Micro','Quiz animé par ton IA : des questions à l\'oral, jamais deux fois la même.','t-micro',
+      tool('chrono','⏱️','Tic-Tac','Le duel de temps qui met l\'ambiance. Chacun défend son chrono, le dernier debout l\'emporte.','t-tictac','')+
+      tool('quizz','🎙️','Le Micro','Ton animateur de quiz personnel. Des questions à l\'oral, sur mesure, et jamais deux fois la même — même dans dix ans.','t-micro',
         D.journal.length?pl(D.journal.length,'question')+' au journal':'')+
-      '<p class="mini" style="margin-top:16px">Trois jeux indépendants : La Coupe garde tes scores, Tic-Tac ne gère que le temps, Le Micro a son propre décompte.</p>'+
+      '<div class="card" style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-color:#ddd6fe;margin-top:16px"><p style="margin:0;font-size:13px;color:#5b21b6;line-height:1.5"><b>✨ La pépite : Le Micro.</b> Aucun autre jeu ne fait ça — un animateur qui s\'adapte à chaque joueur et retient tout, pour ne jamais reposer la même question. Vos soirées et vos trajets ne se ressembleront plus.</p></div>'+
       (canSave?'<p class="mini" style="margin-top:10px;color:#059669">✓ Sauvegardé sur cet iPhone</p>':'');
     return;
   }
@@ -384,10 +384,19 @@ function tabRank(m){
   h+='<div class="card"><h2>🏅 Classement'+(m.winRule==='low'?' (le moins de points gagne)':'')+'</h2>';
   r.byCumul.forEach(function(p,i){
     var tp=lp.indexOf(p.id)>=0,tw=lw.indexOf(p.id)>=0;
-    h+='<div class="rank'+(tp?' lead':'')+(i===0?' first':'')+'"><div class="pos">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1))+'</div>'+
+    var opendetail=S.detail===p.id;
+    h+='<div class="rank'+(tp?' lead':'')+(i===0?' first':'')+'" style="cursor:pointer" onclick="S.detail=S.detail===\''+p.id+'\'?null:\''+p.id+'\';render()"><div class="pos">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1))+'</div>'+
       av(p.name,'sm')+'<div class="nm" style="margin-left:8px"><b>'+esc(p.name)+(tp?' 🏆':'')+(tw?' 👑':'')+'</b>'+
-      '<small>'+pl(p.played,'manche')+' · '+pl(p.wins,'victoire')+(p.played?' · moy. '+nf(p.points/p.played):'')+'</small></div>'+
+      '<small>'+pl(p.played,'manche')+' · '+pl(p.wins,'victoire')+(p.played?' · moy. '+nf(p.points/p.played):'')+' · voir le détail ›</small></div>'+
       '<div class="pts"><b>'+nf(p.points)+'</b><small>points</small></div></div>';
+    if(opendetail){
+      var det=m.rounds.filter(keeper()).filter(function(r){return r.scores[p.id]!==undefined;});
+      h+='<div style="background:#fafaf9;border-radius:12px;padding:10px 12px;margin:-2px 0 6px">'+
+        (det.length?'<div style="font-size:11px;text-transform:uppercase;color:#a8a29e;font-weight:700;margin-bottom:6px">Détail de '+esc(p.name)+' — '+pl(det.length,'manche')+'</div>'+
+          det.map(function(r){var w=winners(r,m.players,m.winRule).indexOf(p.id)>=0;
+            return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 0"><span style="color:#78716c">'+fr(r.date)+'</span><b style="color:'+(w?'#059669':'#1c1917')+'">'+nf(r.scores[p.id])+(w?' 👑':'')+'</b></div>';}).join(''):
+          '<p class="mini">Aucune manche sur la période.</p>')+'</div>';
+    }
   });
   h+='</div><button class="btn dark" onclick="share()">📤  Envoyer les résultats</button>'+
      '<p class="mini" style="text-align:center;margin-top:8px">Messages, WhatsApp, mail…</p>';
@@ -806,7 +815,7 @@ function chSound(b){ chSettings().sound=b; persist(); render(); }
 /* ---- Démarrage d'une manche ---- */
 function chStart(){
   var s=chSettings();
-  CH={ players:s.players.map(function(n){return {name:n, left:s.secs, out:false};}),
+  CH={ players:s.players.map(function(n){return {name:n, left:s.secs, out:false, good:0};}),
        active:0, running:false, sound:s.sound, total:s.secs, winner:null };
   chStopTick();
   render();
@@ -841,7 +850,7 @@ function chAdvance(auto){
   if(auto) render();
 }
 /* Boutons animateur */
-function chGood(){ /* garde la main : on relance simplement son temps */ if(!CH.winner) chRun(); }
+function chGood(){ if(CH.winner) return; CH.players[CH.active].good++; chRun(); }
 function chWrong(){ chStopTick(); CH.running=false; chAdvance(false);
   // enchaîne directement sur le nouveau joueur
   if(!CH.winner) chRun(); else render(); }
@@ -872,7 +881,12 @@ function chGame(){
       ['🎉','🏆','⭐️','🎊','✨','🥇'].map(function(e,i){return '<span style="left:'+(8+i*15)+'%;animation-delay:'+(i*.35)+'s">'+e+'</span>';}).join('')+'</div>';
     return '<div class="card" style="text-align:center;padding:28px 16px;position:relative;overflow:hidden">'+conf+
       '<div style="font-size:46px">🏆</div><div style="margin:4px 0">'+(w?av(w,'big'):'')+'</div><h2 style="font-size:22px;margin:4px 0 2px">'+esc(w||'—')+'</h2>'+
-      '<p class="mini">dernier joueur en course</p></div>'+
+      '<p class="mini">dernier joueur en course</p>'+
+      '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">'+
+        CH.players.slice().sort(function(a,b){return b.good-a.good;}).map(function(pl){
+          return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0"><span style="display:flex;align-items:center;gap:6px">'+av(pl.name,'sm')+esc(pl.name)+'</span><b style="color:#059669">✓ '+pl.good+'</b></div>';
+        }).join('')+
+      '</div></div>'+
       '<button class="btn" onclick="chStart()">Rejouer (mêmes réglages)</button>'+
       '<button class="btn grey" style="margin-top:8px" onclick="chReset()">Changer les réglages</button>';
   }
@@ -883,6 +897,7 @@ function chGame(){
       '<div style="margin-bottom:2px">'+av(p.name)+'</div>'+
       '<div style="font-size:13px;color:#78716c;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name)+'</div>'+
       '<div style="font-size:44px;font-weight:800;font-variant-numeric:tabular-nums;color:'+col+'">'+fmtT(p.left)+'</div>'+
+      '<div style="font-size:12px;color:#059669;font-weight:700;margin-top:2px">✓ '+CH.players[CH.active].good+' bonne'+(CH.players[CH.active].good>1?'s':'')+'</div>'+
       '<div style="font-size:11px;color:#a8a29e">'+(CH.running?'en cours':'en pause')+'</div>'+
     '</div></div></div>';
 
@@ -891,11 +906,12 @@ function chGame(){
     ? '<button class="btn" style="background:#78716c" onclick="chPause()">⏸ Pause</button>'
     : '<button class="btn" onclick="chRun()">▶︎ Lancer le temps de '+esc(p.name)+'</button>';
 
-  // boutons animateur
-  h+='<div class="row" style="margin-top:10px;gap:10px">'+
-     '<button class="btn" style="flex:1" onclick="chGood()">✓ Bon</button>'+
-     '<button class="btn red" style="flex:1" onclick="chWrong()">✗ Faux → suivant</button></div>'+
-     '<button class="btn grey" style="margin-top:8px" onclick="chSkip()">Passer au suivant</button>';
+  // boutons animateur : Bon (garde la main, +1) / Raté (passe, sans point) / Passer (neutre)
+  h+='<button class="btn" style="margin-top:10px;font-size:17px" onclick="chGood()">✓ Bonne réponse — '+esc(p.name)+' garde la main</button>'+
+     '<div class="row" style="margin-top:8px;gap:8px">'+
+     '<button class="btn red" style="flex:1" onclick="chWrong()">✗ Raté → au suivant</button>'+
+     '<button class="btn grey" style="flex:1" onclick="chSkip()">⏭ Passer (sans faute)</button></div>'+
+     '<p class="mini" style="text-align:center;margin-top:6px">« Raté » et « Passer » donnent la main au suivant. « Raté » compte une erreur ; « Passer » est neutre (question sautée).</p>';
 
   // arène des joueurs : pastilles avec mini-anneaux de temps
   h+='<div class="card" style="margin-top:14px"><h2>Arène</h2><div class="charena">';
@@ -907,9 +923,21 @@ function chGame(){
        '<div class="ring"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="'+r2+'" fill="none" stroke="#e7e5e4" stroke-width="5"/>'+
        '<circle cx="32" cy="32" r="'+r2+'" fill="none" stroke="'+cc+'" stroke-width="5" stroke-linecap="round" transform="rotate(-90 32 32)" stroke-dasharray="'+C2.toFixed(1)+'" stroke-dashoffset="'+o2.toFixed(1)+'"/></svg>'+
        '<span class="face">'+(pl.out?'❌':av(pl.name))+'</span></div>'+
-       '<b>'+esc(pl.name)+'</b><small style="color:'+cc+'">'+(pl.out?'éliminé':fmtT(pl.left))+'</small></div>';
+       '<b>'+esc(pl.name)+'</b><small style="color:'+cc+'">'+(pl.out?'éliminé':fmtT(pl.left))+'</small>'+
+       '<small style="color:#059669;font-weight:700">✓ '+pl.good+'</small></div>';
   });
   h+='</div><p class="mini" style="margin-top:8px;text-align:center">Touche une pastille pour donner la main à ce joueur.</p></div>';
+  // barre de comparaison des bonnes réponses
+  var maxG=Math.max(1,Math.max.apply(null,CH.players.map(function(p){return p.good;})));
+  if(CH.players.some(function(p){return p.good>0;})){
+    h+='<div class="card"><h2>Bonnes réponses</h2>';
+    CH.players.slice().sort(function(a,b){return b.good-a.good;}).forEach(function(pl){
+      var pct=Math.round(pl.good/maxG*100);
+      h+='<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px"><span style="display:flex;align-items:center;gap:6px">'+av(pl.name,'sm')+esc(pl.name)+'</span><b>'+pl.good+'</b></div>'+
+         '<div style="height:8px;background:#f5f5f4;border-radius:99px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#059669,#34d399);border-radius:99px"></div></div></div>';
+    });
+    h+='</div>';
+  }
   h+='<button class="btn grey" style="margin-top:10px" onclick="chReset()">⟲ Nouvelle manche</button>';
   return h;
 }
