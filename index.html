@@ -50,6 +50,13 @@
   @keyframes fall{0%{transform:translateY(-30px) rotate(0)}100%{transform:translateY(320px) rotate(340deg);opacity:0}}
   .confetti span{position:absolute;top:0;font-size:22px;animation:fall 2.6s linear infinite}
   .medal{font-size:17px;margin-right:2px}
+  .av{display:inline-flex;align-items:center;justify-content:center;border-radius:99px;flex-shrink:0;
+    width:34px;height:34px;font-size:19px;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .av.big{width:64px;height:64px;font-size:36px;border-width:3px}
+  .av.sm{width:26px;height:26px;font-size:15px}
+  .avgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+  .avgrid button{border:2px solid transparent;background:#fff;border-radius:14px;font-size:26px;padding:8px 0;cursor:pointer}
+  .avgrid button.on{border-color:var(--gr);background:var(--gr-l)}
   .tool b{font-size:16px;display:block}
   .tool small{color:var(--mut);font-size:13px;display:block;margin-top:2px;line-height:1.35}
   .tag{display:inline-block;background:#e7e5e4;color:var(--mut);border-radius:99px;padding:2px 8px;font-size:10px;font-weight:700;text-transform:uppercase;margin-left:6px;vertical-align:middle}
@@ -156,6 +163,17 @@ function pl(n,w){return n+' '+w+(n>1?'s':'');}
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function fp(s){return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();}
 
+var AV_POOL=['🦁','🐯','🦊','🐼','🐨','🐸','🐙','🦄','🐵','🐷','🦖','🦉','🐺','🐳','🐝','🦋','🤖','👽','🧙‍♂️','🦸‍♀️','🥷','🧜‍♀️','🐲','🦩'];
+var AV_BG=['#fee2e2','#ffedd5','#fef9c3','#dcfce7','#d1fae5','#cffafe','#dbeafe','#e0e7ff','#ede9fe','#fae8ff','#fce7f3','#f5f5f4'];
+function hashN(s){var x=0,f=fp(s);for(var i=0;i<f.length;i++)x=(x*31+f.charCodeAt(i))>>>0;return x;}
+function avFor(name){
+  var k=fp(name);
+  for(var i=0;i<D.lib.length;i++) if(fp(D.lib[i].name)===k && D.lib[i].emoji) return D.lib[i].emoji;
+  return AV_POOL[hashN(name)%AV_POOL.length];
+}
+function avBg(name){return AV_BG[hashN(name)%AV_BG.length];}
+function av(name,cls){return '<span class="av '+(cls||'')+'" style="background:'+avBg(name)+'">'+avFor(name)+'</span>';}
+
 var DEF=['Patrick','Mélanie','Mattéo','Maxime'];
 function fresh(){return {v:1, lib:DEF.map(function(n){return{id:uid(),name:n};}), matches:[], journal:[]};}
 
@@ -207,7 +225,10 @@ function toast(t){var d=document.createElement('div');d.className='toast';d.text
 function render(){
   var hd=document.getElementById('hd'),app=document.getElementById('app'),nav=document.getElementById('nav');
   nav.innerHTML='';
-  var banner = !canSave ? '<div class="warn"><b>Sauvegarde impossible ici.</b> Ouvre ce fichier via Safari (ou ajoute-le à l\'écran d\'accueil) pour que l\'historique soit conservé. En attendant, utilise Sauvegarde → Copier avant de fermer.</div>' : '';
+  var standalone = (window.navigator.standalone===true) || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  var banner = !canSave ? '<div class="warn"><b>Sauvegarde impossible ici.</b> Ce navigateur ne garde pas la mémoire. Ouvre le lien dans <b>Safari</b>, puis Partager → Sur l\'écran d\'accueil, et lance l\'app depuis l\'icône.</div>' : '';
+  if(canSave && !standalone && S.view==='home')
+    banner += '<div class="warn" style="background:#fffbeb;border-color:#fde68a;color:#92400e"><b>📌 Pour garder l\'historique à coup sûr :</b> ouvre ce lien dans <b>Safari</b> → Partager → <b>Sur l\'écran d\'accueil</b>, puis lance toujours l\'app depuis l\'icône 🏆. Les navigateurs intégrés (Claude, WhatsApp…) peuvent effacer la mémoire en se fermant.</div>';
 
   if(S.view==='home'){
     hd.innerHTML='<span style="width:38px"></span><h1>En Jeux<span class="sub">Votre kit de jeux</span></h1>'+
@@ -344,7 +365,7 @@ function tabRank(m){
   r.byCumul.forEach(function(p,i){
     var tp=lp.indexOf(p.id)>=0,tw=lw.indexOf(p.id)>=0;
     h+='<div class="rank'+(tp?' lead':'')+(i===0?' first':'')+'"><div class="pos">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1))+'</div>'+
-      '<div class="nm"><b>'+esc(p.name)+(tp?' 🏆':'')+(tw?' 👑':'')+'</b>'+
+      av(p.name,'sm')+'<div class="nm" style="margin-left:8px"><b>'+esc(p.name)+(tp?' 🏆':'')+(tw?' 👑':'')+'</b>'+
       '<small>'+pl(p.played,'manche')+' · '+pl(p.wins,'victoire')+(p.played?' · moy. '+nf(p.points/p.played):'')+'</small></div>'+
       '<div class="pts"><b>'+nf(p.points)+'</b><small>points</small></div></div>';
   });
@@ -362,7 +383,7 @@ function tabPlay(m){
     '<input type="date" style="width:auto" value="'+S.date+'" onchange="S.date=this.value"></div>';
   m.players.forEach(function(p){
     var on=w.indexOf(p.id)>=0;
-    h+='<div class="plr'+(on?' win':'')+'"><span class="n">'+esc(p.name)+(on?' 👑':'')+'</span>'+
+    h+='<div class="plr'+(on?' win':'')+'"><span class="n" style="display:flex;align-items:center;gap:7px">'+av(p.name,'sm')+esc(p.name)+(on?' 👑':'')+'</span>'+
       '<button class="stp" onclick="bump(\''+p.id+'\',-1)">−</button>'+
       '<input inputmode="decimal" placeholder="—" value="'+(S.inputs[p.id]!==undefined?S.inputs[p.id]:'')+'" oninput="S.inputs[\''+p.id+'\']=this.value" onchange="render()">'+
       '<button class="stp p" onclick="bump(\''+p.id+'\',1)">+</button></div>';
@@ -521,7 +542,10 @@ function renderSave(hd,app,banner){
   h+='<div class="card"><h2>Bibliothèque de joueurs</h2>';
   D.lib.forEach(function(p){
     h+='<div class="row" style="background:#fafaf9;border-radius:10px;padding:8px 10px;margin-bottom:6px">'+
-      '<span style="flex:1;font-weight:600">'+esc(p.name)+'</span><button class="sm r" onclick="delLib(\''+p.id+'\')">Retirer</button></div>';});
+      '<button style="border:0;background:none;padding:0;cursor:pointer" onclick="openAv(\''+p.id+'\')">'+av(p.name)+'</button>'+
+      '<span style="flex:1;font-weight:600">'+esc(p.name)+'</span>'+
+      '<button class="sm" onclick="openAv(\''+p.id+'\')">Avatar</button>'+
+      '<button class="sm r" onclick="delLib(\''+p.id+'\')">Retirer</button></div>';});
   h+='<div class="row" style="margin-top:8px"><input id="nl" placeholder="Nom du joueur"><button class="sm g" onclick="addLib()">Ajouter</button></div>'+
      '<p class="mini" style="margin-top:8px">Retirer un joueur ici ne touche pas aux parties déjà jouées.</p></div>';
   h+='<div class="card"><h2>Sauvegarde de secours</h2>'+
@@ -532,6 +556,25 @@ function renderSave(hd,app,banner){
      '<textarea id="imp" rows="3" placeholder="Colle ici une sauvegarde"></textarea>'+
      '<button class="sm" style="width:100%;margin-top:8px" onclick="restore()">Restaurer (remplace tout)</button></div>';
   app.innerHTML=h;
+}
+function openAv(id){S.avPick=id;drawAvSheet();}
+function closeAv(){S.avPick=null;var e;while((e=document.getElementById('avsh')))e.remove();}
+function drawAvSheet(){
+  var keep=S.avPick; closeAv(); S.avPick=keep;
+  var p=D.lib.filter(function(x){return x.id===S.avPick;})[0]; if(!p){S.avPick=null;return;}
+  var el=document.createElement('div');el.className='sheet';el.id='avsh';el.onclick=closeAv;
+  el.innerHTML='<div class="in" onclick="event.stopPropagation()"><div class="grab"></div>'+
+    '<h2 style="margin:0 0 4px;font-size:18px">Avatar de '+esc(p.name)+'</h2>'+
+    '<p class="mini" style="margin:0 0 12px">Touche un emoji — il suivra ce joueur partout (classements, duels, palmarès).</p>'+
+    '<div class="avgrid">'+AV_POOL.map(function(e){
+      return '<button class="'+(p.emoji===e?'on':'')+'" onclick="chooseAv(\''+e+'\')">'+e+'</button>';}).join('')+
+    '</div><button class="btn grey" style="margin-top:14px" onclick="closeAv()">Fermer</button></div>';
+  document.body.appendChild(el);
+}
+function chooseAv(e){
+  var p=D.lib.filter(function(x){return x.id===S.avPick;})[0];
+  if(p){p.emoji=e;persist();}
+  closeAv();render();
 }
 function addLib(){var v=document.getElementById('nl').value.trim();if(!v)return;
   v.split(',').forEach(function(s){s=s.trim();if(s)D.lib.push({id:uid(),name:s});});persist();render();}
@@ -598,12 +641,13 @@ function renderPalmares(hd,app,banner){
       ['🎉','🏆','⭐️','✨'].map(function(e,i){return '<span style="left:'+(10+i*24)+'%;animation-delay:'+(i*.4)+'s">'+e+'</span>';}).join('')+'</div>';
     h+='<div class="hero" style="text-align:center;position:relative">'+conf+
        '<p style="margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.85">Champion '+(PAL.year==='all'?'toutes saisons':PAL.year)+'</p>'+
-       '<h2 style="font-size:30px;margin:4px 0 2px">👑 '+esc(champ.name)+'</h2>'+
+       '<div style="margin:6px 0 2px">'+av(champ.name,'big')+'</div>'+
+       '<h2 style="font-size:28px;margin:2px 0 2px">👑 '+esc(champ.name)+'</h2>'+
        '<p style="margin:0">'+pl(champ.titles,'titre')+' · '+pl(champ.wins,'manche gagnée')+'</p></div>';
     h+='<div class="card"><h2>Classement</h2>';
     list.forEach(function(p,i){
       h+='<div class="rank'+(i===0?' lead first':'')+'"><div class="pos">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1))+'</div>'+
-         '<div class="nm"><b>'+esc(p.name)+'</b><small>'+pl(p.matches,'partie')+' · '+pl(p.played,'manche')+'</small></div>'+
+         av(p.name,'sm')+'<div class="nm" style="margin-left:8px"><b>'+esc(p.name)+'</b><small>'+pl(p.matches,'partie')+' · '+pl(p.played,'manche')+'</small></div>'+
          '<div class="pts"><b>'+p.titles+'</b><small>titre'+(p.titles>1?'s':'')+'</small></div>'+
          '<div class="pts" style="margin-left:10px"><b>'+p.wins+'</b><small>manches</small></div></div>';
     });
@@ -746,7 +790,7 @@ function chGame(){
     var conf='<div class="confetti" style="position:absolute;inset:0;pointer-events:none;overflow:hidden">'+
       ['🎉','🏆','⭐️','🎊','✨','🥇'].map(function(e,i){return '<span style="left:'+(8+i*15)+'%;animation-delay:'+(i*.35)+'s">'+e+'</span>';}).join('')+'</div>';
     return '<div class="card" style="text-align:center;padding:28px 16px;position:relative;overflow:hidden">'+conf+
-      '<div style="font-size:46px">🏆</div><h2 style="font-size:22px;margin:8px 0 2px">'+esc(w||'—')+'</h2>'+
+      '<div style="font-size:46px">🏆</div><div style="margin:4px 0">'+(w?av(w,'big'):'')+'</div><h2 style="font-size:22px;margin:4px 0 2px">'+esc(w||'—')+'</h2>'+
       '<p class="mini">dernier joueur en course</p></div>'+
       '<button class="btn" onclick="chStart()">Rejouer (mêmes réglages)</button>'+
       '<button class="btn grey" style="margin-top:8px" onclick="chReset()">Changer les réglages</button>';
@@ -755,6 +799,7 @@ function chGame(){
   var h='<div style="text-align:center;position:relative;margin:6px 0 4px">'+
     '<div style="position:relative;display:inline-block">'+ring+
     '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">'+
+      '<div style="margin-bottom:2px">'+av(p.name)+'</div>'+
       '<div style="font-size:13px;color:#78716c;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name)+'</div>'+
       '<div style="font-size:44px;font-weight:800;font-variant-numeric:tabular-nums;color:'+col+'">'+fmtT(p.left)+'</div>'+
       '<div style="font-size:11px;color:#a8a29e">'+(CH.running?'en cours':'en pause')+'</div>'+
@@ -776,7 +821,7 @@ function chGame(){
   CH.players.forEach(function(pl,i){
     var c = pl.out?'#a8a29e':(i===CH.active?'#059669':'#1c1917');
     h+='<div class="row" style="justify-content:space-between;padding:7px 4px;'+(i===CH.active?'background:var(--gr-l);border-radius:8px':'')+'">'+
-       '<span style="font-weight:600;color:'+c+'">'+(i===CH.active?'▶ ':'')+esc(pl.name)+(pl.out?' — éliminé':'')+'</span>'+
+       '<span style="font-weight:600;color:'+c+';display:flex;align-items:center;gap:7px">'+(i===CH.active?'▶ ':'')+av(pl.name,'sm')+esc(pl.name)+(pl.out?' — éliminé':'')+'</span>'+
        '<span style="font-variant-numeric:tabular-nums;font-weight:700;color:'+c+'">'+fmtT(pl.left)+'</span></div>';
   });
   h+='</div>';
