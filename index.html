@@ -46,7 +46,9 @@
   .tool.t-coupe .tag{background:#d1fae5;color:#047857}
   .tool.t-tictac .tag{background:#fef3c7;color:#b45309}
   .tool.t-micro .tag{background:#ede9fe;color:#6d28d9}
-  .miniact{flex:1;display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:11px 12px;cursor:pointer;font-family:inherit;text-align:left;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  .miniact{flex:1 1 150px;min-width:0;display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:11px 12px;cursor:pointer;font-family:inherit;text-align:left;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  .miniact>span:last-child{min-width:0}
+  .miniact b,.miniact small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .miniact .e{font-size:22px;flex-shrink:0}
   .miniact b{display:block;font-size:13.5px;color:var(--ink)}
   .miniact small{display:block;font-size:11px;color:var(--mut);margin-top:1px}
@@ -80,7 +82,7 @@
   .avgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
   .avgrid button{border:2px solid transparent;background:#fff;border-radius:14px;font-size:26px;padding:8px 0;cursor:pointer}
   .avgrid button.on{border-color:var(--gr);background:var(--gr-l)}
-  .charena{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+  .charena{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:10px;justify-items:center}
   .chp{width:76px;text-align:center;cursor:pointer;border-radius:14px;padding:6px 2px;transition:transform .15s}
   .chp b{display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
   .chp small{font-variant-numeric:tabular-nums;font-weight:700;font-size:12px}
@@ -101,8 +103,14 @@
   button.sm.g{background:var(--gr);color:#fff}button.sm.r{background:var(--ro);color:#fff}
   input,textarea{font-family:inherit;font-size:16px;border:1px solid #d6d3d1;border-radius:12px;padding:10px;width:100%;background:#fff}
   input:focus,textarea:focus{outline:2px solid var(--gr);outline-offset:-1px}
-  .row{display:flex;gap:8px;align-items:center}
-  .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+  .row{display:flex;gap:8px;align-items:center;min-width:0}
+  .row>input,.row>textarea{flex:1;min-width:0}           /* un champ ne pousse jamais la ligne hors écran */
+  .row>button{flex-shrink:0}                              /* les petits boutons gardent leur taille */
+  button{max-width:100%;word-break:break-word}            /* aucun bouton ne déborde */
+  .btn{line-height:1.3;text-align:center}
+  input,textarea,select{max-width:100%;box-sizing:border-box;font-size:16px} /* 16px = pas de zoom auto iOS */
+  .card{overflow:hidden}                                  /* rien ne dépasse d'une carte */
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
   .chip{border:1px solid var(--line);background:#fff;color:var(--mut);border-radius:99px;padding:7px 14px;font-size:14px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit}
   .chip.on{background:var(--gr);color:#fff;border-color:var(--gr)}
   nav{position:fixed;bottom:0;left:0;right:0;z-index:20;background:#fff;border-top:1px solid var(--line);
@@ -210,7 +218,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='19';
+var APP_VERSION='20';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -1292,7 +1300,10 @@ function chRun(){
     var now=Date.now(), dt=(now-last)/1000; last=now;
     var p=CH.players[CH.active];
     p.left-=dt;
-    if(p.left<=0){ p.left=0; p.out=true; if(CH.sound) chBeep(); chStopTick(); CH.running=false; chAdvance(true); }
+    if(p.left<=0){ p.left=0; p.out=true; if(CH.sound) chBeep(); chStopTick(); CH.running=false;
+      var rest=chAlive().length;
+      if(rest>1){ toast('⏰ '+p.name+' éliminé — encore '+rest+' en course'); speak(p.name+' éliminé'); }
+      chAdvance(true); }
     render();
   },100);
   render();
@@ -1317,7 +1328,6 @@ function chGood(){ if(CH.winner) return; CH.players[CH.active].good++; chRun(); 
 function chWrong(){ chStopTick(); CH.running=false; chAdvance(false);
   // enchaîne directement sur le nouveau joueur
   if(!CH.winner) chRun(); else render(); }
-function chSkip(){ chStopTick(); CH.running=false; chAdvance(true); }
 function chJump(i){
   if(!CH||CH.winner!==null) return;
   if(CH.players[i].out||i===CH.active) return;
@@ -1357,7 +1367,10 @@ function chGame(){
       '<button class="btn grey" style="margin-top:8px" onclick="chReset()">Changer les réglages</button>';
   }
 
-  var h='<div style="text-align:center;position:relative;margin:6px 0 4px">'+
+  var alive=chAlive().length;
+  var h='<div class="card" style="padding:9px 12px;margin-bottom:10px;background:linear-gradient(135deg,#fffbeb,#fef3c7);border-color:#fde68a;text-align:center">'+
+    '<p style="margin:0;font-size:13px;color:#92400e"><b>👥 '+alive+' en course</b> · à zéro seconde on est éliminé · <b>le dernier debout gagne</b> 🏆</p></div>'+
+    '<div style="text-align:center;position:relative;margin:6px 0 4px">'+
     '<div style="position:relative;display:inline-block">'+ring+
     '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">'+
       '<div style="margin-bottom:2px">'+av(p.name)+'</div>'+
@@ -1372,12 +1385,10 @@ function chGame(){
     ? '<button class="btn" style="background:#78716c" onclick="chPause()">⏸ Pause</button>'
     : '<button class="btn" onclick="chRun()">▶︎ Lancer le temps de '+esc(p.name)+'</button>';
 
-  // boutons animateur : Bon (garde la main, +1) / Raté (passe, sans point) / Passer (neutre)
-  h+='<button class="btn" style="margin-top:10px;font-size:17px" onclick="chGood()">✓ Bonne réponse — '+esc(p.name)+' garde la main</button>'+
-     '<div class="row" style="margin-top:8px;gap:8px">'+
-     '<button class="btn red" style="flex:1" onclick="chWrong()">✗ Raté → au suivant</button>'+
-     '<button class="btn grey" style="flex:1" onclick="chSkip()">⏭ Passer (sans faute)</button></div>'+
-     '<p class="mini" style="text-align:center;margin-top:6px">« Raté » et « Passer » donnent la main au suivant. « Raté » compte une erreur ; « Passer » est neutre (question sautée).</p>';
+  // boutons animateur : 2 actions seulement (benchmark pendule d'échecs / party games)
+  h+='<button class="btn" style="margin-top:10px" onclick="chGood()">✓ Bonne réponse — garde la main</button>'+
+     '<button class="btn red" style="margin-top:8px" onclick="chWrong()">⏭ Au suivant</button>'+
+     '<p class="mini" style="text-align:center;margin-top:6px">Bonne réponse : '+esc(p.name)+' continue et son ✓ grimpe. Sinon : la main passe, son chrono se fige.</p>';
 
   // arène des joueurs : pastilles avec mini-anneaux de temps
   h+='<div class="card" style="margin-top:14px"><h2>Arène</h2><div class="charena">';
