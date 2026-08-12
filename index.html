@@ -57,6 +57,17 @@
   .avgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
   .avgrid button{border:2px solid transparent;background:#fff;border-radius:14px;font-size:26px;padding:8px 0;cursor:pointer}
   .avgrid button.on{border-color:var(--gr);background:var(--gr-l)}
+  .charena{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+  .chp{width:76px;text-align:center;cursor:pointer;border-radius:14px;padding:6px 2px;transition:transform .15s}
+  .chp b{display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+  .chp small{font-variant-numeric:tabular-nums;font-weight:700;font-size:12px}
+  .chp .ring{position:relative;width:64px;height:64px;margin:0 auto}
+  .chp .ring svg{width:64px;height:64px}
+  .chp .face{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:20px}
+  .chp.live{background:var(--gr-l);transform:scale(1.06)}
+  .chp.live .face{animation:pulse 1.2s ease-in-out infinite}
+  .chp.ko{opacity:.45;filter:grayscale(1)}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
   .tool b{font-size:16px;display:block}
   .tool small{color:var(--mut);font-size:13px;display:block;margin-top:2px;line-height:1.35}
   .tag{display:inline-block;background:#e7e5e4;color:var(--mut);border-radius:99px;padding:2px 8px;font-size:10px;font-weight:700;text-transform:uppercase;margin-left:6px;vertical-align:middle}
@@ -163,7 +174,7 @@ function pl(n,w){return n+' '+w+(n>1?'s':'');}
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function fp(s){return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();}
 
-var AV_POOL=['🦁','🐯','🦊','🐼','🐨','🐸','🐙','🦄','🐵','🐷','🦖','🦉','🐺','🐳','🐝','🦋','🤖','👽','🧙‍♂️','🦸‍♀️','🥷','🧜‍♀️','🐲','🦩'];
+var AV_POOL=['🦁','🐯','🦊','🐼','🐨','🐸','🐙','🦄','🐵','🐷','🦖','🦉','🐺','🐳','🐝','🦋','🤖','👽','🧙‍♂️','🦸‍♀️','🥷','🧜‍♀️','🐲','🦩','👹','👺','🤡','👻','🎃','😈','🤠','🥸','💀','🧛','🧟','🎭'];
 var AV_BG=['#fee2e2','#ffedd5','#fef9c3','#dcfce7','#d1fae5','#cffafe','#dbeafe','#e0e7ff','#ede9fe','#fae8ff','#fce7f3','#f5f5f4'];
 function hashN(s){var x=0,f=fp(s);for(var i=0;i<f.length;i++)x=(x*31+f.charCodeAt(i))>>>0;return x;}
 function avFor(name){
@@ -172,7 +183,16 @@ function avFor(name){
   return AV_POOL[hashN(name)%AV_POOL.length];
 }
 function avBg(name){return AV_BG[hashN(name)%AV_BG.length];}
-function av(name,cls){return '<span class="av '+(cls||'')+'" style="background:'+avBg(name)+'">'+avFor(name)+'</span>';}
+function avPhotoOf(name){
+  var k=fp(name);
+  for(var i=0;i<D.lib.length;i++) if(fp(D.lib[i].name)===k && D.lib[i].photo) return D.lib[i].photo;
+  return null;
+}
+function av(name,cls){
+  var ph=avPhotoOf(name);
+  if(ph) return '<span class="av '+(cls||'')+'" style="background-image:url('+ph+');background-size:cover;background-position:center"></span>';
+  return '<span class="av '+(cls||'')+'" style="background:'+avBg(name)+'">'+avFor(name)+'</span>';
+}
 
 var DEF=['Patrick','Mélanie','Mattéo','Maxime'];
 function fresh(){return {v:1, lib:DEF.map(function(n){return{id:uid(),name:n};}), matches:[], journal:[]};}
@@ -565,16 +585,45 @@ function drawAvSheet(){
   var el=document.createElement('div');el.className='sheet';el.id='avsh';el.onclick=closeAv;
   el.innerHTML='<div class="in" onclick="event.stopPropagation()"><div class="grab"></div>'+
     '<h2 style="margin:0 0 4px;font-size:18px">Avatar de '+esc(p.name)+'</h2>'+
-    '<p class="mini" style="margin:0 0 12px">Touche un emoji — il suivra ce joueur partout (classements, duels, palmarès).</p>'+
+    '<p class="mini" style="margin:0 0 10px">Ta photo (elle reste sur cet iPhone) ou un personnage.</p>'+
+    '<div class="row" style="margin-bottom:12px">'+
+      '<label class="btn" style="flex:1;text-align:center;margin:0">📷 Choisir ma photo'+
+      '<input id="avf" type="file" accept="image/*" style="display:none" onchange="avPhoto(this)"></label>'+
+      (p.photo?'<button class="sm r" style="margin-left:8px" onclick="avDelPhoto()">🗑 Retirer</button>':'')+'</div>'+
     '<div class="avgrid">'+AV_POOL.map(function(e){
-      return '<button class="'+(p.emoji===e?'on':'')+'" onclick="chooseAv(\''+e+'\')">'+e+'</button>';}).join('')+
+      return '<button class="'+(p.emoji===e&&!p.photo?'on':'')+'" onclick="chooseAv(\''+e+'\')">'+e+'</button>';}).join('')+
     '</div><button class="btn grey" style="margin-top:14px" onclick="closeAv()">Fermer</button></div>';
   document.body.appendChild(el);
 }
 function chooseAv(e){
   var p=D.lib.filter(function(x){return x.id===S.avPick;})[0];
-  if(p){p.emoji=e;persist();}
+  if(p){p.emoji=e;delete p.photo;persist();}
   closeAv();render();
+}
+function avDelPhoto(){
+  var p=D.lib.filter(function(x){return x.id===S.avPick;})[0];
+  if(p){delete p.photo;persist();}
+  closeAv();render();
+}
+function avPhoto(inp){
+  var f=inp.files&&inp.files[0]; if(!f) return;
+  var rd=new FileReader();
+  rd.onload=function(){
+    var img=new Image();
+    img.onload=function(){
+      try{
+        var S2=96,c=document.createElement('canvas');c.width=S2;c.height=S2;
+        var x=c.getContext('2d');
+        var m=Math.min(img.width,img.height);
+        x.drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,S2,S2);
+        var p=D.lib.filter(function(q){return q.id===S.avPick;})[0];
+        if(p){p.photo=c.toDataURL('image/jpeg',.72);persist();}
+        closeAv();render();toast('Photo enregistrée ✓');
+      }catch(e){toast('Photo impossible ici — choisis un personnage');}
+    };
+    img.src=rd.result;
+  };
+  rd.readAsDataURL(f);
 }
 function addLib(){var v=document.getElementById('nl').value.trim();if(!v)return;
   v.split(',').forEach(function(s){s=s.trim();if(s)D.lib.push({id:uid(),name:s});});persist();render();}
@@ -595,6 +644,15 @@ function restore(){
    puis par victoires de manches. Joueurs agrégés par nom (insensible à la
    casse et aux accents). */
 var PAL={year:String(new Date().getFullYear())};
+function palKeep(y){
+  if(y==='all') return function(){return true;};
+  if(y==='d1'||y==='d7'||y==='d30'){
+    var n=y==='d1'?1:y==='d7'?7:30;
+    var lim=new Date(Date.now()-(n-1)*864e5).toISOString().slice(0,10);
+    return function(r){return r.date>=lim;};
+  }
+  return function(r){return r.date.slice(0,4)===y;};
+}
 function palYears(){
   var ys={};
   D.matches.forEach(function(m){m.rounds.forEach(function(r){ys[r.date.slice(0,4)]=1;});});
@@ -607,8 +665,9 @@ function palData(year){
     if(!agg[k]) agg[k]={name:name,titles:0,wins:0,played:0,matches:0};
     return agg[k];
   }
+  if(year===undefined) year=PAL.year;
+  var keep=palKeep(year);
   D.matches.forEach(function(m){
-    var keep=function(r){return year==='all'||r.date.slice(0,4)===year;};
     var r=rank(m,keep);
     if(!r.count) return;
     var seen={};
@@ -628,11 +687,12 @@ function palData(year){
 function renderPalmares(hd,app,banner){
   hd.innerHTML=back()+'<h1>🏅 Palmarès<span class="sub">Toutes parties confondues</span></h1><span style="width:38px"></span>';
   var ys=palYears();
-  if(PAL.year!=='all'&&ys.indexOf(PAL.year)<0) PAL.year=ys[0]||'all';
+  if(['all','d1','d7','d30'].indexOf(PAL.year)<0 && ys.indexOf(PAL.year)<0) PAL.year=ys[0]||'all';
   var list=palData(PAL.year);
+  function pchip(v,lb){return '<button class="chip'+(PAL.year===v?' on':'')+'" onclick="PAL.year=\''+v+'\';render()">'+lb+'</button>';}
   var h=banner+'<div class="chips" style="margin-bottom:12px">'+
-    '<button class="chip'+(PAL.year==='all'?' on':'')+'" onclick="PAL.year=\'all\';render()">Tout</button>'+
-    ys.map(function(y){return '<button class="chip'+(PAL.year===y?' on':'')+'" onclick="PAL.year=\''+y+'\';render()">'+y+'</button>';}).join('')+'</div>';
+    pchip('d1','Ce soir')+pchip('d7','7 jours')+pchip('d30','30 jours')+
+    ys.map(function(y){return pchip(y,y);}).join('')+pchip('all','Tout')+'</div>';
   if(!list.length){
     h+='<div class="empty"><div class="e">🏅</div><h3>Rien sur cette période</h3><p>Joue des manches et le palmarès se remplit.</p></div>';
   }else{
@@ -640,7 +700,7 @@ function renderPalmares(hd,app,banner){
     var conf='<div class="confetti" style="position:absolute;inset:0;pointer-events:none;overflow:hidden">'+
       ['🎉','🏆','⭐️','✨'].map(function(e,i){return '<span style="left:'+(10+i*24)+'%;animation-delay:'+(i*.4)+'s">'+e+'</span>';}).join('')+'</div>';
     h+='<div class="hero" style="text-align:center;position:relative">'+conf+
-       '<p style="margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.85">Champion '+(PAL.year==='all'?'toutes saisons':PAL.year)+'</p>'+
+       '<p style="margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.85">Champion '+({all:'toutes saisons',d1:'de la soirée',d7:'des 7 jours',d30:'des 30 jours'}[PAL.year]||PAL.year)+'</p>'+
        '<div style="margin:6px 0 2px">'+av(champ.name,'big')+'</div>'+
        '<h2 style="font-size:28px;margin:2px 0 2px">👑 '+esc(champ.name)+'</h2>'+
        '<p style="margin:0">'+pl(champ.titles,'titre')+' · '+pl(champ.wins,'manche gagnée')+'</p></div>';
@@ -658,7 +718,8 @@ function renderPalmares(hd,app,banner){
 }
 function palShare(){
   var list=palData(PAL.year), med=['🥇','🥈','🥉'];
-  var t='🏅 Palmarès '+(PAL.year==='all'?'':PAL.year+' ')+'— En Jeux\n\n';
+  var lb={all:'',d1:'de la soirée ',d7:'des 7 jours ',d30:'des 30 jours '}[PAL.year]; if(lb===undefined) lb=PAL.year+' ';
+  var t='🏅 Palmarès '+lb+'— En Jeux\n\n';
   list.forEach(function(p,i){t+=(med[i]||'   ')+' '+p.name+' — '+pl(p.titles,'titre')+' · '+pl(p.wins,'manche')+'\n';});
   if(navigator.share){navigator.share({text:t}).catch(function(){});} else copy(t,'Palmarès copié');
 }
@@ -770,6 +831,11 @@ function chWrong(){ chStopTick(); CH.running=false; chAdvance(false);
   // enchaîne directement sur le nouveau joueur
   if(!CH.winner) chRun(); else render(); }
 function chSkip(){ chStopTick(); CH.running=false; chAdvance(true); }
+function chJump(i){
+  if(!CH||CH.winner!==null) return;
+  if(CH.players[i].out||i===CH.active) return;
+  chStopTick(); CH.running=false; CH.active=i; render();
+}
 function chReset(){ chStopTick(); CH=null; render(); }
 
 /* ---- Écran de jeu ---- */
@@ -816,15 +882,19 @@ function chGame(){
      '<button class="btn red" style="flex:1" onclick="chWrong()">✗ Faux → suivant</button></div>'+
      '<button class="btn grey" style="margin-top:8px" onclick="chSkip()">Passer au suivant</button>';
 
-  // rangée des joueurs
-  h+='<div class="card" style="margin-top:14px"><h2>Joueurs</h2>';
+  // arène des joueurs : pastilles avec mini-anneaux de temps
+  h+='<div class="card" style="margin-top:14px"><h2>Arène</h2><div class="charena">';
   CH.players.forEach(function(pl,i){
-    var c = pl.out?'#a8a29e':(i===CH.active?'#059669':'#1c1917');
-    h+='<div class="row" style="justify-content:space-between;padding:7px 4px;'+(i===CH.active?'background:var(--gr-l);border-radius:8px':'')+'">'+
-       '<span style="font-weight:600;color:'+c+';display:flex;align-items:center;gap:7px">'+(i===CH.active?'▶ ':'')+av(pl.name,'sm')+esc(pl.name)+(pl.out?' — éliminé':'')+'</span>'+
-       '<span style="font-variant-numeric:tabular-nums;font-weight:700;color:'+c+'">'+fmtT(pl.left)+'</span></div>';
+    var pc=CH.total>0?Math.max(0,Math.min(1,pl.left/CH.total)):0;
+    var cc=pl.out?'#d6d3d1':(pl.left<=5?'#e11d48':pl.left<=20?'#f59e0b':'#059669');
+    var r2=26,C2=2*Math.PI*r2,o2=C2*(1-pc);
+    h+='<div class="chp'+(i===CH.active&&!pl.out?' live':'')+(pl.out?' ko':'')+'" onclick="chJump('+i+')">'+
+       '<div class="ring"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="'+r2+'" fill="none" stroke="#e7e5e4" stroke-width="5"/>'+
+       '<circle cx="32" cy="32" r="'+r2+'" fill="none" stroke="'+cc+'" stroke-width="5" stroke-linecap="round" transform="rotate(-90 32 32)" stroke-dasharray="'+C2.toFixed(1)+'" stroke-dashoffset="'+o2.toFixed(1)+'"/></svg>'+
+       '<span class="face">'+(pl.out?'❌':av(pl.name))+'</span></div>'+
+       '<b>'+esc(pl.name)+'</b><small style="color:'+cc+'">'+(pl.out?'éliminé':fmtT(pl.left))+'</small></div>';
   });
-  h+='</div>';
+  h+='</div><p class="mini" style="margin-top:8px;text-align:center">Touche une pastille pour donner la main à ce joueur.</p></div>';
   h+='<button class="btn grey" style="margin-top:10px" onclick="chReset()">⟲ Nouvelle manche</button>';
   return h;
 }
