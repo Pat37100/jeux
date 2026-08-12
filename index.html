@@ -224,6 +224,7 @@ function render(){
     return;
   }
   if(S.view==='save') return renderSave(hd,app,banner);
+  if(S.view==='palmares') return renderPalmares(hd,app,banner);
   if(S.view==='chrono') return renderChrono(hd,app,nav,banner);
   if(S.view==='quizz') return renderQuizz(hd,app,banner);
   if(S.view==='points') return renderPoints(hd,app,banner);
@@ -244,6 +245,10 @@ function renderPoints(hd,app,banner){
   if(!D.matches.length){
     h+='<div class="empty"><div class="e">🏆</div><h3>Aucune partie</h3><p>Crée une partie pour compter les points.</p></div>';
   }else{
+    if(D.matches.some(function(m){return m.rounds.length;}))
+      h+='<button class="tool t-coupe" style="padding:12px 16px" onclick="go(\'palmares\')"><span class="em" style="width:44px;height:44px;font-size:22px">🏅</span>'+
+         '<span style="flex:1;min-width:0"><b>Palmarès</b><small>Les champions, toutes parties confondues.</small></span>'+
+         '<span style="color:#d6d3d1">›</span></button>';
     h+='<label class="lb">En cours</label>'+(act.length?act.map(mcard).join(''):'<p class="mini" style="margin-bottom:14px">Aucune partie en cours.</p>');
     if(dn.length) h+='<label class="lb" style="margin-top:16px">Terminées</label>'+dn.map(mcard).join('');
   }
@@ -539,6 +544,79 @@ function restore(){
     D=o;if(!D.lib)D.lib=[];if(!D.matches)D.matches=[];if(!D.journal)D.journal=[];
     persist();toast('Sauvegarde restaurée ✓');go('home');
   }catch(e){toast('Texte invalide');}
+}
+
+/* ============================== PALMARÈS ==========================
+   Agrège toutes les parties de La Coupe. Les points de jeux différents ne
+   sont pas comparables : on classe donc par TITRES (meneur d'une partie)
+   puis par victoires de manches. Joueurs agrégés par nom (insensible à la
+   casse et aux accents). */
+var PAL={year:String(new Date().getFullYear())};
+function palYears(){
+  var ys={};
+  D.matches.forEach(function(m){m.rounds.forEach(function(r){ys[r.date.slice(0,4)]=1;});});
+  return Object.keys(ys).sort().reverse();
+}
+function palData(year){
+  var agg={};
+  function slot(name){
+    var k=fp(name);
+    if(!agg[k]) agg[k]={name:name,titles:0,wins:0,played:0,matches:0};
+    return agg[k];
+  }
+  D.matches.forEach(function(m){
+    var keep=function(r){return year==='all'||r.date.slice(0,4)===year;};
+    var r=rank(m,keep);
+    if(!r.count) return;
+    var seen={};
+    m.players.forEach(function(p){
+      var st=r.byCumul.filter(function(x){return x.id===p.id;})[0];
+      if(!st||!st.played) return;
+      var s=slot(p.name); if(!seen[fp(p.name)]){s.matches++;seen[fp(p.name)]=1;}
+      s.wins+=st.wins; s.played+=st.played;
+    });
+    var lead=leaders(r.byCumul,'points',m.winRule);
+    m.players.forEach(function(p){ if(lead.indexOf(p.id)>=0) slot(p.name).titles++; });
+  });
+  var list=[]; for(var k in agg) list.push(agg[k]);
+  list.sort(function(a,b){return b.titles-a.titles||b.wins-a.wins||b.played-a.played;});
+  return list;
+}
+function renderPalmares(hd,app,banner){
+  hd.innerHTML=back()+'<h1>🏅 Palmarès<span class="sub">Toutes parties confondues</span></h1><span style="width:38px"></span>';
+  var ys=palYears();
+  if(PAL.year!=='all'&&ys.indexOf(PAL.year)<0) PAL.year=ys[0]||'all';
+  var list=palData(PAL.year);
+  var h=banner+'<div class="chips" style="margin-bottom:12px">'+
+    '<button class="chip'+(PAL.year==='all'?' on':'')+'" onclick="PAL.year=\'all\';render()">Tout</button>'+
+    ys.map(function(y){return '<button class="chip'+(PAL.year===y?' on':'')+'" onclick="PAL.year=\''+y+'\';render()">'+y+'</button>';}).join('')+'</div>';
+  if(!list.length){
+    h+='<div class="empty"><div class="e">🏅</div><h3>Rien sur cette période</h3><p>Joue des manches et le palmarès se remplit.</p></div>';
+  }else{
+    var champ=list[0];
+    var conf='<div class="confetti" style="position:absolute;inset:0;pointer-events:none;overflow:hidden">'+
+      ['🎉','🏆','⭐️','✨'].map(function(e,i){return '<span style="left:'+(10+i*24)+'%;animation-delay:'+(i*.4)+'s">'+e+'</span>';}).join('')+'</div>';
+    h+='<div class="hero" style="text-align:center;position:relative">'+conf+
+       '<p style="margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.85">Champion '+(PAL.year==='all'?'toutes saisons':PAL.year)+'</p>'+
+       '<h2 style="font-size:30px;margin:4px 0 2px">👑 '+esc(champ.name)+'</h2>'+
+       '<p style="margin:0">'+pl(champ.titles,'titre')+' · '+pl(champ.wins,'manche gagnée')+'</p></div>';
+    h+='<div class="card"><h2>Classement</h2>';
+    list.forEach(function(p,i){
+      h+='<div class="rank'+(i===0?' lead first':'')+'"><div class="pos">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1))+'</div>'+
+         '<div class="nm"><b>'+esc(p.name)+'</b><small>'+pl(p.matches,'partie')+' · '+pl(p.played,'manche')+'</small></div>'+
+         '<div class="pts"><b>'+p.titles+'</b><small>titre'+(p.titles>1?'s':'')+'</small></div>'+
+         '<div class="pts" style="margin-left:10px"><b>'+p.wins+'</b><small>manches</small></div></div>';
+    });
+    h+='</div><button class="btn dark" onclick="palShare()">📤 Envoyer le palmarès</button>';
+  }
+  app.innerHTML=h;
+  document.getElementById('nav').innerHTML='';
+}
+function palShare(){
+  var list=palData(PAL.year), med=['🥇','🥈','🥉'];
+  var t='🏅 Palmarès '+(PAL.year==='all'?'':PAL.year+' ')+'— En Jeux\n\n';
+  list.forEach(function(p,i){t+=(med[i]||'   ')+' '+p.name+' — '+pl(p.titles,'titre')+' · '+pl(p.wins,'manche')+'\n';});
+  if(navigator.share){navigator.share({text:t}).catch(function(){});} else copy(t,'Palmarès copié');
 }
 
 /* =============================== CHRONO ===========================
