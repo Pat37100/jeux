@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Jeux">
+<title>Jeux — famille</title>
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#059669">
+<meta name="description" content="Compteur de points, quizz et chrono pour jouer en famille.">
+<style>
+  :root{
+    --bg:#f5f5f4; --card:#fff; --line:#e7e5e4; --ink:#1c1917; --mut:#78716c; --soft:#a8a29e;
+    --gr:#059669; --gr-l:#ecfdf5; --gr-b:#a7f3d0; --am:#f59e0b; --am-l:#fffbeb; --ro:#e11d48; --ro-l:#fff1f2;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    padding-bottom:env(safe-area-inset-bottom)}
+  .wrap{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+  header{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);padding:10px 8px;display:flex;align-items:center;gap:6px;
+    padding-top:calc(10px + env(safe-area-inset-top))}
+  header h1{font-size:17px;margin:0;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  header .sub{font-size:11px;color:var(--soft);font-weight:400;display:block;margin-top:1px}
+  main{flex:1;padding:16px 16px 110px}
+  .icobtn{background:none;border:0;font-size:22px;padding:6px 10px;color:var(--mut);cursor:pointer;line-height:1}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:0 1px 2px rgba(0,0,0,.04);margin-bottom:12px}
+  .card h2{font-size:13px;margin:0 0 8px;color:var(--mut);font-weight:600}
+  .tool{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:16px;margin-bottom:12px;
+    border-radius:16px;border:1px solid var(--line);background:#fff;cursor:pointer;font-family:inherit}
+  .tool.on{border-color:var(--gr-b);background:var(--gr-l)}
+  .tool .em{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;background:#f5f5f4;flex-shrink:0}
+  .tool.on .em{background:var(--gr);}
+  .tool b{font-size:16px;display:block}
+  .tool small{color:var(--mut);font-size:13px;display:block;margin-top:2px;line-height:1.35}
+  .tag{display:inline-block;background:#e7e5e4;color:var(--mut);border-radius:99px;padding:2px 8px;font-size:10px;font-weight:700;text-transform:uppercase;margin-left:6px;vertical-align:middle}
+  button.btn{width:100%;border:0;border-radius:14px;padding:14px;font-size:16px;font-weight:700;background:var(--gr);color:#fff;cursor:pointer;font-family:inherit}
+  button.btn.dark{background:#292524}button.btn.grey{background:#e7e5e4;color:#44403c}
+  button.btn.red{background:var(--ro)}
+  button.sm{border:0;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;background:#e7e5e4;color:#44403c}
+  button.sm.g{background:var(--gr);color:#fff}button.sm.r{background:var(--ro);color:#fff}
+  input,textarea{font-family:inherit;font-size:16px;border:1px solid #d6d3d1;border-radius:12px;padding:10px;width:100%;background:#fff}
+  input:focus,textarea:focus{outline:2px solid var(--gr);outline-offset:-1px}
+  .row{display:flex;gap:8px;align-items:center}
+  .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+  .chip{border:1px solid var(--line);background:#fff;color:var(--mut);border-radius:99px;padding:7px 14px;font-size:14px;font-weight:600;white-space:nowrap;cursor:pointer;font-family:inherit}
+  .chip.on{background:var(--gr);color:#fff;border-color:var(--gr)}
+  nav{position:fixed;bottom:0;left:0;right:0;z-index:20;background:#fff;border-top:1px solid var(--line);
+    padding-bottom:env(safe-area-inset-bottom)}
+  nav .in{max-width:520px;margin:0 auto;display:flex}
+  nav button{flex:1;background:none;border:0;padding:9px 0 7px;font-size:11px;color:var(--soft);cursor:pointer;font-family:inherit;font-weight:600}
+  nav button .i{display:block;font-size:20px;margin-bottom:2px}
+  nav button.on{color:var(--gr)}
+  .navbar{position:fixed;bottom:0;left:0;right:0;z-index:20;background:#fff;border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+  .navbar .in{max-width:520px;margin:0 auto}
+  .rank{display:flex;align-items:center;gap:12px;border-radius:12px;padding:10px;background:#fafaf9;margin-bottom:5px}
+  .rank.lead{background:var(--gr-l)}
+  .rank .pos{width:28px;height:28px;border-radius:99px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;background:#fff;border:1px solid var(--line);color:var(--soft);flex-shrink:0}
+  .rank.first .pos{background:var(--gr);color:#fff;border-color:var(--gr)}
+  .rank .nm{flex:1;min-width:0}
+  .rank .nm b{display:block;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rank .nm small{color:var(--soft);font-size:11px}
+  .rank .pts{text-align:right;font-variant-numeric:tabular-nums}
+  .rank .pts b{font-size:19px;display:block}
+  .rank .pts small{font-size:9px;text-transform:uppercase;color:var(--soft);letter-spacing:.03em}
+  .champ{border-radius:16px;padding:12px;border:1px solid}
+  .champ.g{background:var(--gr-l);border-color:var(--gr-b)}
+  .champ.a{background:var(--am-l);border-color:#fde68a}
+  .champ .l{font-size:11px;font-weight:700;text-transform:uppercase}
+  .champ.g .l{color:#047857}.champ.a .l{color:#b45309}
+  .champ .v{font-size:18px;font-weight:800;margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .champ .s{font-size:13px;font-variant-numeric:tabular-nums}
+  .champ.g .v,.champ.g .s{color:#064e3b}.champ.a .v,.champ.a .s{color:#78350f}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+  .plr{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:9px;margin-bottom:9px}
+  .plr.win{border-color:var(--gr-b);background:var(--gr-l)}
+  .plr .n{flex:1;font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:4px}
+  .plr .stp{width:42px;height:42px;border-radius:12px;border:0;font-size:20px;background:#f5f5f4;color:var(--mut);cursor:pointer;flex-shrink:0}
+  .plr .stp.p{background:var(--gr-l);color:var(--gr)}
+  .plr input{width:64px;text-align:center;font-size:20px;font-weight:700;padding:8px 2px;font-variant-numeric:tabular-nums}
+  .empty{text-align:center;padding:48px 16px}
+  .empty .e{font-size:40px}.empty h3{margin:10px 0 4px;font-size:17px}
+  .empty p{color:var(--mut);font-size:14px;margin:0 0 16px}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;background:#1c1917;color:#fff;
+    padding:10px 18px;border-radius:99px;font-size:14px;font-weight:600;z-index:60;max-width:90%;text-align:center}
+  .warn{background:var(--ro-l);border:1px solid #fecdd3;color:#9f1239;border-radius:12px;padding:10px;font-size:12.5px;line-height:1.4;margin-bottom:12px}
+  .ok{background:var(--gr-l);border:1px solid var(--gr-b);color:#065f46;border-radius:12px;padding:10px;font-size:12.5px;line-height:1.4;margin-bottom:12px}
+  ul.lst{list-style:none;padding:0;margin:0}
+  ul.lst li{display:flex;gap:8px;align-items:flex-start;background:#fafaf9;border-radius:10px;padding:8px 10px;margin-bottom:5px;font-size:14px}
+  .hist{background:#fff;border:1px solid var(--line);border-radius:14px;padding:11px;margin-bottom:9px}
+  .hist .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .hist .dt{font-size:11px;color:var(--soft);font-variant-numeric:tabular-nums}
+  .hist .w{background:var(--am-l);color:#b45309;border-radius:99px;padding:2px 9px;font-size:11px;font-weight:600}
+  .hist .sc{margin-top:7px;font-size:13px;color:var(--mut);display:flex;flex-wrap:wrap;gap:4px 14px;font-variant-numeric:tabular-nums}
+  .sheet{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:70;display:flex;align-items:flex-end}
+  .sheet .in{background:var(--bg);width:100%;max-width:520px;margin:0 auto;border-radius:22px 22px 0 0;padding:16px;
+    max-height:92vh;overflow-y:auto;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+  .grab{width:40px;height:5px;background:#d6d3d1;border-radius:99px;margin:0 auto 12px}
+  label.lb{font-size:11px;font-weight:700;text-transform:uppercase;color:var(--soft);display:block;margin:0 0 5px}
+  .mini{font-size:12px;color:var(--soft);line-height:1.45}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header id="hd"></header>
+  <main id="app"></main>
+  <div id="nav"></div>
+</div>
+<script>
+/* ============================ STOCKAGE ============================
+   Sur un vrai fichier ouvert dans Safari, localStorage persiste.
+   Règle de sûreté : on n'écrit JAMAIS avant une lecture réussie,
+   pour qu'un incident de lecture ne puisse pas effacer l'historique. */
+var KEY='jeux-famille-v1', canSave=false, saveMsg='';
+function loadStore(){
+  try{
+    var probe='__t'+Date.now();
+    localStorage.setItem(probe,'1'); localStorage.removeItem(probe); // le stockage répond
+    canSave=true;
+    var v=localStorage.getItem(KEY);
+    if(v) return JSON.parse(v);
+    return null;
+  }catch(e){ canSave=false; saveMsg=e.message||'indisponible'; return null; }
+}
+function persist(){
+  if(!canSave) return;
+  try{ localStorage.setItem(KEY, JSON.stringify(D)); }
+  catch(e){ canSave=false; saveMsg='écriture refusée'; render(); }
+}
+
+/* ============================= UTILS ============================== */
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
+function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
+function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
+function pl(n,w){return n+' '+w+(n>1?'s':'');}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function fp(s){return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();}
+
+var DEF=['Patrick','Mélanie','Mattéo','Maxime'];
+function fresh(){return {v:1, lib:DEF.map(function(n){return{id:uid(),name:n};}), matches:[], journal:[]};}
+
+var D=loadStore()||fresh();
+if(!D.lib)D.lib=[]; if(!D.matches)D.matches=[]; if(!D.journal)D.journal=[];
+
+/* ========================== LOGIQUE SCORE ========================= */
+function winners(r,roster,rule){
+  var ids=roster.map(function(p){return p.id;}),e=[];
+  for(var k in r.scores){ if(ids.indexOf(k)>=0 && r.scores[k]!==null && !isNaN(r.scores[k])) e.push([k,r.scores[k]]); }
+  if(!e.length) return [];
+  var vals=e.map(function(x){return x[1];});
+  var best=rule==='low'?Math.min.apply(null,vals):Math.max.apply(null,vals);
+  return e.filter(function(x){return x[1]===best;}).map(function(x){return x[0];});
+}
+function rank(m,keep){
+  keep=keep||function(){return true;};
+  var rounds=m.rounds.filter(keep), s={};
+  m.players.forEach(function(p){s[p.id]={id:p.id,name:p.name,points:0,played:0,wins:0};});
+  rounds.forEach(function(r){
+    var w=winners(r,m.players,m.winRule);
+    for(var k in r.scores){ if(s[k]&&r.scores[k]!==null&&!isNaN(r.scores[k])){s[k].points+=r.scores[k];s[k].played++;} }
+    w.forEach(function(k){ if(s[k]) s[k].wins++; });
+  });
+  var list=[]; for(var k in s) list.push(s[k]);
+  var low=m.winRule==='low';
+  var byCumul=list.slice().sort(function(a,b){return low?(a.points-b.points||b.wins-a.wins):(b.points-a.points||b.wins-a.wins);});
+  var byWins=list.slice().sort(function(a,b){return b.wins-a.wins||(low?a.points-b.points:b.points-a.points);});
+  return {byCumul:byCumul,byWins:byWins,count:rounds.length};
+}
+function leaders(sorted,key,rule){
+  var played=sorted.filter(function(p){return p.played>0;});
+  if(!played.length) return [];
+  if(key==='wins'){ var bw=Math.max.apply(null,played.map(function(p){return p.wins;}));
+    if(bw<=0) return []; return played.filter(function(p){return p.wins===bw;}).map(function(p){return p.id;}); }
+  var vals=played.map(function(p){return p.points;});
+  var b=rule==='low'?Math.min.apply(null,vals):Math.max.apply(null,vals);
+  return played.filter(function(p){return p.points===b;}).map(function(p){return p.id;});
+}
+
+/* ============================== ÉTAT UI =========================== */
+var S={view:'home',matchId:null,tab:'rank',qtab:'play',period:'all',from:'',to:'',inputs:{},date:today(),sheet:false,confirm:null};
+function go(v){S.view=v;S.tab='rank';S.qtab='play';window.scrollTo(0,0);render();}
+function cur(){return D.matches.filter(function(m){return m.id===S.matchId;})[0];}
+function toast(t){var d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);
+  setTimeout(function(){d.remove();},2000);}
+
+/* ============================== RENDU ============================= */
+function render(){
+  var hd=document.getElementById('hd'),app=document.getElementById('app'),nav=document.getElementById('nav');
+  nav.innerHTML='';
+  var banner = !canSave ? '<div class="warn"><b>Sauvegarde impossible ici.</b> Ouvre ce fichier via Safari (ou ajoute-le à l\'écran d\'accueil) pour que l\'historique soit conservé. En attendant, utilise Sauvegarde → Copier avant de fermer.</div>' : '';
+
+  if(S.view==='home'){
+    hd.innerHTML='<span style="width:38px"></span><h1>Jeux<span class="sub">3 outils indépendants</span></h1>'+
+      '<button class="icobtn" onclick="go(\'save\')">⚙︎</button>';
+    app.innerHTML=banner+
+      tool('points','🧮','Décompte de points','Compter les points d\'un jeu : cumul, victoires, classement.',true,
+        D.matches.length?pl(D.matches.length,'partie')+' en mémoire':'')+
+      tool('quizz','🎙️','Quizz présentateur','Quiz de culture générale animé à l\'oral par Claude. Journal des questions déjà posées.',true,
+        D.journal.length?pl(D.journal.length,'question')+' au journal':'')+
+      tool('chrono','⏱️','Chrono','Minuteurs de jeu. Aucun score.',false,'')+
+      '<p class="mini" style="margin-top:16px">Chaque outil a sa propre logique. Le chrono ne gère pas de score ; le quizz a son propre décompte, séparé du décompte de points.</p>'+
+      (canSave?'<p class="mini" style="margin-top:10px;color:#059669">✓ Sauvegardé sur cet iPhone</p>':'');
+    return;
+  }
+  if(S.view==='save') return renderSave(hd,app,banner);
+  if(S.view==='chrono'){
+    hd.innerHTML=back()+'<h1>Chrono<span class="sub">Outil séparé — à venir</span></h1><span style="width:38px"></span>';
+    app.innerHTML='<div class="empty"><div class="e">⏱️</div><h3>Chrono</h3><p>Minuterie pure, indépendante du décompte de points.</p></div>'+
+      '<div class="card"><h2>Ce qui est prévu</h2><ul class="lst">'+
+      ['Compte à rebours ou chrono ascendant','Plusieurs minuteurs nommés','Départ / pause / reprise / remise à zéro','Alerte sonore en fin de temps','Aucun score, aucun joueur']
+        .map(function(t){return '<li>✓ '+t+'</li>';}).join('')+'</ul></div>';
+    return;
+  }
+  if(S.view==='quizz') return renderQuizz(hd,app,banner);
+  if(S.view==='points') return renderPoints(hd,app,banner);
+  if(S.view==='match') return renderMatch(hd,app,nav,banner);
+}
+function back(){return '<button class="icobtn" onclick="go(\''+(S.view==='match'?'points':'home')+'\')">‹</button>';}
+function tool(k,em,t,d,on,note){
+  return '<button class="tool'+(on?' on':'')+'" onclick="go(\''+k+'\')"><span class="em">'+em+'</span>'+
+   '<span style="flex:1;min-width:0"><b>'+t+(on?'':'<span class="tag">à venir</span>')+'</b><small>'+d+'</small>'+
+   (note?'<small style="color:#059669;margin-top:3px">'+note+'</small>':'')+'</span><span style="color:#d6d3d1">›</span></button>';
+}
+
+/* -------------------------- DÉCOMPTE POINTS ----------------------- */
+function renderPoints(hd,app,banner){
+  hd.innerHTML=back()+'<h1>Décompte de points<span class="sub">Tes parties</span></h1><span style="width:38px"></span>';
+  var act=D.matches.filter(function(m){return m.status!=='done';}),dn=D.matches.filter(function(m){return m.status==='done';});
+  var h=banner;
+  if(!D.matches.length){
+    h+='<div class="empty"><div class="e">🏆</div><h3>Aucune partie</h3><p>Crée une partie pour compter les points.</p></div>';
+  }else{
+    h+='<label class="lb">En cours</label>'+(act.length?act.map(mcard).join(''):'<p class="mini" style="margin-bottom:14px">Aucune partie en cours.</p>');
+    if(dn.length) h+='<label class="lb" style="margin-top:16px">Terminées</label>'+dn.map(mcard).join('');
+  }
+  app.innerHTML=h;
+  document.getElementById('nav').innerHTML='<div class="navbar"><div class="in"><button class="btn" onclick="openSheet()">+  Nouvelle partie</button></div></div>';
+  if(S.sheet) drawSheet();
+}
+function mcard(m){
+  var r=rank(m),ld=leaders(r.byCumul,'points',m.winRule);
+  var nm=ld.length?r.byCumul.filter(function(p){return ld.indexOf(p.id)>=0;}).map(function(p){return p.name;}).join(' & '):'—';
+  return '<button class="tool on" onclick="openMatch(\''+m.id+'\')"><span class="em" style="background:#d1fae5;font-size:20px">🧮</span>'+
+    '<span style="flex:1;min-width:0"><b>'+esc(m.name)+'</b><small>'+pl(m.players.length,'joueur')+' · '+pl(r.count,'manche')+
+    (m.winRule==='low'?' · moins gagne':'')+'</small></span>'+
+    '<span style="text-align:right;flex-shrink:0"><b style="font-size:13px">'+(r.count?'🏆 '+esc(nm):'—')+'</b>'+
+    '<small style="display:block;font-size:10px;color:#a8a29e;text-transform:uppercase">'+(r.count?'en tête':'à démarrer')+'</small></span></button>';
+}
+function openMatch(id){S.matchId=id;S.view='match';S.tab='rank';S.inputs={};S.date=today();window.scrollTo(0,0);render();}
+function openSheet(){S.sheet=true;render();}
+function closeSheet(){S.sheet=false;removeSheet();render();}
+function removeSheet(){var e;while((e=document.getElementById('sh')))e.remove();}
+function drawSheet(){
+  removeSheet();
+  var el=document.createElement('div');el.className='sheet';el.id='sh';
+  el.innerHTML='<div class="in" onclick="event.stopPropagation()"><div class="grab"></div>'+
+    '<h2 style="margin:0 0 12px;font-size:19px">Nouvelle partie</h2>'+
+    '<label class="lb">Nom</label><input id="mn" value="Partie du '+fr(today())+'">'+
+    '<label class="lb" style="margin-top:14px">Joueurs</label><div id="pk" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px">'+
+      D.lib.map(function(p){return '<button class="chip on" data-id="'+p.id+'" onclick="this.classList.toggle(\'on\')">'+esc(p.name)+'</button>';}).join('')+
+    '</div><input id="mx" placeholder="Autres joueurs (séparés par des virgules)">'+
+    '<label class="lb" style="margin-top:14px">Règle</label><div class="row" style="margin-bottom:18px">'+
+      '<button class="chip on" id="rh" style="flex:1;text-align:center" onclick="pickRule(1)">Le plus de points</button>'+
+      '<button class="chip" id="rl" style="flex:1;text-align:center" onclick="pickRule(0)">Le moins de points</button></div>'+
+    '<div class="row"><button class="btn grey" onclick="closeSheet()">Annuler</button><button class="btn" onclick="createMatch()">Créer</button></div></div>';
+  el.onclick=closeSheet;document.body.appendChild(el);
+}
+var NEWRULE='high';
+function pickRule(hi){NEWRULE=hi?'high':'low';
+  document.getElementById('rh').className='chip'+(hi?' on':'');document.getElementById('rl').className='chip'+(hi?'':' on');}
+function createMatch(){
+  var name=document.getElementById('mn').value.trim()||'Partie';
+  var roster=[];
+  [].forEach.call(document.querySelectorAll('#pk .chip.on'),function(b){
+    var p=D.lib.filter(function(x){return x.id===b.getAttribute('data-id');})[0];
+    if(p) roster.push({id:p.id,name:p.name});});
+  document.getElementById('mx').value.split(',').forEach(function(s){s=s.trim();if(s)roster.push({id:uid(),name:s});});
+  if(!roster.length){toast('Choisis au moins un joueur');return;}
+  var m={id:uid(),name:name,winRule:NEWRULE,status:'active',created:today(),players:roster,rounds:[]};
+  D.matches.unshift(m);persist();S.sheet=false;removeSheet();openMatch(m.id);
+}
+
+/* ----------------------------- UNE PARTIE ------------------------- */
+function renderMatch(hd,app,nav,banner){
+  var m=cur(); if(!m){go('points');return;}
+  hd.innerHTML=back()+'<h1>'+esc(m.name)+'<span class="sub">'+(m.status==='done'?'Terminée':'Décompte de points')+'</span></h1><span style="width:38px"></span>';
+  var h=banner;
+  if(S.tab==='rank') h+=tabRank(m);
+  if(S.tab==='play') h+=tabPlay(m);
+  if(S.tab==='hist') h+=tabHist(m);
+  if(S.tab==='set')  h+=tabSet(m);
+  app.innerHTML=h;
+  nav.innerHTML='<nav><div class="in">'+
+    nb('rank','🏅','Classement')+nb('play','➕','Manche')+nb('hist','📋','Manches')+nb('set','⚙︎','Réglages')+'</div></nav>';
+}
+function nb(k,i,l){return '<button class="'+(S.tab===k?'on':'')+'" onclick="S.tab=\''+k+'\';window.scrollTo(0,0);render()"><span class="i">'+i+'</span>'+l+'</button>';}
+function keeper(){
+  return function(r){
+    if(S.period==='all')return true;
+    if(S.period==='month')return r.date.slice(0,7)===today().slice(0,7);
+    if(S.period==='year')return r.date.slice(0,4)===today().slice(0,4);
+    if(S.period==='custom')return (!S.from||r.date>=S.from)&&(!S.to||r.date<=S.to);
+    return true;};
+}
+function tabRank(m){
+  if(!m.players.length) return '<div class="empty"><div class="e">👥</div><h3>Aucun joueur</h3><p>Ajoute des joueurs dans les réglages.</p></div>';
+  var r=rank(m,keeper()),lp=leaders(r.byCumul,'points',m.winRule),lw=leaders(r.byWins,'wins',m.winRule);
+  var per=[['all','Tout'],['month','Ce mois'],['year','Cette année'],['custom','Dates']];
+  var h='<div class="chips" style="margin-bottom:6px">'+per.map(function(p){
+    return '<button class="chip'+(S.period===p[0]?' on':'')+'" onclick="S.period=\''+p[0]+'\';render()">'+p[1]+'</button>';}).join('')+'</div>';
+  if(S.period==='custom') h+='<div class="row" style="margin-bottom:8px"><input type="date" value="'+S.from+'" onchange="S.from=this.value;render()"><span>→</span><input type="date" value="'+S.to+'" onchange="S.to=this.value;render()"></div>';
+  h+='<p class="mini" style="margin:0 0 12px">'+pl(r.count,'manche')+' sur la période</p>';
+  if(!r.count){
+    return h+(m.rounds.length?
+      '<div class="card" style="text-align:center;background:var(--am-l);border-color:#fde68a"><b>Aucune manche sur cette période</b><p class="mini" style="color:#b45309">Cette partie contient '+pl(m.rounds.length,'manche')+', hors du filtre.</p><button class="sm g" onclick="S.period=\'all\';render()">Voir tout</button></div>':
+      '<div class="empty"><div class="e">🏆</div><h3>Pas encore de manche</h3><p>Enregistre une première manche.</p><button class="sm g" onclick="S.tab=\'play\';render()">Saisir une manche</button></div>');
+  }
+  function nmOf(list,ids){return list.filter(function(p){return ids.indexOf(p.id)>=0;}).map(function(p){return p.name;}).join(' & ');}
+  h+='<div class="grid2">'+
+    '<div class="champ g"><div class="l">🏆 Meilleur cumul</div><div class="v">'+esc(lp.length?nmOf(r.byCumul,lp):'—')+'</div>'+
+      '<div class="s">'+(lp.length?nf(r.byCumul.filter(function(p){return lp.indexOf(p.id)>=0;})[0].points)+' pts':'—')+'</div></div>'+
+    '<div class="champ a"><div class="l">👑 Plus de victoires</div><div class="v">'+esc(lw.length?nmOf(r.byWins,lw):'—')+'</div>'+
+      '<div class="s">'+(lw.length?pl(r.byWins.filter(function(p){return lw.indexOf(p.id)>=0;})[0].wins,'victoire'):'—')+'</div></div></div>';
+  h+='<div class="card"><h2>🏅 Classement'+(m.winRule==='low'?' (le moins de points gagne)':'')+'</h2>';
+  r.byCumul.forEach(function(p,i){
+    var tp=lp.indexOf(p.id)>=0,tw=lw.indexOf(p.id)>=0;
+    h+='<div class="rank'+(tp?' lead':'')+(i===0?' first':'')+'"><div class="pos">'+(i+1)+'</div>'+
+      '<div class="nm"><b>'+esc(p.name)+(tp?' 🏆':'')+(tw?' 👑':'')+'</b>'+
+      '<small>'+pl(p.played,'manche')+' · '+pl(p.wins,'victoire')+(p.played?' · moy. '+nf(p.points/p.played):'')+'</small></div>'+
+      '<div class="pts"><b>'+nf(p.points)+'</b><small>points</small></div></div>';
+  });
+  h+='</div><button class="btn dark" onclick="share()">📤  Envoyer les résultats</button>'+
+     '<p class="mini" style="text-align:center;margin-top:8px">Messages, WhatsApp, mail…</p>';
+  return h;
+}
+function tabPlay(m){
+  if(!m.players.length) return '<div class="empty"><div class="e">👥</div><h3>Aucun joueur</h3><p>Ajoute des joueurs dans les réglages.</p></div>';
+  if(m.status==='done') return '<div class="card" style="background:var(--am-l);border-color:#fde68a"><b>Partie terminée.</b><p class="mini">Rouvre-la dans les réglages pour ajouter des manches.</p></div>';
+  var prev={},k;
+  for(k in S.inputs){var n=parseFloat(String(S.inputs[k]).replace(',','.'));if(!isNaN(n))prev[k]=n;}
+  var w=winners({scores:prev},m.players,m.winRule);
+  var h='<div class="card row" style="justify-content:space-between"><span style="font-size:14px;color:var(--mut)">Date de la manche</span>'+
+    '<input type="date" style="width:auto" value="'+S.date+'" onchange="S.date=this.value"></div>';
+  m.players.forEach(function(p){
+    var on=w.indexOf(p.id)>=0;
+    h+='<div class="plr'+(on?' win':'')+'"><span class="n">'+esc(p.name)+(on?' 👑':'')+'</span>'+
+      '<button class="stp" onclick="bump(\''+p.id+'\',-1)">−</button>'+
+      '<input inputmode="decimal" placeholder="—" value="'+(S.inputs[p.id]!==undefined?S.inputs[p.id]:'')+'" oninput="S.inputs[\''+p.id+'\']=this.value" onchange="render()">'+
+      '<button class="stp p" onclick="bump(\''+p.id+'\',1)">+</button></div>';
+  });
+  h+='<p class="mini" style="margin:4px 0 12px">Laisse vide si un joueur n\'a pas joué cette manche.</p>'+
+     '<button class="btn" onclick="saveRound()">Enregistrer la manche</button>';
+  return h;
+}
+function bump(id,d){var c=parseFloat(String(S.inputs[id]||'').replace(',','.'))||0;S.inputs[id]=String(c+d);render();}
+function saveRound(){
+  var m=cur(),sc={},any=false,k;
+  for(k in S.inputs){var n=parseFloat(String(S.inputs[k]).replace(',','.'));if(!isNaN(n)){sc[k]=n;any=true;}}
+  if(!any){toast('Saisis au moins un score');return;}
+  m.rounds.unshift({id:uid(),date:S.date||today(),scores:sc});
+  persist();S.inputs={};S.date=today();S.tab='rank';toast('Manche enregistrée ✓');window.scrollTo(0,0);render();
+}
+function tabHist(m){
+  if(!m.rounds.length) return '<div class="empty"><div class="e">📋</div><h3>Aucune manche</h3><p>Rien d\'enregistré pour l\'instant.</p></div>';
+  return m.rounds.map(function(r){
+    var w=winners(r,m.players,m.winRule);
+    var wn=m.players.filter(function(p){return w.indexOf(p.id)>=0;}).map(function(p){return p.name;}).join(', ');
+    var sc=m.players.filter(function(p){return r.scores[p.id]!==undefined;}).map(function(p){
+      return '<span>'+esc(p.name)+' <b style="color:'+(w.indexOf(p.id)>=0?'#059669':'#1c1917')+'">'+nf(r.scores[p.id])+'</b></span>';}).join('');
+    var cf=S.confirm===r.id;
+    return '<div class="hist"><div class="top"><span class="dt">'+fr(r.date)+'</span><span style="display:flex;gap:8px;align-items:center">'+
+      (wn?'<span class="w">👑 '+esc(wn)+'</span>':'')+
+      '<button class="icobtn" style="font-size:16px;padding:2px 6px" onclick="S.confirm=\''+r.id+'\';render()">🗑</button></span></div>'+
+      '<div class="sc">'+sc+'</div>'+
+      (cf?'<div class="row" style="margin-top:9px;background:var(--ro-l);padding:8px;border-radius:10px"><span style="flex:1;font-size:12px;color:#9f1239">Supprimer cette manche ?</span><button class="sm r" onclick="delRound(\''+r.id+'\')">Supprimer</button><button class="sm" onclick="S.confirm=null;render()">Annuler</button></div>':'')+
+      '</div>';
+  }).join('');
+}
+function delRound(id){var m=cur();m.rounds=m.rounds.filter(function(r){return r.id!==id;});S.confirm=null;persist();toast('Manche supprimée');render();}
+function tabSet(m){
+  var scored=function(id){return m.rounds.some(function(r){return r.scores[id]!==undefined;});};
+  var notIn=D.lib.filter(function(p){return !m.players.some(function(x){return x.id===p.id;});});
+  var h='<div class="card"><h2>Nom de la partie</h2><div class="row"><input id="rn" value="'+esc(m.name)+'"><button class="sm g" onclick="renameMatch()">OK</button></div></div>';
+  h+='<div class="card"><h2>Joueurs de la partie</h2>';
+  m.players.forEach(function(p){
+    h+='<div class="row" style="background:#fafaf9;border-radius:10px;padding:8px 10px;margin-bottom:6px"><span style="flex:1;font-weight:600">'+esc(p.name)+'</span>'+
+      (scored(p.id)?'<span class="mini">a joué</span>':'<button class="sm r" onclick="dropPlayer(\''+p.id+'\')">Retirer</button>')+'</div>';
+  });
+  if(notIn.length) h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">'+notIn.map(function(p){
+    return '<button class="chip" onclick="addPlayer(\''+p.id+'\')">+ '+esc(p.name)+'</button>';}).join('')+'</div>';
+  h+='<div class="row" style="margin-top:8px"><input id="np" placeholder="Nouveau joueur"><button class="sm g" onclick="addNew()">Ajouter</button></div>'+
+     '<p class="mini" style="margin-top:8px">Un joueur ayant déjà des scores ne peut pas être retiré : l\'historique reste intact.</p></div>';
+  h+='<div class="card"><h2>Règle</h2><div class="row">'+
+     '<button class="chip'+(m.winRule==='high'?' on':'')+'" style="flex:1;text-align:center" onclick="setRule(\'high\')">Le plus de points</button>'+
+     '<button class="chip'+(m.winRule==='low'?' on':'')+'" style="flex:1;text-align:center" onclick="setRule(\'low\')">Le moins de points</button></div></div>';
+  h+='<div class="card"><h2>État</h2>'+(m.status==='done'?
+     '<button class="sm g" onclick="setStatus(\'active\')">▶ Reprendre la partie</button>':
+     '<button class="sm" onclick="setStatus(\'done\')">🏁 Marquer terminée</button>')+'</div>';
+  h+='<div class="card">'+(S.confirm==='delm'?
+     '<p style="font-size:14px;margin:0 0 8px">Supprimer définitivement cette partie et son historique ?</p><div class="row"><button class="btn red" onclick="delMatch()">Oui, supprimer</button><button class="btn grey" onclick="S.confirm=null;render()">Annuler</button></div>':
+     '<button class="sm r" onclick="S.confirm=\'delm\';render()">🗑 Supprimer la partie</button>')+'</div>';
+  return h;
+}
+function renameMatch(){var m=cur(),v=document.getElementById('rn').value.trim();if(v)m.name=v;persist();toast('Nom mis à jour');render();}
+function dropPlayer(id){var m=cur();m.players=m.players.filter(function(p){return p.id!==id;});persist();render();}
+function addPlayer(id){var m=cur(),p=D.lib.filter(function(x){return x.id===id;})[0];if(p)m.players.push({id:p.id,name:p.name});persist();render();}
+function addNew(){var m=cur(),v=document.getElementById('np').value.trim();if(!v)return;
+  v.split(',').forEach(function(s){s=s.trim();if(s)m.players.push({id:uid(),name:s});});persist();render();}
+function setRule(r){cur().winRule=r;persist();render();}
+function setStatus(s){cur().status=s;persist();render();}
+function delMatch(){D.matches=D.matches.filter(function(m){return m.id!==S.matchId;});S.confirm=null;persist();go('points');}
+
+/* ------------------------------ PARTAGE --------------------------- */
+function share(){
+  var m=cur(),r=rank(m,keeper()),lp=leaders(r.byCumul,'points',m.winRule),lw=leaders(r.byWins,'wins',m.winRule);
+  var med=['🥇','🥈','🥉'];
+  var lab={all:'',month:'ce mois-ci',year:'cette année',custom:'période choisie'}[S.period];
+  var t='🏆 '+m.name+'\n'+pl(r.count,'manche')+(lab?' · '+lab:'')+(m.winRule==='low'?' · le moins de points gagne':'')+'\n\n';
+  r.byCumul.forEach(function(p,i){t+=(med[i]||'   ')+' '+p.name+' — '+nf(p.points)+' pts · '+pl(p.wins,'victoire')+'\n';});
+  var nmOf=function(l,ids){return l.filter(function(p){return ids.indexOf(p.id)>=0;}).map(function(p){return p.name;}).join(' & ');};
+  t+='\n';
+  if(lp.length) t+='Meilleur cumul : '+nmOf(r.byCumul,lp)+'\n';
+  if(lw.length && nmOf(r.byWins,lw)!==nmOf(r.byCumul,lp)) t+='Plus de victoires : '+nmOf(r.byWins,lw)+'\n';
+  if(navigator.share){ navigator.share({text:t}).catch(function(){}); return; }
+  copy(t,'Résultats copiés — colle-les dans WhatsApp');
+}
+function copy(t,msg){
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){toast(msg);},function(){fallbackCopy(t,msg);});}
+  else fallbackCopy(t,msg);
+}
+function fallbackCopy(t,msg){
+  var a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);
+  a.select();a.setSelectionRange(0,999999);try{document.execCommand('copy');toast(msg);}catch(e){toast('Copie impossible');}a.remove();
+}
+
+/* ------------------------------- QUIZZ ---------------------------- */
+function renderQuizz(hd,app,banner){
+  hd.innerHTML=back()+'<h1>Quizz présentateur<span class="sub">Jeu vocal — animé par Claude</span></h1><span style="width:38px"></span>';
+  var h=banner;
+  if(S.qtab==='play'){
+    h+='<div class="card" style="background:var(--gr-l);border-color:var(--gr-b);text-align:center">'+
+      '<div class="l" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#047857">Pour lancer</div>'+
+      '<div style="font-size:18px;font-weight:800;color:#064e3b;margin:4px 0">« On fait un quiz »</div>'+
+      '<p class="mini" style="color:#047857">Dis-le à Claude en mode voix. Il demande qui joue, puis enchaîne.</p></div>';
+    h+='<div class="card"><h2>Éviter les questions déjà posées</h2>'+
+      (D.journal.length?
+        '<p class="mini" style="margin-bottom:10px">Envoie ce brief à Claude au début de la partie : il saura quoi éviter ('+
+          Math.min(D.journal.length,120)+' dernières questions).</p><button class="btn" onclick="briefShare()">📤 Envoyer le brief à Claude</button>'+
+        '<button class="sm" style="width:100%;margin-top:8px" onclick="briefCopy()">Copier le brief</button>':
+        '<p class="mini">Journal vide. Après ta première partie, demande la liste des questions posées et ajoute-la dans l\'onglet Journal.</p>')+'</div>';
+    h+='<div class="card"><h2>Après la partie</h2><p class="mini">Demande à Claude : <b>« Donne-moi la liste des questions posées »</b>. Colle-la dans le Journal : c\'est ce qui évite les répétitions dans les années à venir.</p></div>';
+    h+='<div class="card"><h2>Règles</h2><ul class="lst">'+
+      ['Objectif 15 points · niveau de départ ~5/8','2 pts en réponse directe, 1 pt avec les propositions','Cash, Vol, Tour Défi, Question mystère, Duel','Rotation stricte, difficulté adaptée à chacun','Score tenu par l\'animateur, séparé du décompte de points']
+      .map(function(t){return '<li>✓ '+t+'</li>';}).join('')+'</ul></div>';
+  }else{
+    h+='<div class="card"><h2>Ajouter les questions d\'une partie</h2>'+
+      '<p class="mini" style="margin-bottom:8px">Colle la liste donnée en fin de partie (une par ligne). Les doublons sont détectés automatiquement.</p>'+
+      '<textarea id="jp" rows="5" placeholder="astronomie — satellite principal de Neptune&#10;histoire — année du traité de Versailles"></textarea>'+
+      '<button class="btn" style="margin-top:8px" onclick="addJournal()">Ajouter au journal</button></div>';
+    h+='<div class="card"><h2>Questions enregistrées ('+D.journal.length+')</h2>';
+    if(!D.journal.length) h+='<p class="mini" style="text-align:center;padding:12px 0">Journal vide.</p>';
+    else{
+      h+='<ul class="lst" style="max-height:340px;overflow-y:auto">'+D.journal.map(function(e){
+        return '<li><span style="font-size:10px;color:#a8a29e;flex-shrink:0">'+fr(e.date).slice(0,5)+'</span><span style="flex:1">'+esc(e.text)+'</span>'+
+        '<button class="icobtn" style="font-size:14px;padding:0 4px" onclick="delJ(\''+e.id+'\')">🗑</button></li>';}).join('')+'</ul>'+
+        '<button class="sm" style="width:100%;margin-top:10px" onclick="copyJournal()">Copier tout le journal</button>';
+    }
+    h+='</div>';
+  }
+  app.innerHTML=h;
+  document.getElementById('nav').innerHTML='<nav><div class="in">'+
+    '<button class="'+(S.qtab==='play'?'on':'')+'" onclick="S.qtab=\'play\';window.scrollTo(0,0);render()"><span class="i">🎙️</span>Jouer</button>'+
+    '<button class="'+(S.qtab==='j'?'on':'')+'" onclick="S.qtab=\'j\';window.scrollTo(0,0);render()"><span class="i">📖</span>Journal ('+D.journal.length+')</button>'+
+    '</div></nav>';
+}
+function briefText(){
+  var recent=D.journal.slice(0,120);
+  return 'Voici les questions déjà posées lors de nos parties précédentes. Ne les repose pas, et n\'utilise pas non plus le même fait sous une autre formulation :\n\n'+
+    recent.map(function(e){return '- '+e.text;}).join('\n')+'\n\nOn fait un quiz';
+}
+function briefShare(){ if(navigator.share){navigator.share({text:briefText()}).catch(function(){});} else briefCopy(); }
+function briefCopy(){ copy(briefText(),'Brief copié — colle-le dans Claude'); }
+function addJournal(){
+  var t=document.getElementById('jp').value;
+  var lines=t.split('\n').map(function(s){return s.replace(/^\s*[-•*\d.)]+\s*/,'').trim();}).filter(Boolean);
+  if(!lines.length){toast('Rien à ajouter');return;}
+  var seen={};D.journal.forEach(function(e){seen[e.fp]=1;});
+  var added=0;var fresh=[];
+  lines.forEach(function(l){var f=fp(l);if(!f||seen[f])return;seen[f]=1;fresh.push({id:uid(),text:l,fp:f,date:today()});added++;});
+  if(!added){toast('Déjà toutes au journal');return;}
+  D.journal=fresh.concat(D.journal);persist();
+  toast(added+' ajoutée'+(added>1?'s':'')+' · '+(lines.length-added)+' doublon(s) ignoré(s)');
+  render();
+}
+function delJ(id){D.journal=D.journal.filter(function(e){return e.id!==id;});persist();render();}
+function copyJournal(){copy(D.journal.map(function(e){return e.text;}).join('\n'),'Journal copié');}
+
+/* --------------------------- SAUVEGARDE --------------------------- */
+function renderSave(hd,app,banner){
+  hd.innerHTML=back()+'<h1>Joueurs & sauvegarde</h1><span style="width:38px"></span>';
+  var h=banner+(canSave?'<div class="ok">✓ L\'historique est enregistré sur cet iPhone. Il sera là au prochain lancement.</div>':'');
+  h+='<div class="card"><h2>Bibliothèque de joueurs</h2>';
+  D.lib.forEach(function(p){
+    h+='<div class="row" style="background:#fafaf9;border-radius:10px;padding:8px 10px;margin-bottom:6px">'+
+      '<span style="flex:1;font-weight:600">'+esc(p.name)+'</span><button class="sm r" onclick="delLib(\''+p.id+'\')">Retirer</button></div>';});
+  h+='<div class="row" style="margin-top:8px"><input id="nl" placeholder="Nom du joueur"><button class="sm g" onclick="addLib()">Ajouter</button></div>'+
+     '<p class="mini" style="margin-top:8px">Retirer un joueur ici ne touche pas aux parties déjà jouées.</p></div>';
+  h+='<div class="card"><h2>Sauvegarde de secours</h2>'+
+     '<p class="mini" style="margin-bottom:10px">Envoie-toi cette sauvegarde par WhatsApp ou Notes de temps en temps. C\'est ton filet si tu changes de téléphone.</p>'+
+     '<button class="btn dark" onclick="shareBackup()">📤 Envoyer la sauvegarde</button>'+
+     '<button class="sm" style="width:100%;margin-top:8px" onclick="copy(JSON.stringify(D),\'Sauvegarde copiée\')">Copier</button>'+
+     '<label class="lb" style="margin-top:16px">Restaurer</label>'+
+     '<textarea id="imp" rows="3" placeholder="Colle ici une sauvegarde"></textarea>'+
+     '<button class="sm" style="width:100%;margin-top:8px" onclick="restore()">Restaurer (remplace tout)</button></div>';
+  app.innerHTML=h;
+}
+function addLib(){var v=document.getElementById('nl').value.trim();if(!v)return;
+  v.split(',').forEach(function(s){s=s.trim();if(s)D.lib.push({id:uid(),name:s});});persist();render();}
+function delLib(id){D.lib=D.lib.filter(function(p){return p.id!==id;});persist();render();}
+function shareBackup(){var t=JSON.stringify(D);
+  if(navigator.share){navigator.share({text:t}).catch(function(){});}else copy(t,'Sauvegarde copiée');}
+function restore(){
+  try{var o=JSON.parse(document.getElementById('imp').value);
+    if(!o||!o.matches){toast('Sauvegarde non reconnue');return;}
+    D=o;if(!D.lib)D.lib=[];if(!D.matches)D.matches=[];if(!D.journal)D.journal=[];
+    persist();toast('Sauvegarde restaurée ✓');go('home');
+  }catch(e){toast('Texte invalide');}
+}
+
+render();
+
+/* Fonctionnement hors réseau (utile en voiture) */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
+</script>
+</body>
+</html>
