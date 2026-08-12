@@ -50,6 +50,13 @@
   .miniact .e{font-size:22px;flex-shrink:0}
   .miniact b{display:block;font-size:13.5px;color:var(--ink)}
   .miniact small{display:block;font-size:11px;color:var(--mut);margin-top:1px}
+  /* retour visuel immédiat au toucher : plus aucune impression de « ça ne réagit pas » */
+  button{transition:transform .06s ease, opacity .06s ease}
+  .btn:active,.sm:active,.tool:active,.miniact:active,.chip:active,.icobtn:active,.navbar button:active,nav button:active{transform:scale(.96);opacity:.85}
+  .updbar{position:fixed;left:12px;right:12px;bottom:16px;z-index:9999;background:#1c1917;color:#fff;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,.28);animation:updin .25s ease}
+  .updbar span{flex:1;font-size:13.5px;font-weight:600}
+  .updbar button{background:#059669;color:#fff;border:0;border-radius:10px;padding:8px 14px;font-weight:700;font-family:inherit;cursor:pointer;font-size:13px}
+  @keyframes updin{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
   .whowheel{font-size:56px;text-align:center;padding:8px 0}
   .whoname{font-size:30px;font-weight:800;text-align:center;letter-spacing:-.02em}
   .tool{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:16px;margin-bottom:12px;
@@ -203,6 +210,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
+var APP_VERSION='19';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -819,6 +827,7 @@ function renderSave(hd,app,banner){
      '<p class="mini" style="margin-top:8px">Retirer un joueur ici ne touche pas aux parties déjà jouées.</p></div>';
   h+='<div class="card"><h2>Options</h2>'+
      '<button class="sm" style="width:100%;margin-bottom:10px" onclick="obReplay()">🎬 Revoir la présentation de bienvenue</button>'+
+     '<button class="sm" style="width:100%;margin-bottom:10px" onclick="location.reload()">🔄 Recharger l\'app (récupérer la dernière version)</button>'+
      '<div class="row">'+
      '<button class="chip'+(D.voice?' on':'')+'" style="flex:1;text-align:center" onclick="setVoice(true)">🔊 Annonce vocale</button>'+
      '<button class="chip'+(!D.voice?' on':'')+'" style="flex:1;text-align:center" onclick="setVoice(false)">🔇 Silencieux</button></div>'+
@@ -830,6 +839,7 @@ function renderSave(hd,app,banner){
      '<label class="lb" style="margin-top:16px">Restaurer</label>'+
      '<textarea id="imp" rows="3" placeholder="Colle ici une sauvegarde"></textarea>'+
      '<button class="sm" style="width:100%;margin-top:8px" onclick="restore()">Restaurer (remplace tout)</button></div>';
+  h+='<p class="mini" style="text-align:center;margin-top:4px;color:#a8a29e">En Jeux — version '+APP_VERSION+'</p>';
   app.innerHTML=h;
 }
 /* ---- ONBOARDING : bienvenue en 30 secondes ---- */
@@ -1400,10 +1410,34 @@ function chGame(){
 
 render();
 
-/* Fonctionnement hors réseau (utile en voiture) */
+/* Fonctionnement hors réseau (utile en voiture) + détection de mise à jour */
+function showUpdateBar(){
+  if(document.getElementById('updbar')) return;
+  var d=document.createElement('div'); d.id='updbar'; d.className='updbar';
+  d.innerHTML='<span>🔄 Nouvelle version prête</span><button id="updbtn">Mettre à jour</button>';
+  document.body.appendChild(d);
+  document.getElementById('updbtn').onclick=function(){ try{location.reload();}catch(e){} };
+}
 if('serviceWorker' in navigator){
+  var __hadController = !!navigator.serviceWorker.controller;
+  var __reloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',function(){
+    if(__reloaded) return;
+    // Un nouveau service worker a pris le contrôle. Si l'app tournait déjà
+    // (mise à jour pendant l'usage), on propose de recharger — sans surprise.
+    if(__hadController) showUpdateBar();
+    __reloaded=true;
+  });
   window.addEventListener('load',function(){
-    navigator.serviceWorker.register('sw.js').catch(function(){});
+    navigator.serviceWorker.register('sw.js').then(function(reg){
+      if(reg.waiting && navigator.serviceWorker.controller) showUpdateBar();
+      reg.addEventListener('updatefound',function(){
+        var nw=reg.installing; if(!nw) return;
+        nw.addEventListener('statechange',function(){
+          if(nw.state==='installed' && navigator.serviceWorker.controller) showUpdateBar();
+        });
+      });
+    }).catch(function(){});
   });
 }
 </script>
