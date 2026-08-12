@@ -46,6 +46,12 @@
   .tool.t-coupe .tag{background:#d1fae5;color:#047857}
   .tool.t-tictac .tag{background:#fef3c7;color:#b45309}
   .tool.t-micro .tag{background:#ede9fe;color:#6d28d9}
+  .miniact{flex:1;display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:11px 12px;cursor:pointer;font-family:inherit;text-align:left;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  .miniact .e{font-size:22px;flex-shrink:0}
+  .miniact b{display:block;font-size:13.5px;color:var(--ink)}
+  .miniact small{display:block;font-size:11px;color:var(--mut);margin-top:1px}
+  .whowheel{font-size:56px;text-align:center;padding:8px 0}
+  .whoname{font-size:30px;font-weight:800;text-align:center;letter-spacing:-.02em}
   .tool{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:16px;margin-bottom:12px;
     border-radius:18px;border:1px solid var(--line);background:#fff;cursor:pointer;font-family:inherit;position:relative;overflow:hidden}
   .tool .em{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;background:#f5f5f4;flex-shrink:0;color:#fff}
@@ -145,6 +151,24 @@
   .grab{width:40px;height:5px;background:#d6d3d1;border-radius:99px;margin:0 auto 12px}
   label.lb{font-size:11px;font-weight:700;text-transform:uppercase;color:var(--soft);display:block;margin:0 0 5px}
   .mini{font-size:12px;color:var(--soft);line-height:1.45}
+  /* ---- Export PDF (impression) ---- */
+  #pdf{display:none}
+  @media print{
+    body{background:#fff}
+    header,#nav,#app,.sheet,.toast{display:none !important}
+    #pdf{display:block !important;padding:0;color:#1c1917;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+    .pdf-h{background:linear-gradient(135deg,#065f46,#34d399);color:#fff;padding:22px 20px;border-radius:14px;margin-bottom:16px}
+    .pdf-h h1{margin:0;font-size:26px} .pdf-h p{margin:4px 0 0;opacity:.9;font-size:13px}
+    .pdf-sec{margin-bottom:18px;break-inside:avoid}
+    .pdf-sec h2{font-size:15px;border-bottom:2px solid #059669;padding-bottom:4px;margin:0 0 8px;color:#065f46}
+    table{width:100%;border-collapse:collapse;font-size:12.5px}
+    th{text-align:left;color:#78716c;font-weight:600;padding:6px 8px;border-bottom:1px solid #e7e5e4;font-size:11px;text-transform:uppercase}
+    td{padding:6px 8px;border-bottom:1px solid #f0efee}
+    tr:nth-child(even) td{background:#fafaf9}
+    .pdf-top td{font-weight:800;color:#065f46}
+    .pdf-medal{font-size:15px}
+    .pdf-foot{margin-top:20px;text-align:center;color:#a8a29e;font-size:10px}
+  }
 </style>
 </head>
 <body>
@@ -152,6 +176,7 @@
   <header id="hd"></header>
   <main id="app"></main>
   <div id="nav"></div>
+  <div id="pdf"></div>
 </div>
 <script>
 /* ============================ STOCKAGE ============================
@@ -245,9 +270,23 @@ function leaders(sorted,key,rule){
 }
 
 /* ============================== ÉTAT UI =========================== */
-var S={view:'home',matchId:null,tab:'rank',qtab:'play',period:'all',from:'',to:'',inputs:{},date:today(),sheet:false,confirm:null,detail:null,avPick:null,tipOff:0,microSheet:false,chTab:'play'};
+var S={view:'home',matchId:null,tab:'rank',qtab:'play',period:'all',from:'',to:'',inputs:{},date:today(),sheet:false,confirm:null,detail:null,avPick:null,tipOff:0,microSheet:false,chTab:'play',whoSheet:false};
 function go(v){S.view=v;S.tab='rank';S.qtab='play';window.scrollTo(0,0);render();}
 function cur(){return D.matches.filter(function(m){return m.id===S.matchId;})[0];}
+function setVoice(b){
+  D.voice=b; persist();
+  if(b){ try{ if(window.speechSynthesis && window.SpeechSynthesisUtterance){ var u=new SpeechSynthesisUtterance('Annonce activée'); u.lang='fr-FR'; window.speechSynthesis.speak(u);} }catch(e){} }
+  render();
+}
+function speak(txt){
+  try{
+    if(!D.voice) return;
+    if(typeof window==='undefined' || !window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
+    window.speechSynthesis.cancel();
+    var u=new SpeechSynthesisUtterance(txt); u.lang='fr-FR'; u.rate=1; u.pitch=1;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
 function toast(t){var d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);
   setTimeout(function(){d.remove();},2000);}
 
@@ -274,7 +313,11 @@ function render(){
       tool('quizz','🎙️','Le Micro','Ton animateur de quiz personnel. Des questions à l\'oral, sur mesure, et jamais deux fois la même — même dans dix ans.','t-micro',
         D.journal.length?pl(D.journal.length,'question')+' au journal':'','Quiz vocal · IA')+
       '<div class="card" style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-color:#ddd6fe;margin-top:16px"><p style="margin:0;font-size:13px;color:#5b21b6;line-height:1.5"><b>✨ La pépite : Le Micro.</b> Aucun autre jeu ne fait ça — un animateur qui s\'adapte à chaque joueur et retient tout, pour ne jamais reposer la même question. Vos soirées et vos trajets ne se ressembleront plus.</p></div>'+
-      (canSave?'<p class="mini" style="margin-top:10px;color:#059669">✓ Sauvegardé sur cet iPhone</p>':'');
+      '<div class="row" style="margin-top:14px;gap:10px">'+
+        '<button class="miniact" onclick="whoStart()"><span class="e">🎯</span><span><b>Qui commence ?</b><small>Tirage au sort</small></span></button>'+
+        '<button class="miniact" onclick="go(\'champions\')"><span class="e">🏅</span><span><b>Mur des champions</b><small>Tous les jeux</small></span></button>'+
+      '</div>'+
+      (canSave?'<p class="mini" style="margin-top:12px;color:#059669">✓ Sauvegardé sur cet iPhone</p>':'');
     return;
   }
   if(S.view==='save') return renderSave(hd,app,banner);
@@ -283,7 +326,9 @@ function render(){
   if(S.view==='quizz') return renderQuizz(hd,app,banner);
   if(S.view==='points') return renderPoints(hd,app,banner);
   if(S.view==='match') return renderMatch(hd,app,nav,banner);
+  if(S.view==='champions') return renderChampions(hd,app,banner);
 }
+function afterRender(){ if(S.whoSheet) drawWhoSheet(); }
 function back(){return '<button class="icobtn" onclick="go(\''+(S.view==='match'?'points':'home')+'\')">‹</button>';}
 function tool(k,em,t,d,cls,note,tag){
   return '<button class="tool '+cls+'" onclick="go(\''+k+'\')"><span class="wm">'+em+'</span><span class="em" style="position:relative;z-index:1">'+em+'</span>'+
@@ -413,6 +458,7 @@ function tabRank(m){
     }
   });
   h+='</div><button class="btn dark" onclick="share()">📤  Envoyer les résultats</button>'+
+     '<button class="sm" style="width:100%;margin-top:8px" onclick="exportMatchPDF()">📄 Exporter en PDF (imprimable)</button>'+
      '<p class="mini" style="text-align:center;margin-top:8px">Messages, WhatsApp, mail…</p>';
   return h;
 }
@@ -660,6 +706,7 @@ function microPalmares(){
   });
   h+='</div>';
   h+='<button class="btn" onclick="microOpen()">+ Enregistrer un résultat</button>';
+  h+='<button class="btn dark" style="margin-top:8px" onclick="microShare()">📤 Partager le palmarès</button>';
   h+='<div class="card" style="margin-top:12px"><h2>Historique des parties</h2>'+
     D.micro.map(function(g){
       var cf=S.confirm==='mq'+g.id;
@@ -674,6 +721,74 @@ function microPalmares(){
 }
 
 /* --------------------------- SAUVEGARDE --------------------------- */
+/* ---- MUR DES CHAMPIONS : agrégation transverse des 3 jeux ---- */
+function championsAgg(){
+  var agg={};
+  function slot(name){ var k=fp(name); if(!k) return null;
+    if(!agg[k]) agg[k]={name:name, coupes:0, coupeManches:0, quizWins:0, quizGames:0, duels:0, duelWins:0}; return agg[k]; }
+  // La Coupe : titres (champion cumul, toutes parties) + manches gagnées
+  D.matches.forEach(function(m){
+    var r=rank(m,function(){return true;}); if(!r.count) return;
+    r.byCumul.forEach(function(p){ var s=slot(p.name); if(s) s.coupeManches+=p.wins; });
+    var lead=leaders(r.byCumul,'points',m.winRule);
+    m.players.forEach(function(p){ if(lead.indexOf(p.id)>=0){ var s=slot(p.name); if(s) s.coupes++; } });
+  });
+  // Le Micro
+  D.micro.forEach(function(g){
+    g.players.forEach(function(p,i){ var s=slot(p.name); if(s){ s.quizGames++; if(i===0) s.quizWins++; } });
+  });
+  // Tic-Tac
+  D.tictac.forEach(function(d){
+    d.players.forEach(function(p){ var s=slot(p.name); if(s){ s.duels++; if(d.winner&&fp(d.winner)===fp(p.name)) s.duelWins++; } });
+  });
+  var list=[]; for(var k in agg){ var a=agg[k]; a.crowns=a.coupes+a.quizWins+a.duelWins; list.push(a); }
+  list.sort(function(a,b){return b.crowns-a.crowns || (b.coupeManches+b.quizGames+b.duels)-(a.coupeManches+a.quizGames+a.duels);});
+  return list;
+}
+function renderChampions(hd,app,banner){
+  hd.innerHTML=back()+'<h1>🏅 Mur des champions<span class="sub">Tous les jeux réunis</span></h1><span style="width:38px"></span>';
+  var list=championsAgg();
+  var h=banner;
+  if(!list.length || list.every(function(p){return p.crowns===0 && !p.coupeManches && !p.quizGames && !p.duels;})){
+    h+='<div class="empty"><div class="e">🏅</div><h3>Le mur est encore vierge</h3><p>Joue des parties à La Coupe, au Micro ou au Tic-Tac : les couronnes de chacun s\'accumuleront ici, tous jeux confondus.</p></div>';
+    app.innerHTML=h; return;
+  }
+  var champ=list[0];
+  var conf='<div class="confetti" style="position:absolute;inset:0;pointer-events:none;overflow:hidden">'+
+    ['🎉','👑','⭐️','✨','🏆'].map(function(e,i){return '<span style="left:'+(8+i*20)+'%;animation-delay:'+(i*.35)+'s">'+e+'</span>';}).join('')+'</div>';
+  h+='<div class="hero" style="text-align:center;position:relative;background:linear-gradient(135deg,#7c3aed,#a78bfa)">'+conf+
+    '<p style="margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.9">Champion de la famille</p>'+
+    '<div style="margin:6px 0 2px">'+av(champ.name,'big')+'</div>'+
+    '<h2 style="font-size:28px;margin:2px 0">👑 '+esc(champ.name)+'</h2>'+
+    '<p style="margin:0;font-size:13px;opacity:.92">'+pl(champ.crowns,'couronne')+' au total</p></div>';
+  h+='<div class="card"><h2>Classement général (couronnes)</h2>';
+  list.forEach(function(p,i){
+    var open=S.detail==='champ'+fp(p.name);
+    h+='<div class="rank'+(i===0?' first lead':'')+'" style="cursor:pointer" onclick="S.detail=S.detail===\'champ'+fp(p.name)+'\'?null:\'champ'+fp(p.name)+'\';render()"><div class="pos">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1))+'</div>'+
+      av(p.name,'sm')+'<div class="nm" style="margin-left:8px"><b>'+esc(p.name)+'</b>'+
+      '<small>'+(p.coupes?'🏆'+p.coupes+' ':'')+(p.quizWins?'🎙️'+p.quizWins+' ':'')+(p.duelWins?'⏱️'+p.duelWins+' ':'')+(!p.crowns?'pas encore de couronne':'· voir le détail ›')+'</small></div>'+
+      '<div class="pts"><b>'+p.crowns+'</b><small>👑</small></div></div>';
+    if(open){
+      h+='<div style="background:#fafaf9;border-radius:12px;padding:10px 12px;margin:-2px 0 6px;font-size:13px">'+
+        '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>🏆 La Coupe</span><b>'+pl(p.coupes,'titre')+' · '+pl(p.coupeManches,'manche gagnée')+'</b></div>'+
+        '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>🎙️ Le Micro</span><b>'+p.quizWins+' / '+pl(p.quizGames,'partie')+'</b></div>'+
+        '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>⏱️ Tic-Tac</span><b>'+p.duelWins+' / '+pl(p.duels,'duel')+'</b></div>'+
+      '</div>';
+    }
+  });
+  h+='</div>';
+  h+='<p class="mini" style="text-align:center">Une couronne = un titre à La Coupe, une partie du Micro gagnée, ou un duel Tic-Tac remporté.</p>';
+  h+='<button class="btn dark" style="margin-top:10px" onclick="champShare()">📤 Partager le mur</button>';
+  h+='<button class="sm" style="width:100%;margin-top:8px" onclick="exportChampionsPDF()">📄 Exporter en PDF</button>';
+  app.innerHTML=h;
+}
+function champShare(){
+  var list=championsAgg(), med=['🥇','🥈','🥉'];
+  var t='🏅 Mur des champions — En Jeux\n\n';
+  list.forEach(function(p,i){ if(p.crowns) t+=(med[i]||'   ')+' '+p.name+' — '+pl(p.crowns,'couronne')+'\n'; });
+  if(navigator.share){navigator.share({text:t}).catch(function(){});} else copy(t,'Mur des champions copié');
+}
+
 function renderSave(hd,app,banner){
   hd.innerHTML=back()+'<h1>Joueurs & sauvegarde</h1><span style="width:38px"></span>';
   var h=banner+(canSave?'<div class="ok">✓ L\'historique est enregistré sur cet iPhone. Il sera là au prochain lancement.</div>':'');
@@ -686,6 +801,10 @@ function renderSave(hd,app,banner){
       '<button class="sm r" onclick="delLib(\''+p.id+'\')">Retirer</button></div>';});
   h+='<div class="row" style="margin-top:8px"><input id="nl" placeholder="Nom du joueur"><button class="sm g" onclick="addLib()">Ajouter</button></div>'+
      '<p class="mini" style="margin-top:8px">Retirer un joueur ici ne touche pas aux parties déjà jouées.</p></div>';
+  h+='<div class="card"><h2>Options</h2><div class="row">'+
+     '<button class="chip'+(D.voice?' on':'')+'" style="flex:1;text-align:center" onclick="setVoice(true)">🔊 Annonce vocale</button>'+
+     '<button class="chip'+(!D.voice?' on':'')+'" style="flex:1;text-align:center" onclick="setVoice(false)">🔇 Silencieux</button></div>'+
+     '<p class="mini" style="margin-top:8px">Quand elle est activée, l\'app annonce à voix haute qui doit jouer et qui gagne (Tic-Tac, tirage au sort). Pratique en voiture ou en balade.</p></div>';
   h+='<div class="card"><h2>Sauvegarde de secours</h2>'+
      '<p class="mini" style="margin-bottom:10px">Envoie-toi cette sauvegarde par WhatsApp ou Notes de temps en temps. C\'est ton filet si tu changes de téléphone.</p>'+
      '<button class="btn dark" onclick="shareBackup()">📤 Envoyer la sauvegarde</button>'+
@@ -695,6 +814,51 @@ function renderSave(hd,app,banner){
      '<button class="sm" style="width:100%;margin-top:8px" onclick="restore()">Restaurer (remplace tout)</button></div>';
   app.innerHTML=h;
 }
+/* ---- « Qui commence ? » : tirage au sort universel (sert n'importe quel jeu) ---- */
+var WHO={picked:null, roster:null};
+function whoStart(){
+  if(!WHO.roster){ WHO.roster={}; D.lib.forEach(function(p){WHO.roster[p.id]=true;}); }
+  WHO.picked=null; S.whoSheet=true; drawWhoSheet();
+}
+function whoClose(){ S.whoSheet=false; WHO.spinning=false; var e;while((e=document.getElementById('whosh')))e.remove(); }
+function whoToggle(id){ WHO.roster[id]=!WHO.roster[id]; drawWhoSheet(); }
+function whoChosen(){ return D.lib.filter(function(p){return WHO.roster[p.id];}); }
+function whoSpin(){
+  var pool=whoChosen(); if(pool.length<1){toast('Choisis au moins un joueur');return;}
+  if(WHO.spinning) return; WHO.spinning=true; WHO.picked=null;
+  var n=0, ticks=14+Math.floor(Math.random()*8);
+  function step(){
+    WHO.picked=pool[Math.floor(Math.random()*pool.length)];
+    drawWhoSheet(); n++;
+    if(n<ticks){ setTimeout(step, 60+n*14); }
+    else { WHO.spinning=false; WHO.picked=pool[Math.floor(Math.random()*pool.length)]; drawWhoSheet(); speak((WHO.picked?WHO.picked.name:'')+' commence'); try{if(navigator.vibrate)navigator.vibrate(30);}catch(e){} }
+  }
+  step();
+}
+function drawWhoSheet(){
+  var keepP=WHO.picked; var e;while((e=document.getElementById('whosh')))e.remove();
+  var el=document.createElement('div'); el.className='sheet'; el.id='whosh'; el.onclick=whoClose;
+  var chosen=whoChosen();
+  var res = WHO.picked
+    ? '<div class="whowheel">'+av(WHO.picked.name,'big')+'</div><div class="whoname">'+esc(WHO.picked.name)+'</div>'+
+      '<p class="mini" style="text-align:center;margin:4px 0 0">'+(WHO.spinning?'…':'commence 🎉')+'</p>'
+    : '<div class="whowheel">🎯</div><p class="mini" style="text-align:center">Choisis les joueurs, puis lance le tirage.</p>';
+  var grid=D.lib.map(function(p){
+    var on=WHO.roster[p.id];
+    return '<button onclick="event.stopPropagation();whoToggle(\''+p.id+'\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;border:2px solid '+(on?'var(--gr)':'var(--line)')+';background:'+(on?'var(--gr-l)':'#fff')+';border-radius:14px;padding:8px 4px;cursor:pointer;opacity:'+(on?'1':'.5')+'">'+
+      av(p.name,'sm')+'<span style="font-size:11px;font-weight:600;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name)+'</span></button>';
+  }).join('');
+  el.innerHTML='<div class="in" onclick="event.stopPropagation()"><div class="grab"></div>'+
+    '<h2 style="margin:0 0 4px;font-size:19px">🎯 Qui commence ?</h2>'+
+    '<p class="mini" style="margin:0 0 12px">Un tirage au sort pour n\'importe quel jeu — même un jeu de société.</p>'+
+    '<div class="card" style="margin:0 0 12px">'+res+'</div>'+
+    '<label class="lb">Joueurs (touche pour activer)</label>'+
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0 14px">'+grid+'</div>'+
+    '<button class="btn" onclick="whoSpin()">'+(WHO.picked&&!WHO.spinning?'🎲 Retirer au sort':'🎲 Tirer au sort')+'</button>'+
+    '<button class="btn grey" style="margin-top:8px" onclick="whoClose()">Fermer</button></div>';
+  document.body.appendChild(el);
+}
+
 function libIdForName(name){
   var k=fp(name);
   for(var j=0;j<D.lib.length;j++) if(fp(D.lib[j].name)===k) return D.lib[j].id;
@@ -844,10 +1008,67 @@ function renderPalmares(hd,app,banner){
          '<div class="pts"><b>'+p.titles+'</b><small>titre'+(p.titles>1?'s':'')+'</small></div>'+
          '<div class="pts" style="margin-left:10px"><b>'+p.wins+'</b><small>manches</small></div></div>';
     });
-    h+='</div><button class="btn dark" onclick="palShare()">📤 Envoyer le palmarès</button>';
+    h+='</div><button class="btn dark" onclick="palShare()">📤 Envoyer le palmarès</button>'+
+       '<button class="sm" style="width:100%;margin-top:8px" onclick="exportPalmaresPDF()">📄 Exporter le palmarès en PDF</button>';
   }
   app.innerHTML=h;
   document.getElementById('nav').innerHTML='';
+}
+/* ---- EXPORT PDF (via impression navigateur -> Enregistrer en PDF) ---- */
+function pdfRender(inner){
+  var el=document.getElementById('pdf'); if(!el) return;
+  el.innerHTML=inner+'<div class="pdf-foot">Généré avec En Jeux · '+fr(today())+'</div>';
+  setTimeout(function(){ try{ window.print(); }catch(e){ toast('Impression indisponible ici'); } }, 60);
+}
+function pdfMedal(i){ return ['🥇','🥈','🥉'][i]||(i+1); }
+function exportMatchPDF(){
+  var m=cur(); if(!m){toast('Aucune partie');return;}
+  var r=rank(m,function(){return true;});
+  var rounds=m.rounds.slice();
+  var head='<div class="pdf-h"><h1>🏆 '+esc(m.name)+'</h1><p>'+pl(rounds.length,'manche')+' · '+pl(m.players.length,'joueur')+(m.winRule==='low'?' · le moins de points gagne':'')+'</p></div>';
+  // classement
+  var cl='<div class="pdf-sec"><h2>Classement final</h2><table><thead><tr><th>#</th><th>Joueur</th><th>Points</th><th>Victoires</th><th>Moyenne</th></tr></thead><tbody>';
+  r.byCumul.forEach(function(p,i){ cl+='<tr class="'+(i===0?'pdf-top':'')+'"><td class="pdf-medal">'+pdfMedal(i)+'</td><td>'+esc(p.name)+'</td><td>'+nf(p.points)+'</td><td>'+p.wins+'</td><td>'+(p.played?nf(p.points/p.played):'—')+'</td></tr>'; });
+  cl+='</tbody></table></div>';
+  // détail des manches
+  var det='';
+  if(rounds.length){
+    det='<div class="pdf-sec"><h2>Détail des manches</h2><table><thead><tr><th>Date</th>'+m.players.map(function(p){return '<th>'+esc(p.name)+'</th>';}).join('')+'</tr></thead><tbody>';
+    rounds.forEach(function(rd){
+      det+='<tr><td>'+fr(rd.date)+'</td>'+m.players.map(function(p){ var w=winners(rd,m.players,m.winRule).indexOf(p.id)>=0; var v=rd.scores[p.id]; return '<td>'+(v===undefined?'—':nf(v)+(w?' 👑':''))+'</td>';}).join('')+'</tr>';
+    });
+    det+='</tbody></table></div>';
+  }
+  pdfRender(head+cl+det);
+}
+function exportPalmaresPDF(){
+  var list=palData(PAL.year);
+  var lb={all:'depuis le début',d1:'de la soirée',d7:'des 7 derniers jours',d30:'des 30 derniers jours'}[PAL.year]||('saison '+PAL.year);
+  var head='<div class="pdf-h"><h1>🏅 Palmarès</h1><p>La Coupe · '+lb+'</p></div>';
+  var t='<div class="pdf-sec"><h2>Classement '+lb+'</h2><table><thead><tr><th>#</th><th>Joueur</th><th>Titres</th><th>Manches gagnées</th><th>Parties</th></tr></thead><tbody>';
+  list.forEach(function(p,i){ t+='<tr class="'+(i===0?'pdf-top':'')+'"><td class="pdf-medal">'+pdfMedal(i)+'</td><td>'+esc(p.name)+'</td><td>'+p.titles+'</td><td>'+p.wins+'</td><td>'+p.matches+'</td></tr>'; });
+  t+='</tbody></table></div>';
+  pdfRender(head+t);
+}
+function exportChampionsPDF(){
+  var list=championsAgg().filter(function(p){return p.crowns||p.coupeManches||p.quizGames||p.duels;});
+  var head='<div class="pdf-h" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)"><h1>🏅 Mur des champions</h1><p>Tous les jeux réunis · '+pl(list.length,'joueur')+'</p></div>';
+  var t='<div class="pdf-sec"><h2>Classement général (couronnes)</h2><table><thead><tr><th>#</th><th>Joueur</th><th>👑 Total</th><th>🏆 Coupe</th><th>🎙️ Micro</th><th>⏱️ Tic-Tac</th></tr></thead><tbody>';
+  list.forEach(function(p,i){ t+='<tr class="'+(i===0?'pdf-top':'')+'"><td class="pdf-medal">'+pdfMedal(i)+'</td><td>'+esc(p.name)+'</td><td>'+p.crowns+'</td><td>'+p.coupes+'</td><td>'+p.quizWins+'</td><td>'+p.duelWins+'</td></tr>'; });
+  t+='</tbody></table></div>';
+  pdfRender(head+t);
+}
+function microShare(){
+  var agg=microAgg(), med=['🥇','🥈','🥉'];
+  var t='🎙️ Maître du Micro — En Jeux\n\n';
+  agg.forEach(function(p,i){ t+=(med[i]||'   ')+' '+p.name+' — '+pl(p.wins,'victoire')+' / '+pl(p.games,'partie')+'\n'; });
+  if(navigator.share){navigator.share({text:t}).catch(function(){});} else copy(t,'Palmarès du Micro copié');
+}
+function chShareP(){
+  var agg=chAggChrono(), med=['🥇','🥈','🥉'];
+  var t='⏱️ Roi du chrono — En Jeux\n\n';
+  agg.forEach(function(p,i){ t+=(med[i]||'   ')+' '+p.name+' — '+pl(p.wins,'duel gagné')+' / '+pl(p.duels,'joué')+'\n'; });
+  if(navigator.share){navigator.share({text:t}).catch(function(){});} else copy(t,'Palmarès du chrono copié');
 }
 function palShare(){
   var list=palData(PAL.year), med=['🥇','🥈','🥉'];
@@ -935,7 +1156,8 @@ function chPalmares(){
       '<div class="pts"><b>'+p.wins+'</b><small>victoire'+(p.wins>1?'s':'')+'</small></div></div>';
   });
   h+='</div>';
-  h+='<div class="card"><h2>Historique des duels</h2>'+
+  h+='<button class="btn dark" onclick="chShareP()">📤 Partager le palmarès</button>';
+  h+='<div class="card" style="margin-top:12px"><h2>Historique des duels</h2>'+
     D.tictac.map(function(d){
       var cf=S.confirm==='ct'+d.id;
       return '<div class="hist"><div class="top"><span class="dt">'+fr(d.date)+'</span>'+
@@ -1017,9 +1239,9 @@ function chNextIdx(from){
 }
 function chAdvance(auto){
   var alive=chAlive();
-  if(alive.length<=1){ CH.winner = alive.length? alive[0].name : null; CH.running=false; chStopTick(); render(); return; }
+  if(alive.length<=1){ CH.winner = alive.length? alive[0].name : null; CH.running=false; chStopTick(); if(CH.winner) speak(CH.winner+' remporte le duel'); render(); return; }
   var ni=chNextIdx(CH.active);
-  if(ni>=0) CH.active=ni;
+  if(ni>=0){ CH.active=ni; speak('À toi '+CH.players[ni].name); }
   CH.running=false; chStopTick();
   if(auto) render();
 }
