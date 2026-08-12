@@ -36,6 +36,16 @@
   .hero h2{margin:0;font-size:26px;font-weight:800;letter-spacing:-.02em}
   .hero p{margin:4px 0 0;font-size:13.5px;opacity:.92}
   .hero .dice{position:absolute;right:10px;top:6px;font-size:64px;opacity:.22;transform:rotate(12deg)}
+  .hero .pills{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;position:relative;z-index:1}
+  .hero .pills span{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.28);border-radius:99px;padding:3px 11px;font-size:11.5px;font-weight:600;backdrop-filter:blur(2px)}
+  .trust{display:flex;gap:6px;margin:-6px 0 16px}
+  .trust span{flex:1;text-align:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 4px;font-size:11.5px;font-weight:600;color:var(--mut);box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  .trust b{display:block;font-size:16px;margin-bottom:1px}
+  .tool .wm{position:absolute;right:-8px;bottom:-18px;font-size:84px;opacity:.07;transform:rotate(-10deg);pointer-events:none;z-index:0}
+  .tool .tag{display:inline-block;margin:5px 0 1px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;padding:2px 9px;border-radius:99px}
+  .tool.t-coupe .tag{background:#d1fae5;color:#047857}
+  .tool.t-tictac .tag{background:#fef3c7;color:#b45309}
+  .tool.t-micro .tag{background:#ede9fe;color:#6d28d9}
   .tool{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:16px;margin-bottom:12px;
     border-radius:18px;border:1px solid var(--line);background:#fff;cursor:pointer;font-family:inherit;position:relative;overflow:hidden}
   .tool .em{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;background:#f5f5f4;flex-shrink:0;color:#fff}
@@ -195,10 +205,10 @@ function av(name,cls){
 }
 
 var DEF=['Patrick','Mélanie','Mattéo','Maxime'];
-function fresh(){return {v:1, lib:DEF.map(function(n){return{id:uid(),name:n};}), matches:[], journal:[], micro:[]};}
+function fresh(){return {v:1, lib:DEF.map(function(n){return{id:uid(),name:n};}), matches:[], journal:[], micro:[], tictac:[]};}
 
 var D=loadStore()||fresh();
-if(!D.lib)D.lib=[]; if(!D.matches)D.matches=[]; if(!D.journal)D.journal=[]; if(!D.micro)D.micro=[];
+if(!D.lib)D.lib=[]; if(!D.matches)D.matches=[]; if(!D.journal)D.journal=[]; if(!D.micro)D.micro=[]; if(!D.tictac)D.tictac=[];
 
 /* ========================== LOGIQUE SCORE ========================= */
 function winners(r,roster,rule){
@@ -235,7 +245,7 @@ function leaders(sorted,key,rule){
 }
 
 /* ============================== ÉTAT UI =========================== */
-var S={view:'home',matchId:null,tab:'rank',qtab:'play',period:'all',from:'',to:'',inputs:{},date:today(),sheet:false,confirm:null,detail:null,avPick:null,tipOff:0,microSheet:false};
+var S={view:'home',matchId:null,tab:'rank',qtab:'play',period:'all',from:'',to:'',inputs:{},date:today(),sheet:false,confirm:null,detail:null,avPick:null,tipOff:0,microSheet:false,chTab:'play'};
 function go(v){S.view=v;S.tab='rank';S.qtab='play';window.scrollTo(0,0);render();}
 function cur(){return D.matches.filter(function(m){return m.id===S.matchId;})[0];}
 function toast(t){var d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);
@@ -254,12 +264,15 @@ function render(){
     hd.innerHTML='<span style="width:38px"></span><h1>En Jeux<span class="sub">Le kit de jeux de la famille</span></h1>'+
       '<button class="icobtn" onclick="go(\'save\')">⚙︎</button>';
     app.innerHTML=banner+
-      '<div class="hero"><span class="dice">🎲</span><h2>En Jeux</h2><p>Le kit de jeux de toute la famille. Un animateur, un chrono et un compteur de points — dans ta poche, même en voiture.</p></div>'+tip+
+      '<div class="hero"><span class="dice">🎲</span><h2>En Jeux</h2><p>Le kit de jeux de toute la famille. Un animateur, un chrono et un compteur de points — dans ta poche, même en voiture.</p>'+
+        '<div class="pills"><span>🍿 Soirées</span><span>🚗 Trajets</span><span>👨‍👩‍👧‍👦 En famille</span></div></div>'+tip+
+      '<div class="trust"><span><b>🚫</b>Sans pub</span><span><b>📶</b>Hors-ligne</span><span><b>🆓</b>Gratuit</span></div>'+
       tool('points','🏆','La Coupe','Le compteur qui n\'oublie jamais. Chaque partie, chaque manche, et vos champions couronnés saison après saison.','t-coupe',
-        D.matches.length?pl(D.matches.length,'partie')+' en mémoire':'')+
-      tool('chrono','⏱️','Tic-Tac','Le duel de temps qui met l\'ambiance. Chacun défend son chrono, le dernier debout l\'emporte.','t-tictac','')+
+        D.matches.length?pl(D.matches.length,'partie')+' en mémoire':'','Scores & palmarès')+
+      tool('chrono','⏱️','Tic-Tac','Le duel de temps qui met l\'ambiance. Chacun défend son chrono, le dernier debout l\'emporte.','t-tictac',
+        D.tictac.length?pl(D.tictac.length,'duel')+' au palmarès':'','Chrono & duel')+
       tool('quizz','🎙️','Le Micro','Ton animateur de quiz personnel. Des questions à l\'oral, sur mesure, et jamais deux fois la même — même dans dix ans.','t-micro',
-        D.journal.length?pl(D.journal.length,'question')+' au journal':'')+
+        D.journal.length?pl(D.journal.length,'question')+' au journal':'','Quiz vocal · IA')+
       '<div class="card" style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-color:#ddd6fe;margin-top:16px"><p style="margin:0;font-size:13px;color:#5b21b6;line-height:1.5"><b>✨ La pépite : Le Micro.</b> Aucun autre jeu ne fait ça — un animateur qui s\'adapte à chaque joueur et retient tout, pour ne jamais reposer la même question. Vos soirées et vos trajets ne se ressembleront plus.</p></div>'+
       (canSave?'<p class="mini" style="margin-top:10px;color:#059669">✓ Sauvegardé sur cet iPhone</p>':'');
     return;
@@ -272,10 +285,11 @@ function render(){
   if(S.view==='match') return renderMatch(hd,app,nav,banner);
 }
 function back(){return '<button class="icobtn" onclick="go(\''+(S.view==='match'?'points':'home')+'\')">‹</button>';}
-function tool(k,em,t,d,cls,note){
-  return '<button class="tool '+cls+'" onclick="go(\''+k+'\')"><span class="em">'+em+'</span>'+
-   '<span style="flex:1;min-width:0"><b>'+t+'</b><small>'+d+'</small>'+
-   (note?'<small style="color:#059669;margin-top:3px;font-weight:600">'+note+'</small>':'')+'</span><span style="color:#d6d3d1">›</span></button>';
+function tool(k,em,t,d,cls,note,tag){
+  return '<button class="tool '+cls+'" onclick="go(\''+k+'\')"><span class="wm">'+em+'</span><span class="em" style="position:relative;z-index:1">'+em+'</span>'+
+   '<span style="flex:1;min-width:0;position:relative;z-index:1"><b>'+t+'</b>'+
+   (tag?'<span class="tag">'+tag+'</span>':'')+'<small>'+d+'</small>'+
+   (note?'<small style="color:#059669;margin-top:3px;font-weight:600">'+note+'</small>':'')+'</span><span style="color:#d6d3d1;position:relative;z-index:1">›</span></button>';
 }
 
 /* -------------------------- DÉCOMPTE POINTS ----------------------- */
@@ -681,6 +695,11 @@ function renderSave(hd,app,banner){
      '<button class="sm" style="width:100%;margin-top:8px" onclick="restore()">Restaurer (remplace tout)</button></div>';
   app.innerHTML=h;
 }
+function libIdForName(name){
+  var k=fp(name);
+  for(var j=0;j<D.lib.length;j++) if(fp(D.lib[j].name)===k) return D.lib[j].id;
+  var id=uid(); D.lib.push({id:id,name:name||('Joueur '+(D.lib.length+1))}); persist(); return id;
+}
 function openAv(id){S.avPick=id;drawAvSheet();}
 function closeAv(){S.avPick=null;var e;while((e=document.getElementById('avsh')))e.remove();}
 function drawAvSheet(){
@@ -864,8 +883,69 @@ function chSettings(){
 function renderChrono(hd,app,nav,banner){
   chSettings();
   hd.innerHTML=back()+'<h1>⏱️ Tic-Tac<span class="sub">Duel de temps</span></h1><span style="width:38px"></span>';
-  nav.innerHTML='';
-  app.innerHTML = banner + (CH ? chGame() : chConfig());
+  if(CH){ nav.innerHTML=''; app.innerHTML = banner + chGame(); return; }
+  app.innerHTML = banner + (S.chTab==='pal' ? chPalmares() : chConfig());
+  nav.innerHTML='<nav><div class="in">'+
+    '<button class="'+(S.chTab!=='pal'?'on':'')+'" onclick="S.chTab=\'play\';window.scrollTo(0,0);render()"><span class="i">⏱️</span>Duel</button>'+
+    '<button class="'+(S.chTab==='pal'?'on':'')+'" onclick="S.chTab=\'pal\';window.scrollTo(0,0);render()"><span class="i">🏆</span>Palmarès'+(D.tictac.length?' ('+D.tictac.length+')':'')+'</button>'+
+    '</div></nav>';
+}
+/* ---- Historique optionnel des duels Tic-Tac ---- */
+function chSaveDuel(){
+  if(!CH||CH.saved) return;
+  var w = CH.winner!==null ? CH.winner : (chAlive()[0]&&chAlive()[0].name);
+  D.tictac.unshift({ id:uid(), date:today(),
+    players: CH.players.map(function(p){return {name:p.name, good:p.good};}),
+    winner: w||null });
+  CH.saved=true; persist(); toast('Manche enregistrée 🏆'); render();
+}
+function chDelDuel(id){ D.tictac=D.tictac.filter(function(d){return d.id!==id;}); persist(); render(); }
+function chAggChrono(){
+  var agg={};
+  D.tictac.forEach(function(d){
+    d.players.forEach(function(p){
+      var k=fp(p.name); if(!k) return;
+      if(!agg[k]) agg[k]={name:p.name, duels:0, wins:0, good:0, best:0};
+      agg[k].duels++; agg[k].good+=(p.good||0);
+      if(p.good>agg[k].best) agg[k].best=p.good;
+      if(d.winner && fp(d.winner)===k) agg[k].wins++;
+    });
+  });
+  var list=[]; for(var k in agg) list.push(agg[k]);
+  list.sort(function(a,b){return b.wins-a.wins||b.good-a.good||b.duels-a.duels;});
+  return list;
+}
+function chPalmares(){
+  if(!D.tictac.length){
+    return '<div class="empty"><div class="e">🏆</div><h3>Aucune manche enregistrée</h3><p>Le duel reste vif sur le moment. Mais si tu veux en garder la trace, touche « Enregistrer cette manche » à la fin d\'un duel — ton palmarès se construira ici.</p></div>';
+  }
+  var agg=chAggChrono(), champ=agg[0];
+  var conf='<div class="confetti" style="position:absolute;inset:0;pointer-events:none;overflow:hidden">'+
+    ['🎉','⏱️','⭐️','✨'].map(function(e,i){return '<span style="left:'+(10+i*24)+'%;animation-delay:'+(i*.4)+'s">'+e+'</span>';}).join('')+'</div>';
+  var h='<div class="hero" style="text-align:center;position:relative;background:linear-gradient(135deg,#d97706,#fbbf24)">'+conf+
+    '<p style="margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.9">Roi du chrono</p>'+
+    '<div style="margin:6px 0 2px">'+av(champ.name,'big')+'</div>'+
+    '<h2 style="font-size:26px;margin:2px 0">👑 '+esc(champ.name)+'</h2>'+
+    '<p style="margin:0;font-size:13px;opacity:.92">'+pl(champ.wins,'duel gagné')+' sur '+pl(champ.duels,'joué')+'</p></div>';
+  h+='<div class="card"><h2>🏆 Classement</h2>';
+  agg.forEach(function(p,i){
+    h+='<div class="rank'+(i===0?' first lead':'')+'"><div class="pos">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1))+'</div>'+
+      av(p.name,'sm')+'<div class="nm" style="margin-left:8px"><b>'+esc(p.name)+'</b>'+
+      '<small>'+pl(p.duels,'duel')+' · '+p.good+' bonnes'+(p.best?' · record '+p.best:'')+'</small></div>'+
+      '<div class="pts"><b>'+p.wins+'</b><small>victoire'+(p.wins>1?'s':'')+'</small></div></div>';
+  });
+  h+='</div>';
+  h+='<div class="card"><h2>Historique des duels</h2>'+
+    D.tictac.map(function(d){
+      var cf=S.confirm==='ct'+d.id;
+      return '<div class="hist"><div class="top"><span class="dt">'+fr(d.date)+'</span>'+
+        '<span style="display:flex;gap:8px;align-items:center"><span class="w">👑 '+esc(d.winner||'—')+'</span>'+
+        '<button class="icobtn" style="font-size:16px;padding:2px 6px" onclick="S.confirm=\'ct'+d.id+'\';render()">🗑</button></span></div>'+
+        '<div class="sc">'+d.players.slice().sort(function(a,b){return b.good-a.good;}).map(function(p){return '<span>'+esc(p.name)+' <b>✓'+p.good+'</b></span>';}).join('')+'</div>'+
+        (cf?'<div class="row" style="margin-top:9px;background:var(--ro-l);padding:8px;border-radius:10px"><span style="flex:1;font-size:12px;color:#9f1239">Supprimer ce duel ?</span><button class="sm r" onclick="chDelDuel(\''+d.id+'\')">Supprimer</button><button class="sm" onclick="S.confirm=null;render()">Annuler</button></div>':'')+
+      '</div>';
+    }).join('')+'</div>';
+  return h;
 }
 
 /* ---- Écran de configuration ---- */
@@ -884,9 +964,12 @@ function chConfig(){
     '<p class="mini" style="margin-top:6px">Actuel : <b>'+durLabel+'</b> pour chaque joueur.</p></div>';
   h+='<div class="card"><h2>Joueurs ('+s.players.length+')</h2>';
   s.players.forEach(function(n,i){
-    h+='<div class="row" style="margin-bottom:6px"><input value="'+n.replace(/"/g,'&quot;')+'" onchange="chRename('+i+',this.value)">'+
+    h+='<div class="row" style="margin-bottom:8px;gap:9px;align-items:center">'+
+       '<button style="border:0;background:none;padding:0;cursor:pointer;flex-shrink:0" onclick="chAv('+i+')" title="Photo ou personnage">'+av(n)+'</button>'+
+       '<input style="flex:1" value="'+n.replace(/"/g,'&quot;')+'" onchange="chRename('+i+',this.value)">'+
        (s.players.length>2?'<button class="sm r" onclick="chDelP('+i+')">✕</button>':'')+'</div>';
   });
+  h+='<p class="mini" style="margin-top:2px">Touche un avatar pour mettre une photo ou un personnage (facultatif). Il est partagé avec La Coupe et Le Micro.</p>';
   if(s.players.length<8) h+='<button class="sm g" style="width:100%;margin-top:4px" onclick="chAddP()">+ Ajouter un joueur</button>';
   h+='</div>';
   h+='<div class="card"><h2>Son</h2><div class="row">'+
@@ -896,6 +979,7 @@ function chConfig(){
      '<p class="mini" style="text-align:center;margin-top:8px">Chaque joueur défend son temps. Bon → il garde la main. Faux → au suivant.</p>';
   return h;
 }
+function chAv(i){ var s=chSettings(); if(!s.players[i]||!s.players[i].trim()){ s.players[i]='Joueur '+(i+1); } openAv(libIdForName(s.players[i])); }
 function chSetSecs(v){ chSettings().secs=Math.max(5,v||60); persist(); render(); }
 function chRename(i,v){ chSettings().players[i]=v.trim()||('Joueur '+(i+1)); persist(); }
 function chAddP(){ var s=chSettings(); s.players.push('Joueur '+(s.players.length+1)); persist(); render(); }
@@ -977,7 +1061,10 @@ function chGame(){
           return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0"><span style="display:flex;align-items:center;gap:6px">'+av(pl.name,'sm')+esc(pl.name)+'</span><b style="color:#059669">✓ '+pl.good+'</b></div>';
         }).join('')+
       '</div></div>'+
-      '<button class="btn" onclick="chStart()">Rejouer (mêmes réglages)</button>'+
+      (CH.saved
+        ? '<p class="mini" style="text-align:center;color:#059669;margin-top:12px">✓ Manche enregistrée au palmarès</p>'
+        : '<button class="btn" style="margin-top:12px;background:linear-gradient(135deg,#d97706,#fbbf24)" onclick="chSaveDuel()">🏆 Enregistrer cette manche</button>')+
+      '<button class="btn" style="margin-top:8px" onclick="chStart()">Rejouer (mêmes réglages)</button>'+
       '<button class="btn grey" style="margin-top:8px" onclick="chReset()">Changer les réglages</button>';
   }
 
