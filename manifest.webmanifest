@@ -1,7 +1,7 @@
 {
-  "name": "En Jeux — votre kit de jeux",
+  "name": "En Jeux — maître du jeu de poche",
   "short_name": "En Jeux",
-  "description": "Trois jeux dans votre poche : scores, duel de temps et quiz animé. En famille, entre amis, en voiture.",
+  "description": "Bien plus qu'un kit de jeux : un animateur qui compte, arbitre et retient qui gagne. Quiz vocal, duel de chrono, decompte de points, et le palmares de vos champions.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
