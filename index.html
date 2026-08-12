@@ -203,20 +203,13 @@ function render(){
         D.matches.length?pl(D.matches.length,'partie')+' en mémoire':'')+
       tool('quizz','🎙️','Quizz présentateur','Quiz de culture générale animé à l\'oral par Claude. Journal des questions déjà posées.',true,
         D.journal.length?pl(D.journal.length,'question')+' au journal':'')+
-      tool('chrono','⏱️','Chrono','Minuteurs de jeu. Aucun score.',false,'')+
+      tool('chrono','⏱️','Chrono','Duel de temps façon « 12 coups de midi ». Chacun défend son chrono.',true,'')+
       '<p class="mini" style="margin-top:16px">Chaque outil a sa propre logique. Le chrono ne gère pas de score ; le quizz a son propre décompte, séparé du décompte de points.</p>'+
       (canSave?'<p class="mini" style="margin-top:10px;color:#059669">✓ Sauvegardé sur cet iPhone</p>':'');
     return;
   }
   if(S.view==='save') return renderSave(hd,app,banner);
-  if(S.view==='chrono'){
-    hd.innerHTML=back()+'<h1>Chrono<span class="sub">Outil séparé — à venir</span></h1><span style="width:38px"></span>';
-    app.innerHTML='<div class="empty"><div class="e">⏱️</div><h3>Chrono</h3><p>Minuterie pure, indépendante du décompte de points.</p></div>'+
-      '<div class="card"><h2>Ce qui est prévu</h2><ul class="lst">'+
-      ['Compte à rebours ou chrono ascendant','Plusieurs minuteurs nommés','Départ / pause / reprise / remise à zéro','Alerte sonore en fin de temps','Aucun score, aucun joueur']
-        .map(function(t){return '<li>✓ '+t+'</li>';}).join('')+'</ul></div>';
-    return;
-  }
+  if(S.view==='chrono') return renderChrono(hd,app,nav,banner);
   if(S.view==='quizz') return renderQuizz(hd,app,banner);
   if(S.view==='points') return renderPoints(hd,app,banner);
   if(S.view==='match') return renderMatch(hd,app,nav,banner);
@@ -531,6 +524,169 @@ function restore(){
     D=o;if(!D.lib)D.lib=[];if(!D.matches)D.matches=[];if(!D.journal)D.journal=[];
     persist();toast('Sauvegarde restaurée ✓');go('home');
   }catch(e){toast('Texte invalide');}
+}
+
+/* =============================== CHRONO ===========================
+   Duel de temps « 12 coups de midi » : chaque joueur a son compte à rebours,
+   en pause quand ce n'est pas son tour. Bon = il garde la main ; Faux = au
+   suivant. À zéro = éliminé. L'animateur pilote. Rien n'est persisté : une
+   manche de chrono est éphémère (mais les réglages, eux, sont mémorisés). */
+var CH = null;              // état de la manche en cours (null = écran de config)
+var chTick = null;          // intervalle
+function chBeep(){
+  try{
+    var C=window.AudioContext||window.webkitAudioContext; if(!C) return;
+    var a=new C(); var o=a.createOscillator(), g=a.createGain();
+    o.connect(g); g.connect(a.destination); o.type='sine'; o.frequency.value=880;
+    g.gain.setValueAtTime(.001,a.currentTime); g.gain.exponentialRampToValueAtTime(.4,a.currentTime+.02);
+    g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.5);
+    o.start(); o.stop(a.currentTime+.5);
+  }catch(e){}
+  if(navigator.vibrate) navigator.vibrate(300);
+}
+/* Réglages persistés du chrono */
+function chSettings(){
+  if(!D.chrono) D.chrono={secs:60, players:['Joueur 1','Joueur 2','Joueur 3'], sound:true};
+  return D.chrono;
+}
+function renderChrono(hd,app,nav,banner){
+  chSettings();
+  hd.innerHTML=back()+'<h1>Chrono<span class="sub">Duel de temps</span></h1><span style="width:38px"></span>';
+  nav.innerHTML='';
+  app.innerHTML = banner + (CH ? chGame() : chConfig());
+}
+
+/* ---- Écran de configuration ---- */
+function chConfig(){
+  var s=chSettings();
+  var mins=Math.floor(s.secs/60), secs=s.secs%60;
+  var durLabel = mins? (mins+' min'+(secs? ' '+secs:'')) : (secs+' s');
+  var presets=[30,60,90,120,180];
+  var h='<div class="card"><h2>Temps par joueur</h2>'+
+    '<div class="chips" style="margin-bottom:8px">'+presets.map(function(p){
+      var lb=p<60?p+' s':(p/60)+' min'; if(p===90)lb='1 min 30'; if(p===180)lb='3 min';
+      return '<button class="chip'+(s.secs===p?' on':'')+'" onclick="chSetSecs('+p+')">'+lb+'</button>';}).join('')+
+    '</div>'+
+    '<div class="row"><span class="mini" style="flex:1">Personnalisé (secondes)</span>'+
+    '<input type="number" inputmode="numeric" style="width:90px;text-align:center" value="'+s.secs+'" onchange="chSetSecs(parseInt(this.value)||60)"></div>'+
+    '<p class="mini" style="margin-top:6px">Actuel : <b>'+durLabel+'</b> pour chaque joueur.</p></div>';
+  h+='<div class="card"><h2>Joueurs ('+s.players.length+')</h2>';
+  s.players.forEach(function(n,i){
+    h+='<div class="row" style="margin-bottom:6px"><input value="'+n.replace(/"/g,'&quot;')+'" onchange="chRename('+i+',this.value)">'+
+       (s.players.length>2?'<button class="sm r" onclick="chDelP('+i+')">✕</button>':'')+'</div>';
+  });
+  if(s.players.length<8) h+='<button class="sm g" style="width:100%;margin-top:4px" onclick="chAddP()">+ Ajouter un joueur</button>';
+  h+='</div>';
+  h+='<div class="card"><h2>Son</h2><div class="row">'+
+     '<button class="chip'+(s.sound?' on':'')+'" style="flex:1;text-align:center" onclick="chSound(true)">🔔 Bip activé</button>'+
+     '<button class="chip'+(!s.sound?' on':'')+'" style="flex:1;text-align:center" onclick="chSound(false)">🔕 Silencieux</button></div></div>';
+  h+='<button class="btn" onclick="chStart()">Démarrer la manche</button>'+
+     '<p class="mini" style="text-align:center;margin-top:8px">Chaque joueur défend son temps. Bon → il garde la main. Faux → au suivant.</p>';
+  return h;
+}
+function chSetSecs(v){ chSettings().secs=Math.max(5,v||60); persist(); render(); }
+function chRename(i,v){ chSettings().players[i]=v.trim()||('Joueur '+(i+1)); persist(); }
+function chAddP(){ var s=chSettings(); s.players.push('Joueur '+(s.players.length+1)); persist(); render(); }
+function chDelP(i){ var s=chSettings(); if(s.players.length>2){ s.players.splice(i,1); persist(); render(); } }
+function chSound(b){ chSettings().sound=b; persist(); render(); }
+
+/* ---- Démarrage d'une manche ---- */
+function chStart(){
+  var s=chSettings();
+  CH={ players:s.players.map(function(n){return {name:n, left:s.secs, out:false};}),
+       active:0, running:false, sound:s.sound, total:s.secs, winner:null };
+  chStopTick();
+  render();
+}
+function chStopTick(){ if(chTick){clearInterval(chTick); chTick=null;} }
+function chRun(){
+  if(CH.running) return;
+  CH.running=true; chStopTick();
+  var last=Date.now();
+  chTick=setInterval(function(){
+    var now=Date.now(), dt=(now-last)/1000; last=now;
+    var p=CH.players[CH.active];
+    p.left-=dt;
+    if(p.left<=0){ p.left=0; p.out=true; if(CH.sound) chBeep(); chStopTick(); CH.running=false; chAdvance(true); }
+    render();
+  },100);
+  render();
+}
+function chPause(){ CH.running=false; chStopTick(); render(); }
+function chAlive(){ return CH.players.filter(function(p){return !p.out;}); }
+function chNextIdx(from){
+  var n=CH.players.length;
+  for(var k=1;k<=n;k++){ var i=(from+k)%n; if(!CH.players[i].out) return i; }
+  return -1;
+}
+function chAdvance(auto){
+  var alive=chAlive();
+  if(alive.length<=1){ CH.winner = alive.length? alive[0].name : null; CH.running=false; chStopTick(); render(); return; }
+  var ni=chNextIdx(CH.active);
+  if(ni>=0) CH.active=ni;
+  CH.running=false; chStopTick();
+  if(auto) render();
+}
+/* Boutons animateur */
+function chGood(){ /* garde la main : on relance simplement son temps */ if(!CH.winner) chRun(); }
+function chWrong(){ chStopTick(); CH.running=false; chAdvance(false);
+  // enchaîne directement sur le nouveau joueur
+  if(!CH.winner) chRun(); else render(); }
+function chSkip(){ chStopTick(); CH.running=false; chAdvance(true); }
+function chReset(){ chStopTick(); CH=null; render(); }
+
+/* ---- Écran de jeu ---- */
+function fmtT(sec){ sec=Math.max(0,Math.ceil(sec)); var m=Math.floor(sec/60), s=sec%60; return m+':'+(s<10?'0':'')+s; }
+function chGame(){
+  var p=CH.players[CH.active];
+  var pct = CH.total>0 ? Math.max(0,Math.min(1,p.left/CH.total)) : 0;
+  var col = p.left<=5 ? '#e11d48' : p.left<=20 ? '#f59e0b' : '#059669';
+  var R=52, C=2*Math.PI*R, off=C*(1-pct);
+  // anneau SVG
+  var ring='<svg viewBox="0 0 120 120" style="width:210px;height:210px;transform:rotate(-90deg)">'+
+    '<circle cx="60" cy="60" r="'+R+'" fill="none" stroke="#e7e5e4" stroke-width="10"/>'+
+    '<circle cx="60" cy="60" r="'+R+'" fill="none" stroke="'+col+'" stroke-width="10" stroke-linecap="round" '+
+      'stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'"/></svg>';
+
+  if(CH.winner!==null || chAlive().length<=1){
+    var w = CH.winner!==null ? CH.winner : (chAlive()[0]&&chAlive()[0].name);
+    return '<div class="card" style="text-align:center;padding:28px 16px">'+
+      '<div style="font-size:46px">🏆</div><h2 style="font-size:22px;margin:8px 0 2px">'+esc(w||'—')+'</h2>'+
+      '<p class="mini">dernier joueur en course</p></div>'+
+      '<button class="btn" onclick="chStart()">Rejouer (mêmes réglages)</button>'+
+      '<button class="btn grey" style="margin-top:8px" onclick="chReset()">Changer les réglages</button>';
+  }
+
+  var h='<div style="text-align:center;position:relative;margin:6px 0 4px">'+
+    '<div style="position:relative;display:inline-block">'+ring+
+    '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">'+
+      '<div style="font-size:13px;color:#78716c;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name)+'</div>'+
+      '<div style="font-size:44px;font-weight:800;font-variant-numeric:tabular-nums;color:'+col+'">'+fmtT(p.left)+'</div>'+
+      '<div style="font-size:11px;color:#a8a29e">'+(CH.running?'en cours':'en pause')+'</div>'+
+    '</div></div></div>';
+
+  // contrôle principal : Démarrer / Pause
+  h+= CH.running
+    ? '<button class="btn" style="background:#78716c" onclick="chPause()">⏸ Pause</button>'
+    : '<button class="btn" onclick="chRun()">▶︎ Lancer le temps de '+esc(p.name)+'</button>';
+
+  // boutons animateur
+  h+='<div class="row" style="margin-top:10px;gap:10px">'+
+     '<button class="btn" style="flex:1" onclick="chGood()">✓ Bon</button>'+
+     '<button class="btn red" style="flex:1" onclick="chWrong()">✗ Faux → suivant</button></div>'+
+     '<button class="btn grey" style="margin-top:8px" onclick="chSkip()">Passer au suivant</button>';
+
+  // rangée des joueurs
+  h+='<div class="card" style="margin-top:14px"><h2>Joueurs</h2>';
+  CH.players.forEach(function(pl,i){
+    var c = pl.out?'#a8a29e':(i===CH.active?'#059669':'#1c1917');
+    h+='<div class="row" style="justify-content:space-between;padding:7px 4px;'+(i===CH.active?'background:var(--gr-l);border-radius:8px':'')+'">'+
+       '<span style="font-weight:600;color:'+c+'">'+(i===CH.active?'▶ ':'')+esc(pl.name)+(pl.out?' — éliminé':'')+'</span>'+
+       '<span style="font-variant-numeric:tabular-nums;font-weight:700;color:'+c+'">'+fmtT(pl.left)+'</span></div>';
+  });
+  h+='</div>';
+  h+='<button class="btn grey" style="margin-top:10px" onclick="chReset()">⟲ Nouvelle manche</button>';
+  return h;
 }
 
 render();
