@@ -252,7 +252,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='22';
+var APP_VERSION='23';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -712,14 +712,14 @@ function briefCopy(){ copy(briefText(),'Lancement copié — colle-le dans Claud
 /* Un seul geste : copie le lancement PUIS ouvre Claude (il ne reste qu'à coller) */
 function briefGo(){
   var t=briefText();
-  function openClaude(){
-    try{ var wnd=window.open('https://claude.ai/new','_blank'); if(!wnd) toast('Lancement copié — ouvre Claude et colle'); }
-    catch(e){ toast('Lancement copié — ouvre Claude et colle'); }
-  }
+  /* iOS exige que window.open soit SYNCHRONE dans le geste utilisateur :
+     on copie et on ouvre dans le même tick, sans attendre la promesse. */
   if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(t).then(function(){ toast('Copié ✓ — colle dans Claude, puis mode voix 🎙️'); openClaude(); },
-      function(){ fallbackCopy(t,'Lancement copié'); openClaude(); });
-  } else { fallbackCopy(t,'Lancement copié'); openClaude(); }
+    navigator.clipboard.writeText(t).catch(function(){ try{fallbackCopy(t,'Lancement copié');}catch(e){} });
+  } else { try{fallbackCopy(t,'Lancement copié');}catch(e){} }
+  var wnd=null;
+  try{ wnd=window.open('https://claude.ai/new','_blank'); }catch(e){}
+  toast(wnd ? 'Copié ✓ — colle dans Claude, puis mode voix 🎙️' : 'Copié ✓ — ouvre Claude et colle');
 }
 function addJournal(){
   var t=document.getElementById('jp').value;
