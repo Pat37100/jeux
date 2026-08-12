@@ -271,7 +271,7 @@ function leaders(sorted,key,rule){
 
 /* ============================== ÉTAT UI =========================== */
 var S={view:'home',matchId:null,tab:'rank',qtab:'play',period:'all',from:'',to:'',inputs:{},date:today(),sheet:false,confirm:null,detail:null,avPick:null,tipOff:0,microSheet:false,chTab:'play',whoSheet:false};
-function go(v){S.view=v;S.tab='rank';S.qtab='play';window.scrollTo(0,0);render();}
+function go(v){S.view=v;S.tab='rank';S.qtab='play';S.histAll=false;window.scrollTo(0,0);render();}
 function cur(){return D.matches.filter(function(m){return m.id===S.matchId;})[0];}
 function setVoice(b){
   D.voice=b; persist();
@@ -491,7 +491,11 @@ function saveRound(){
 }
 function tabHist(m){
   if(!m.rounds.length) return '<div class="empty"><div class="e">📋</div><h3>Aucune manche</h3><p>Rien d\'enregistré pour l\'instant.</p></div>';
-  return m.rounds.map(function(r){
+  var all=m.rounds, LIMIT=20, truncated=(!S.histAll && all.length>LIMIT);
+  var shown=truncated? all.slice(-LIMIT) : all;
+  var out=(truncated?'<button class="sm" style="width:100%;margin-bottom:10px" onclick="S.histAll=true;render()">Afficher les '+all.length+' manches (les '+LIMIT+' dernières sont ci-dessous)</button>':'')+
+    (all.length>LIMIT?'<p class="mini" style="margin:0 0 8px;text-align:center">💡 Pour une vue complète et lisible : <b>Classement → 📄 Exporter en PDF</b>.</p>':'');
+  return out + shown.map(function(r){
     var w=winners(r,m.players,m.winRule);
     var wn=m.players.filter(function(p){return w.indexOf(p.id)>=0;}).map(function(p){return p.name;}).join(', ');
     var sc=m.players.filter(function(p){return r.scores[p.id]!==undefined;}).map(function(p){
@@ -577,7 +581,10 @@ function renderQuizz(hd,app,banner){
       '<button class="btn" style="margin-top:12px" onclick="briefCopy()">📋 Copier le lancement'+(D.journal.length?' (+ '+Math.min(D.journal.length,120)+' questions à éviter)':'')+'</button>'+
       '<button class="sm" style="width:100%;margin-top:8px;background:#fff" onclick="briefShare()">📤 Ou l\'envoyer via une app</button>'+
       '</div>';
-    h+='<div class="card"><h2>Après la partie</h2><p class="mini">Demande à Claude : <b>« Donne-moi la liste des questions posées »</b>. Colle-la dans le Journal : c\'est ce qui évite les répétitions dans les années à venir.</p></div>';
+    h+='<div class="card"><h2>Après la partie — 2 réflexes</h2>'+
+      '<p class="mini" style="margin-bottom:8px"><b>🏆 Le classement</b> — enregistre le résultat final annoncé par l\'animateur : il rejoint le palmarès du Micro.</p>'+
+      '<button class="btn" style="margin:0 0 12px" onclick="microOpen()">🏆 Enregistrer un résultat</button>'+
+      '<p class="mini"><b>📖 Les questions</b> — demande à Claude « Donne-moi la liste des questions posées » et colle-la dans le Journal : c\'est ce qui évite les répétitions dans les années à venir.</p></div>';
     h+='<div class="card"><h2>Règles</h2><ul class="lst">'+
       ['Objectif 15 points · niveau de départ ~5/8','2 pts en réponse directe, 1 pt avec les propositions','Cash, Vol, Tour Défi, Question mystère, Duel','Rotation stricte, difficulté adaptée à chacun','Score tenu par l\'animateur, séparé du décompte de points']
       .map(function(t){return '<li>✓ '+t+'</li>';}).join('')+'</ul></div>';
