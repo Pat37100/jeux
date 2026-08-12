@@ -59,6 +59,16 @@
   .updbar span{flex:1;font-size:13.5px;font-weight:600}
   .updbar button{background:#059669;color:#fff;border:0;border-radius:10px;padding:8px 14px;font-weight:700;font-family:inherit;cursor:pointer;font-size:13px}
   @keyframes updin{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+  /* Apparition douce des écrans et des cartes : l'app respire */
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  #app>.card,#app>.hero,#app>.tool,#app>.empty,#app>.trust,#app>.row{animation:fadeUp .28s ease both}
+  #app>*:nth-child(2){animation-delay:.03s} #app>*:nth-child(3){animation-delay:.06s}
+  #app>*:nth-child(4){animation-delay:.09s} #app>*:nth-child(5){animation-delay:.12s}
+  @media (prefers-reduced-motion:reduce){#app>*{animation:none !important}}
+  /* Écran de victoire : pulsation du trophée */
+  @keyframes trophy{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.12) rotate(3deg)}}
+  .winbig{display:inline-block;animation:trophy 1.6s ease-in-out infinite}
+  .hero h2{text-shadow:0 1px 2px rgba(0,0,0,.12)}
   .whowheel{font-size:56px;text-align:center;padding:8px 0}
   .whoname{font-size:30px;font-weight:800;text-align:center;letter-spacing:-.02em}
   .tool{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:16px;margin-bottom:12px;
@@ -218,7 +228,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='20';
+var APP_VERSION='21';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -592,13 +602,25 @@ function renderQuizz(hd,app,banner){
     h+='<div class="card" style="background:var(--gr-l);border-color:var(--gr-b);text-align:center">'+
       '<div class="l" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#047857">Pour lancer une partie</div>'+
       '<div style="display:flex;flex-direction:column;gap:7px;margin-top:8px;color:#065f46;font-size:14px">'+
-        '<div><b>1.</b> Touche le bouton ci-dessous 👇</div>'+
-        '<div><b>2.</b> Colle le message dans <b>Claude</b> — n\'importe quelle discussion, même nouvelle.</div>'+
-        '<div><b>3.</b> Passe en <b>mode voix</b> 🎙️ et jouez : il connaît toutes les règles.</div>'+
+        '<div><b>1.</b> Touche <b>Lancer la partie</b> : le message est copié et Claude s\'ouvre.</div>'+
+        '<div><b>2.</b> <b>Colle</b> (appui long → Coller), envoie, puis passe en <b>mode voix</b> 🎙️.</div>'+
       '</div>'+
-      '<button class="btn" style="margin-top:12px" onclick="briefCopy()">📋 Copier le lancement'+(D.journal.length?' (+ '+Math.min(D.journal.length,120)+' questions à éviter)':'')+'</button>'+
-      '<button class="sm" style="width:100%;margin-top:8px;background:#fff" onclick="briefShare()">📤 Ou l\'envoyer via une app</button>'+
+      '<button class="btn" style="margin-top:12px;font-size:17px" onclick="briefGo()">🚀 Lancer la partie</button>'+
+      '<p class="mini" style="text-align:center;margin:8px 0 0;color:#065f46">L\'animateur connaît déjà vos prénoms et toutes les règles'+(D.journal.length?', et évitera '+Math.min(D.journal.length,120)+' questions déjà posées':'')+'.</p>'+
+      '<div class="row" style="margin-top:10px;gap:8px">'+
+        '<button class="sm" style="flex:1;background:#fff" onclick="briefCopy()">📋 Copier seulement</button>'+
+        '<button class="sm" style="flex:1;background:#fff" onclick="briefShare()">📤 Envoyer</button>'+
+      '</div>'+
       '</div>';
+    // Équipe qui joue (embarquée dans le lancement)
+    var sel=D.microTeam||D.lib.map(function(p){return p.id;});
+    h+='<div class="card"><h2>Qui joue ? ('+microTeam().length+')</h2>'+
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'+
+      D.lib.map(function(p){ var on=sel.indexOf(p.id)>=0;
+        return '<button onclick="microToggleP(\''+p.id+'\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;border:2px solid '+(on?'var(--gr)':'var(--line)')+';background:'+(on?'var(--gr-l)':'#fff')+';border-radius:14px;padding:8px 4px;cursor:pointer;opacity:'+(on?'1':'.5')+';min-width:0">'+
+          av(p.name,'sm')+'<span style="font-size:11px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name)+'</span></button>';
+      }).join('')+'</div>'+
+      '<p class="mini" style="margin-top:8px">Ces prénoms partent avec le lancement : l\'animateur démarre directement, sans demander qui joue.</p></div>';
     h+='<div class="card"><h2>Après la partie — 2 réflexes</h2>'+
       '<p class="mini" style="margin-bottom:8px"><b>🏆 Le classement</b> — enregistre le résultat final annoncé par l\'animateur : il rejoint le palmarès du Micro.</p>'+
       '<button class="btn" style="margin:0 0 12px" onclick="microOpen()">🏆 Enregistrer un résultat</button>'+
@@ -639,11 +661,42 @@ function briefText(){
     t+='\n\n--- JOURNAL ANTI-DOUBLON ---\nVoici les questions/faits déjà posés lors de nos parties précédentes. Traite-les comme historique (section 8) : ne les repose pas, même reformulés :\n\n'+
       recent.map(function(e){return '- '+e.text;}).join('\n')+'\n';
   }
-  t+='\n\nOn fait un quiz';
+  var team=microTeam();
+  if(team.length){
+    t+='\n\nOn fait un quiz. Les joueurs sont, dans cet ordre : '+team.join(', ')+
+       '. Ne demande pas qui joue : démarre directement avec '+team[0]+'.';
+  } else {
+    t+='\n\nOn fait un quiz';
+  }
   return t;
+}
+/* Équipe sélectionnée pour Le Micro (par défaut : toute la bibliothèque) */
+function microTeam(){
+  if(!D.microTeam) return D.lib.map(function(p){return p.name;});
+  var names=D.lib.filter(function(p){return D.microTeam.indexOf(p.id)>=0;}).map(function(p){return p.name;});
+  return names.length?names:D.lib.map(function(p){return p.name;});
+}
+function microToggleP(id){
+  if(!D.microTeam) D.microTeam=D.lib.map(function(p){return p.id;});
+  var i=D.microTeam.indexOf(id);
+  if(i>=0){ if(D.microTeam.length<=1){toast('Au moins un joueur');return;} D.microTeam.splice(i,1); }
+  else D.microTeam.push(id);
+  persist(); render();
 }
 function briefShare(){ if(navigator.share){navigator.share({text:briefText()}).catch(function(){});} else briefCopy(); }
 function briefCopy(){ copy(briefText(),'Lancement copié — colle-le dans Claude et passe en voix'); }
+/* Un seul geste : copie le lancement PUIS ouvre Claude (il ne reste qu'à coller) */
+function briefGo(){
+  var t=briefText();
+  function openClaude(){
+    try{ var wnd=window.open('https://claude.ai/new','_blank'); if(!wnd) toast('Lancement copié — ouvre Claude et colle'); }
+    catch(e){ toast('Lancement copié — ouvre Claude et colle'); }
+  }
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(function(){ toast('Copié ✓ — colle dans Claude, puis mode voix 🎙️'); openClaude(); },
+      function(){ fallbackCopy(t,'Lancement copié'); openClaude(); });
+  } else { fallbackCopy(t,'Lancement copié'); openClaude(); }
+}
 function addJournal(){
   var t=document.getElementById('jp').value;
   var lines=t.split('\n').map(function(s){return s.replace(/^\s*[-•*\d.)]+\s*/,'').trim();}).filter(Boolean);
@@ -840,7 +893,15 @@ function renderSave(hd,app,banner){
      '<button class="chip'+(D.voice?' on':'')+'" style="flex:1;text-align:center" onclick="setVoice(true)">🔊 Annonce vocale</button>'+
      '<button class="chip'+(!D.voice?' on':'')+'" style="flex:1;text-align:center" onclick="setVoice(false)">🔇 Silencieux</button></div>'+
      '<p class="mini" style="margin-top:8px">Quand elle est activée, l\'app annonce à voix haute qui doit jouer et qui gagne (Tic-Tac, tirage au sort). Pratique en voiture ou en balade.</p></div>';
+  var nb=D.matches.length+D.micro.length+D.tictac.length;
+  var lastB=D.lastBackup?fr(D.lastBackup):null;
   h+='<div class="card"><h2>Sauvegarde de secours</h2>'+
+     (nb>=3 && (!D.lastBackup || (Date.now()-new Date(D.lastBackup).getTime())>1000*60*60*24*30)
+       ? '<div class="warn" style="background:#fffbeb;border-color:#fde68a;color:#92400e;margin-bottom:10px"><b>💾 Pense à sauvegarder</b> — '+pl(nb,'partie')+' en mémoire'+(lastB?' · dernière sauvegarde le '+lastB:' · jamais sauvegardé')+'.</div>'
+       : (lastB?'<p class="mini" style="margin-bottom:8px;color:#059669">✓ Dernière sauvegarde le '+lastB+'</p>':''))+
+     '<button class="btn dark" style="margin-bottom:8px" onclick="backupFile()">💾 Télécharger le fichier de sauvegarde</button>'+
+     '<label class="sm" style="display:block;width:100%;text-align:center;margin-bottom:12px;cursor:pointer">📂 Restaurer depuis un fichier'+
+       '<input type="file" accept="application/json,.json" style="display:none" onchange="restoreFile(this)"></label>'+
      '<p class="mini" style="margin-bottom:10px">Envoie-toi cette sauvegarde par WhatsApp ou Notes de temps en temps. C\'est ton filet si tu changes de téléphone.</p>'+
      '<button class="btn dark" onclick="shareBackup()">📤 Envoyer la sauvegarde</button>'+
      '<button class="sm" style="width:100%;margin-top:8px" onclick="copy(JSON.stringify(D),\'Sauvegarde copiée\')">Copier</button>'+
@@ -992,6 +1053,34 @@ function addLib(){var v=document.getElementById('nl').value.trim();if(!v)return;
 function delLib(id){D.lib=D.lib.filter(function(p){return p.id!==id;});persist();render();}
 function shareBackup(){var t=JSON.stringify(D);
   if(navigator.share){navigator.share({text:t}).catch(function(){});}else copy(t,'Sauvegarde copiée');}
+/* Sauvegarde dans un vrai fichier (plus fiable qu'un copier-coller) */
+function backupFile(){
+  try{
+    var data=JSON.stringify(D);
+    var blob=new Blob([data],{type:'application/json'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url; a.download='en-jeux-sauvegarde-'+today()+'.json';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ try{document.body.removeChild(a);URL.revokeObjectURL(url);}catch(e){} },500);
+    D.lastBackup=today(); persist(); render();
+    toast('Sauvegarde téléchargée ✓');
+  }catch(e){ copy(JSON.stringify(D),'Fichier impossible — sauvegarde copiée'); }
+}
+function restoreFile(inp){
+  var f=inp.files&&inp.files[0]; if(!f) return;
+  var rd=new FileReader();
+  rd.onload=function(){
+    try{
+      var o=JSON.parse(rd.result);
+      if(!o||typeof o!=='object'||!('lib' in o)) throw new Error('format');
+      D=o; if(!D.lib)D.lib=[]; if(!D.matches)D.matches=[]; if(!D.journal)D.journal=[];
+      if(!D.micro)D.micro=[]; if(!D.tictac)D.tictac=[]; D.onboarded=1;
+      persist(); go('home'); toast('Sauvegarde restaurée ✓');
+    }catch(e){ toast('Fichier illisible — vérifie que c\'est bien une sauvegarde En Jeux'); }
+  };
+  rd.readAsText(f);
+}
 function restore(){
   try{var o=JSON.parse(document.getElementById('imp').value);
     if(!o||!o.matches){toast('Sauvegarde non reconnue');return;}
@@ -1353,7 +1442,7 @@ function chGame(){
     var conf='<div class="confetti" style="position:absolute;inset:0;pointer-events:none;overflow:hidden">'+
       ['🎉','🏆','⭐️','🎊','✨','🥇'].map(function(e,i){return '<span style="left:'+(8+i*15)+'%;animation-delay:'+(i*.35)+'s">'+e+'</span>';}).join('')+'</div>';
     return '<div class="card" style="text-align:center;padding:28px 16px;position:relative;overflow:hidden">'+conf+
-      '<div style="font-size:46px">🏆</div><div style="margin:4px 0">'+(w?av(w,'big'):'')+'</div><h2 style="font-size:22px;margin:4px 0 2px">'+esc(w||'—')+'</h2>'+
+      '<div style="font-size:52px" class="winbig">🏆</div><div style="margin:4px 0">'+(w?av(w,'big'):'')+'</div><h2 style="font-size:22px;margin:4px 0 2px">'+esc(w||'—')+'</h2>'+
       '<p class="mini">dernier joueur en course</p>'+
       '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">'+
         CH.players.slice().sort(function(a,b){return b.good-a.good;}).map(function(pl){
