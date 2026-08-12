@@ -499,15 +499,15 @@ function renderQuizz(hd,app,banner){
   var h=banner;
   if(S.qtab==='play'){
     h+='<div class="card" style="background:var(--gr-l);border-color:var(--gr-b);text-align:center">'+
-      '<div class="l" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#047857">Pour lancer</div>'+
-      '<div style="font-size:18px;font-weight:800;color:#064e3b;margin:4px 0">« On fait un quiz »</div>'+
-      '<p class="mini" style="color:#047857">Dis-le à ton assistant IA (Claude) en mode voix. Il demande qui joue, puis enchaîne.</p></div>';
-    h+='<div class="card"><h2>Éviter les questions déjà posées</h2>'+
-      (D.journal.length?
-        '<p class="mini" style="margin-bottom:10px">Envoie ce brief à Claude au début de la partie : il saura quoi éviter ('+
-          Math.min(D.journal.length,120)+' dernières questions).</p><button class="btn" onclick="briefShare()">📤 Envoyer le brief à Claude</button>'+
-        '<button class="sm" style="width:100%;margin-top:8px" onclick="briefCopy()">Copier le brief</button>':
-        '<p class="mini">Journal vide. Après ta première partie, demande la liste des questions posées et ajoute-la dans l\'onglet Journal.</p>')+'</div>';
+      '<div class="l" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#047857">Pour lancer une partie</div>'+
+      '<div style="display:flex;flex-direction:column;gap:7px;margin-top:8px;color:#065f46;font-size:14px">'+
+        '<div><b>1.</b> Touche le bouton ci-dessous 👇</div>'+
+        '<div><b>2.</b> Colle le message dans <b>Claude</b> — n\'importe quelle discussion, même nouvelle.</div>'+
+        '<div><b>3.</b> Passe en <b>mode voix</b> 🎙️ et jouez : il connaît toutes les règles.</div>'+
+      '</div>'+
+      '<button class="btn" style="margin-top:12px" onclick="briefCopy()">📋 Copier le lancement'+(D.journal.length?' (+ '+Math.min(D.journal.length,120)+' questions à éviter)':'')+'</button>'+
+      '<button class="sm" style="width:100%;margin-top:8px;background:#fff" onclick="briefShare()">📤 Ou l\'envoyer via une app</button>'+
+      '</div>';
     h+='<div class="card"><h2>Après la partie</h2><p class="mini">Demande à Claude : <b>« Donne-moi la liste des questions posées »</b>. Colle-la dans le Journal : c\'est ce qui évite les répétitions dans les années à venir.</p></div>';
     h+='<div class="card"><h2>Règles</h2><ul class="lst">'+
       ['Objectif 15 points · niveau de départ ~5/8','2 pts en réponse directe, 1 pt avec les propositions','Cash, Vol, Tour Défi, Question mystère, Duel','Rotation stricte, difficulté adaptée à chacun','Score tenu par l\'animateur, séparé du décompte de points']
@@ -534,12 +534,27 @@ function renderQuizz(hd,app,banner){
     '</div></nav>';
 }
 function briefText(){
+  var t='Tu es l\'animateur du jeu « Le Micro » (app En Jeux). Anime un quiz oral familial, à la voix.\n\n'+
+  'RÈGLES :\n'+
+  '- Demande d\'abord qui joue (prénoms et âges approximatifs), puis commence.\n'+
+  '- Objectif : premier à 15 points.\n'+
+  '- Une question à la fois. Réponse libre : 2 points si bonne réponse directe ; sinon donne 3 propositions, 1 point si trouvé.\n'+
+  '- Difficulté ~5/8 au départ, adaptée à chaque joueur (plus dur pour ceux qui enchaînent, plus accessible pour un joueur en difficulté ou plus jeune).\n'+
+  '- Rotation stricte des tours.\n'+
+  '- Pimente régulièrement avec : Cash (3 pts direct, sans propositions), Vol (une réponse ratée peut être volée pour 1 pt), Tour Défi, Question mystère, Estimation (le plus proche gagne), Duel de rapidité, Quitte ou double.\n'+
+  '- Annonce les scores à voix haute après chaque tour. À 15 points, proclame le vainqueur avec panache.\n'+
+  '- Thèmes variés : histoire, géo, sciences, sport, musique, ciné, nature, gastronomie…\n\n'+
+  'À LA FIN : donne-moi la liste des questions posées au format « thème — fait testé » (une par ligne), pour mon journal.\n';
   var recent=D.journal.slice(0,120);
-  return 'Voici les questions déjà posées lors de nos parties précédentes. Ne les repose pas, et n\'utilise pas non plus le même fait sous une autre formulation :\n\n'+
-    recent.map(function(e){return '- '+e.text;}).join('\n')+'\n\nOn fait un quiz';
+  if(recent.length){
+    t+='\nVoici les questions déjà posées lors de nos parties précédentes. Ne les repose pas, et n\'utilise pas non plus le même fait sous une autre formulation :\n\n'+
+      recent.map(function(e){return '- '+e.text;}).join('\n')+'\n';
+  }
+  t+='\nOn fait un quiz : demande qui joue, puis c\'est parti.';
+  return t;
 }
 function briefShare(){ if(navigator.share){navigator.share({text:briefText()}).catch(function(){});} else briefCopy(); }
-function briefCopy(){ copy(briefText(),'Brief copié — colle-le dans Claude'); }
+function briefCopy(){ copy(briefText(),'Lancement copié — colle-le dans Claude et passe en voix'); }
 function addJournal(){
   var t=document.getElementById('jp').value;
   var lines=t.split('\n').map(function(s){return s.replace(/^\s*[-•*\d.)]+\s*/,'').trim();}).filter(Boolean);
