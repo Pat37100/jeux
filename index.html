@@ -252,7 +252,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='24';
+var APP_VERSION='25';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -322,7 +322,7 @@ function leaders(sorted,key,rule){
 
 /* ============================== ÉTAT UI =========================== */
 var S={view:'home',matchId:null,tab:'rank',qtab:'play',period:'all',from:'',to:'',inputs:{},date:today(),sheet:false,confirm:null,detail:null,avPick:null,tipOff:0,microSheet:false,chTab:'play',whoSheet:false};
-function go(v){S.view=v;S.tab='rank';S.qtab='play';S.histAll=false;window.scrollTo(0,0);render();}
+function go(v){S.view=v;S.tab='rank';S.qtab='play';S.histAll=false;S.ceremony=false;window.scrollTo(0,0);render();}
 function cur(){return D.matches.filter(function(m){return m.id===S.matchId;})[0];}
 function setVoice(b){
   D.voice=b; persist();
@@ -482,6 +482,26 @@ function keeper(){
     return true;};
 }
 function tabRank(m){
+  var cerem='';
+  if(S.ceremony){
+    var rc=rank(m,function(){return true;});
+    var champC=rc.byCumul[0];
+    var confC='<div class="confetti" style="position:absolute;inset:0;pointer-events:none;overflow:hidden">'+
+      ['🎉','🏆','⭐️','🎊','✨','👑'].map(function(e,i){return '<span style="left:'+(6+i*16)+'%;animation-delay:'+(i*.3)+'s">'+e+'</span>';}).join('')+'</div>';
+    cerem='<div class="hero" style="text-align:center;position:relative;background:linear-gradient(135deg,#b45309,#f59e0b)">'+confC+
+      '<p style="margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.92">Champion de la partie</p>'+
+      '<div class="winbig" style="font-size:44px;margin:2px 0">🏆</div>'+
+      (champC?'<div style="margin:2px 0">'+av(champC.name,'big')+'</div><h2 style="font-size:26px;margin:2px 0">👑 '+esc(champC.name)+'</h2>'+
+        '<p style="margin:0;font-size:13px;opacity:.92">'+nf(champC.points)+' pts · '+pl(champC.wins,'manche gagnée')+' — sa couronne rejoint le Mur des champions</p>':'')+
+      '<div class="row" style="margin-top:12px;gap:8px;justify-content:center">'+
+        '<button class="sm" style="background:rgba(255,255,255,.92)" onclick="share()">📤 Partager</button>'+
+        '<button class="sm" style="background:rgba(255,255,255,.92)" onclick="exportMatchPDF()">📄 PDF</button>'+
+        '<button class="sm" style="background:rgba(255,255,255,.92)" onclick="S.ceremony=false;go(\'champions\')">🏅 Voir le Mur</button>'+
+      '</div></div>';
+  }
+  return cerem + tabRankBody(m);
+}
+function tabRankBody(m){
   if(!m.players.length) return '<div class="empty"><div class="e">👥</div><h3>Aucun joueur</h3><p>Ajoute des joueurs dans les réglages.</p></div>';
   var r=rank(m,keeper()),lp=leaders(r.byCumul,'points',m.winRule),lw=leaders(r.byWins,'wins',m.winRule);
   var per=[['all','Tout'],['month','Ce mois'],['year','Cette année'],['custom','Dates']];
@@ -588,7 +608,7 @@ function tabSet(m){
      '<button class="chip'+(m.winRule==='low'?' on':'')+'" style="flex:1;text-align:center" onclick="setRule(\'low\')">Le moins de points</button></div></div>';
   h+='<div class="card"><h2>État</h2>'+(m.status==='done'?
      '<button class="sm g" onclick="setStatus(\'active\')">▶ Reprendre la partie</button>':
-     '<button class="sm" onclick="setStatus(\'done\')">🏁 Marquer terminée</button>')+'</div>';
+     '<button class="btn" style="background:linear-gradient(135deg,#d97706,#f59e0b)" onclick="finishMatch()">🏁 Terminer & couronner le champion</button>')+'</div>';
   h+='<div class="card">'+(S.confirm==='delm'?
      '<p style="font-size:14px;margin:0 0 8px">Supprimer définitivement cette partie et son historique ?</p><div class="row"><button class="btn red" onclick="delMatch()">Oui, supprimer</button><button class="btn grey" onclick="S.confirm=null;render()">Annuler</button></div>':
      '<button class="sm r" onclick="S.confirm=\'delm\';render()">🗑 Supprimer la partie</button>')+'</div>';
@@ -601,6 +621,16 @@ function addNew(){var m=cur(),v=document.getElementById('np').value.trim();if(!v
   v.split(',').forEach(function(s){s=s.trim();if(s)m.players.push({id:uid(),name:s});});persist();render();}
 function setRule(r){cur().winRule=r;persist();render();}
 function setStatus(s){cur().status=s;persist();render();}
+function finishMatch(){
+  var m=cur(); if(!m) return;
+  m.status='done'; persist();
+  S.ceremony=true; S.tab='rank';
+  fanfare(); if(navigator.vibrate){ try{navigator.vibrate([80,60,80,60,200]);}catch(e){} }
+  var r=rank(m,function(){return true;});
+  var champ=r.byCumul[0];
+  if(champ) speak(champ.name+' remporte '+m.name);
+  render();
+}
 function delMatch(){D.matches=D.matches.filter(function(m){return m.id!==S.matchId;});S.confirm=null;persist();go('points');}
 
 /* ------------------------------ PARTAGE --------------------------- */
@@ -816,7 +846,8 @@ function microPalmares(){
   });
   h+='</div>';
   h+='<button class="btn" onclick="microOpen()">+ Enregistrer un résultat</button>';
-  h+='<button class="btn dark" style="margin-top:8px" onclick="microShare()">📤 Partager le palmarès</button>';
+  h+='<button class="btn dark" style="margin-top:8px" onclick="microShare()">📤 Partager le palmarès</button>'+
+     '<button class="sm" style="width:100%;margin-top:8px" onclick="exportMicroPDF()">📄 Exporter en PDF</button>';
   h+='<div class="card" style="margin-top:12px"><h2>Historique des parties</h2>'+
     D.micro.map(function(g){
       var cf=S.confirm==='mq'+g.id;
@@ -1254,6 +1285,22 @@ function exportChampionsPDF(){
   t+='</tbody></table></div>';
   pdfRender(head+t);
 }
+function exportChronoPDF(){
+  var agg=chAggChrono(); if(!agg.length){toast('Rien à exporter');return;}
+  var head='<div class="pdf-h" style="background:linear-gradient(135deg,#d97706,#fbbf24)"><h1>⏱️ Roi du chrono</h1><p>Tic-Tac · '+pl(D.tictac.length,'duel enregistré')+'</p></div>';
+  var t='<div class="pdf-sec"><h2>Classement</h2><table><thead><tr><th>#</th><th>Joueur / équipe</th><th>Victoires</th><th>Duels</th><th>✓ Total</th><th>Record</th></tr></thead><tbody>';
+  agg.forEach(function(p,i){ t+='<tr class="'+(i===0?'pdf-top':'')+'"><td class="pdf-medal">'+pdfMedal(i)+'</td><td>'+esc(p.name)+'</td><td>'+p.wins+'</td><td>'+p.duels+'</td><td>'+p.good+'</td><td>'+p.best+'</td></tr>'; });
+  t+='</tbody></table></div>';
+  pdfRender(head+t);
+}
+function exportMicroPDF(){
+  var agg=microAgg(); if(!agg.length){toast('Rien à exporter');return;}
+  var head='<div class="pdf-h" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)"><h1>🎙️ Maître du Micro</h1><p>Quiz vocal · '+pl(D.micro.length,'partie enregistrée')+'</p></div>';
+  var t='<div class="pdf-sec"><h2>Classement</h2><table><thead><tr><th>#</th><th>Joueur / équipe</th><th>Victoires</th><th>Parties</th></tr></thead><tbody>';
+  agg.forEach(function(p,i){ t+='<tr class="'+(i===0?'pdf-top':'')+'"><td class="pdf-medal">'+pdfMedal(i)+'</td><td>'+esc(p.name)+'</td><td>'+p.wins+'</td><td>'+p.games+'</td></tr>'; });
+  t+='</tbody></table></div>';
+  pdfRender(head+t);
+}
 function microShare(){
   var agg=microAgg(), med=['🥇','🥈','🥉'];
   var t='🎙️ Maître du Micro — En Jeux\n\n';
@@ -1295,6 +1342,12 @@ function tone(freq,dur,vol){
   }catch(e){}
 }
 function chBeep(){ tone(880,.5,.4); if(navigator.vibrate) navigator.vibrate(300); }
+function fanfare(){
+  // petit arpège ascendant façon générique de victoire (respecte le silence : rien si pas d'interaction audio possible)
+  try{ [ [523,.14,.28,0], [659,.14,.3,140], [784,.16,.32,280], [1047,.5,.4,430] ].forEach(function(n){
+    setTimeout(function(){ tone(n[0],n[1],n[2]); }, n[3]);
+  }); }catch(e){}
+}
 /* Réglages persistés du chrono */
 function chSettings(){
   if(!D.chrono) D.chrono={secs:60, players:['Joueur 1','Joueur 2','Joueur 3'], sound:true};
@@ -1355,7 +1408,8 @@ function chPalmares(){
       '<div class="pts"><b>'+p.wins+'</b><small>victoire'+(p.wins>1?'s':'')+'</small></div></div>';
   });
   h+='</div>';
-  h+='<button class="btn dark" onclick="chShareP()">📤 Partager le palmarès</button>';
+  h+='<button class="btn dark" onclick="chShareP()">📤 Partager le palmarès</button>'+
+     '<button class="sm" style="width:100%;margin-top:8px" onclick="exportChronoPDF()">📄 Exporter en PDF</button>';
   h+='<div class="card" style="margin-top:12px"><h2>Historique des duels</h2>'+
     D.tictac.map(function(d){
       var cf=S.confirm==='ct'+d.id;
