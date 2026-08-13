@@ -287,7 +287,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='31';
+var APP_VERSION='32';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -703,7 +703,7 @@ function saveRound(){
   for(k in S.inputs){var n=parseFloat(String(S.inputs[k]).replace(',','.'));if(!isNaN(n)){sc[k]=n;any=true;}}
   if(!any){toast('Saisis au moins un score');return;}
   m.rounds.unshift({id:uid(),date:S.date||today(),scores:sc});
-  persist();S.inputs={};S.date=today();S.tab='rank';toast('Manche enregistrée ✓');window.scrollTo(0,0);render();
+  persist();S.inputs={};S.date=today();S.tab='rank';tone(880,.1,.22);setTimeout(function(){tone(1318,.16,.2);},70);toast('Manche enregistrée ✓');window.scrollTo(0,0);render();
 }
 var GCOLORS=['#059669','#7c3aed','#d97706','#e11d48','#2563eb','#0d9488','#c026d3','#65a30d'];
 function histGraph(m){
@@ -962,6 +962,7 @@ function briefText(){
   return t;
 }
 /* Équipe sélectionnée pour Le Micro (par défaut : toute la bibliothèque) */
+function buzzTest(){ tone(659,.12,.3); setTimeout(function(){tone(880,.2,.32);},90); }
 function setMicroStyle(id){ D.microStyle=id; persist(); render(); }
 function microTeam(){
   if(!D.microTeam) return D.lib.map(function(p){return p.name;});
@@ -1185,6 +1186,10 @@ function renderSave(hd,app,banner){
      '<div class="row">'+
      '<button class="chip'+(D.voice?' on':'')+'" style="flex:1;text-align:center" onclick="setVoice(true)">🔊 Annonce vocale</button>'+
      '<button class="chip'+(!D.voice?' on':'')+'" style="flex:1;text-align:center" onclick="setVoice(false)">🔇 Silencieux</button></div>'+
+     '<label class="lb" style="margin-top:12px">Effets sonores <span style="font-weight:400;color:#a8a29e">(buzzer, fanfares, tirage, éliminations)</span></label>'+
+     '<div class="row">'+
+     '<button class="chip'+(D.fx!==0?' on':'')+'" style="flex:1;text-align:center" onclick="D.fx=1;persist();buzzTest();render()">🎉 Activés</button>'+
+     '<button class="chip'+(D.fx===0?' on':'')+'" style="flex:1;text-align:center" onclick="D.fx=0;persist();render()">🔕 Coupés</button></div>'+
      '<p class="mini" style="margin-top:8px">Quand elle est activée, l\'app annonce à voix haute qui doit jouer et qui gagne (Tic-Tac, tirage au sort). Pratique en voiture ou en balade.</p></div>';
   var nb=D.matches.length+D.micro.length+D.tictac.length;
   var lastB=D.lastBackup?fr(D.lastBackup):null;
@@ -1255,17 +1260,31 @@ function openBuzzer(){
   el.innerHTML='<div class="in" onclick="event.stopPropagation()" style="text-align:center"><div class="grab"></div>'+
     '<h2 style="margin:2px 0 2px">🔴 Le Buzzer</h2>'+
     '<p class="mini" style="margin:0 0 14px">Pose le téléphone au centre — premier à taper a la main !</p>'+
-    '<button onclick="buzz(this)" style="width:200px;height:200px;border-radius:50%;border:0;cursor:pointer;margin:0 auto 6px;display:block;'+
+    '<button onclick="buzz(this)" style="width:min(76vw,340px);height:min(76vw,340px);border-radius:50%;border:0;cursor:pointer;margin:6px auto 6px;display:block;transition:transform .12s;'+
       'background:radial-gradient(circle at 35% 30%,#f87171,#dc2626 55%,#991b1b);box-shadow:0 14px 30px rgba(220,38,38,.45), inset 0 -8px 18px rgba(0,0,0,.28);'+
-      'color:#fff;font-size:30px;font-weight:800;font-family:inherit;letter-spacing:.03em">BUZZ</button>'+
+      'color:#fff;font-size:44px;font-weight:800;font-family:inherit;letter-spacing:.04em">BUZZ</button>'+
     '<p class="mini" style="margin-top:10px">Un grand bruit + une vibration. Rien n\'est enregistré : juste le réflexe.</p>'+
     '<button class="btn grey" style="margin-top:12px" onclick="document.getElementById(\'bzsh\').remove()">Fermer</button></div>';
   document.body.appendChild(el);
 }
 function buzz(btn){
-  tone(160,.55,.5); setTimeout(function(){tone(120,.4,.4);},80);
-  if(navigator.vibrate){ try{navigator.vibrate([180,40,120]);}catch(e){} }
-  if(btn){ btn.style.transform='scale(.93)'; setTimeout(function(){ btn.style.transform=''; },140); }
+  // le « EHHH » de plateau TV : deux scies dissonantes + basse + impact de bruit, bien fort
+  tone(160,.55,.5);                       // couche historique (compat)
+  tone(92,.8,.85,'sawtooth');
+  tone(123,.8,.7,'sawtooth');
+  tone(61,.8,.6,'square');
+  noiseBurst(.12,.5);
+  setTimeout(function(){tone(120,.4,.4);},80);
+  if(navigator.vibrate){ try{navigator.vibrate([220,50,160]);}catch(e){} }
+  if(btn){ btn.style.transform='scale(.9)'; setTimeout(function(){ btn.style.transform=''; },150); }
+  // flash rouge plein écran
+  try{
+    var f=document.createElement('div');
+    f.style.cssText='position:fixed;inset:0;background:#dc2626;opacity:.55;z-index:70;pointer-events:none;transition:opacity .35s';
+    document.body.appendChild(f);
+    (window.requestAnimationFrame||function(cb){setTimeout(cb,16);})(function(){ f.style.opacity='0'; });
+    setTimeout(function(){ try{f.remove();}catch(e){} },400);
+  }catch(e){}
 }
 function whoStart(){
   if(!WHO.roster){ WHO.roster={}; D.lib.forEach(function(p){WHO.roster[p.id]=true;}); }
@@ -1280,9 +1299,12 @@ function whoSpin(){
   var n=0, ticks=14+Math.floor(Math.random()*8);
   function step(){
     WHO.picked=pool[Math.floor(Math.random()*pool.length)];
+    noiseBurst(.05,.22); // roulement de tambour
     drawWhoSheet(); n++;
     if(n<ticks){ setTimeout(step, 60+n*14); }
-    else { WHO.spinning=false; WHO.picked=pool[Math.floor(Math.random()*pool.length)]; drawWhoSheet(); speak((WHO.picked?WHO.picked.name:'')+' commence'); try{if(navigator.vibrate)navigator.vibrate(30);}catch(e){} }
+    else { WHO.spinning=false; WHO.picked=pool[Math.floor(Math.random()*pool.length)]; drawWhoSheet();
+      tone(523,.14,.3); setTimeout(function(){tone(784,.4,.35); tone(659,.4,.25);},130); // ta-da !
+      speak((WHO.picked?WHO.picked.name:'')+' commence'); try{if(navigator.vibrate)navigator.vibrate(30);}catch(e){} }
   }
   step();
 }
@@ -1599,25 +1621,60 @@ function palShare(){
    manche de chrono est éphémère (mais les réglages, eux, sont mémorisés). */
 var CH = null;              // état de la manche en cours (null = écran de config)
 var chTick = null;          // intervalle
-var __audio=null;
-function tone(freq,dur,vol){
+var __audio=null,__comp=null;
+function audioCtx(){
+  var C=window.AudioContext||window.webkitAudioContext; if(!C) return null;
+  if(!__audio){ __audio=new C();
+    try{ __comp=__audio.createDynamicsCompressor();
+      __comp.threshold.value=-20; __comp.knee.value=12; __comp.ratio.value=14;
+      __comp.attack.value=.002; __comp.release.value=.18;
+      __comp.connect(__audio.destination);
+    }catch(e){ __comp=null; }
+  }
+  var a=__audio; if(a.state==='suspended'){ try{a.resume();}catch(e){} }
+  return a;
+}
+function outNode(a){ return __comp||a.destination; }
+function tone(freq,dur,vol,wave){
+  if(D.fx===0) return;
   try{
-    var C=window.AudioContext||window.webkitAudioContext; if(!C) return;
-    if(!__audio) __audio=new C();
-    var a=__audio; if(a.state==='suspended'){ try{a.resume();}catch(e){} }
+    var a=audioCtx(); if(!a) return;
     var o=a.createOscillator(), g=a.createGain();
-    o.connect(g); g.connect(a.destination); o.type='sine'; o.frequency.value=freq;
+    o.connect(g); g.connect(outNode(a)); o.type=wave||'sine'; o.frequency.value=freq;
     g.gain.setValueAtTime(.001,a.currentTime); g.gain.exponentialRampToValueAtTime(vol||.35,a.currentTime+.015);
     g.gain.exponentialRampToValueAtTime(.001,a.currentTime+(dur||.4));
     o.start(); o.stop(a.currentTime+(dur||.4));
   }catch(e){}
 }
-function chBeep(){ tone(880,.5,.4); if(navigator.vibrate) navigator.vibrate(300); }
+/* Bruit blanc court (roulement de tambour, impact) */
+function noiseBurst(dur,vol){
+  if(D.fx===0) return;
+  try{
+    var a=audioCtx(); if(!a) return;
+    var len=Math.max(1,Math.floor(a.sampleRate*(dur||.08)));
+    var buf=a.createBuffer(1,len,a.sampleRate), d=buf.getChannelData(0);
+    for(var i=0;i<len;i++) d[i]=(Math.random()*2-1)*(1-i/len);
+    var s=a.createBufferSource(); s.buffer=buf;
+    var g=a.createGain(); g.gain.value=vol||.25;
+    s.connect(g); g.connect(outNode(a)); s.start();
+  }catch(e){}
+}
+function chBeep(){
+  tone(880,.5,.4);
+  tone(330,.3,.45,'sawtooth');
+  setTimeout(function(){tone(220,.32,.4,'sawtooth');},170);
+  setTimeout(function(){tone(147,.5,.42,'sawtooth');noiseBurst(.1,.3);},360);
+  if(navigator.vibrate) navigator.vibrate(300);
+}
 function fanfare(){
-  // petit arpège ascendant façon générique de victoire (respecte le silence : rien si pas d'interaction audio possible)
-  try{ [ [523,.14,.28,0], [659,.14,.3,140], [784,.16,.32,280], [1047,.5,.4,430] ].forEach(function(n){
-    setTimeout(function(){ tone(n[0],n[1],n[2]); }, n[3]);
-  }); }catch(e){}
+  // arpège de victoire + accords en nappe + étincelle de bruit : ça sonne GRAND
+  try{
+    [ [523,.14,.28,0], [659,.14,.3,140], [784,.16,.32,280], [1047,.5,.4,430] ].forEach(function(n){
+      setTimeout(function(){ tone(n[0],n[1],n[2]); }, n[3]);
+    });
+    setTimeout(function(){ tone(262,.7,.22,'triangle'); tone(330,.7,.18,'triangle'); tone(392,.7,.18,'triangle'); },430);
+    setTimeout(function(){ noiseBurst(.25,.18); tone(2093,.3,.12); },480);
+  }catch(e){}
 }
 /* Réglages persistés du chrono */
 function chSettings(){
@@ -1770,7 +1827,10 @@ function chCountdown(done){
   var steps=[['3',760],['2',760],['1',760],['GO !',1180]], i=0;
   function next(){
     if(i>0){ var el=document.getElementById('cnum'); if(el){ el.textContent=steps[i][0]; el.style.fontSize=steps[i][0]==='GO !'?'72px':'110px'; } }
-    if(CH&&CH.sound) tone(steps[i][1], i===3?.5:.18, i===3?.4:.25);
+    if(CH&&CH.sound){
+      tone(steps[i][1], i===3?.5:.18, i===3?.45:.25);
+      if(i===3){ tone(880,.5,.3); tone(1318,.45,.22); noiseBurst(.15,.3); }
+    }
     i++;
     if(i<steps.length){ setTimeout(next,600); }
     else setTimeout(function(){ try{ov.remove();}catch(e){} if(done)done(); },550);
