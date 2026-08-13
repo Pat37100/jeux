@@ -14,7 +14,7 @@ w.CH=null; w.go('chrono'); w.chStart();
 ok('colonnes côte à côte (.duel)', app().includes('class="duel'));
 ok('grille adaptée au nombre (n3 pour 3 joueurs)', app().includes('duel n3'));
 ok('une colonne par joueur', (app().match(/class="lane/g)||[]).length===w.CH.players.length);
-ok('barre de remplissage par colonne', app().includes('fillbar'));
+ok('anneau de temps par colonne (remplace la barre plate)', (app().match(/class="ring"/g)||[]).length===w.CH.players.length && app().includes('stroke-dashoffset'));
 ok('joueur actif mis en avant (.live)', app().includes('lane live'));
 ok('nom du joueur en gros au-dessus', app().includes('turnbar'));
 ok('temps affiché dans chaque colonne', (app().match(/class="tt"/g)||[]).length===w.CH.players.length);
