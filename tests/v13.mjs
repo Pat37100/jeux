@@ -63,7 +63,7 @@ ok('tags de catégorie sur les tuiles', home.includes('Scores &amp; palmarès')|
 ok('tag Quiz vocal · IA', home.includes('Quiz vocal'));
 ok('watermark décoratif présent', home.includes('class="wm"'));
 ok('compteur duels visible si historique', home.includes('au palmarès'));
-ok('pépite Le Micro conservée', home.includes('La pépite'));
+ok('accueil sans carte pépite redondante', !w.document.getElementById('app').innerHTML.includes('La pépite'));
 
 L('[D] Non-régression clés');
 ok('prompt Micro intégral intact', w.briefText().includes('RÈGLES NON NÉGOCIABLES'));
