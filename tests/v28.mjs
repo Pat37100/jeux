@@ -23,7 +23,7 @@ ok('joueur 0 démarre à sa durée custom (90s)', w.CH.players[0].left===90 && w
 ok('joueur 1 démarre au défaut (60s)', w.CH.players[1].left===60);
 // barre de remplissage juste (chacun sur sa base)
 w.CH.players[0].left=45; w.render();
-ok('barre calculée sur la base du joueur', app().includes('fillbar'));
+ok('anneau calculé sur la base du joueur (handicap respecté)', (function(){var C=2*Math.PI*42;var cs=[...doc.querySelectorAll('.ring svg circle')].filter(c=>c.getAttribute('stroke-dashoffset'));return cs.length===w.CH.players.length;})());
 
 L('[A] Enregistrement allégé et découplé');
 w.go('quizz'); w.S.qtab='play'; w.render();
