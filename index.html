@@ -107,6 +107,15 @@
   .gtab .win::after{content:" 👑";font-size:10px}
   .gtab .tot{background:#f0fdf4;font-weight:800;color:#065f46;position:sticky;right:0;box-shadow:-1px 0 0 #e7e5e4}
   .gtab tbody tr:first-child .stick{color:#b45309}
+  /* Glisser vers la gauche pour supprimer (geste iOS) */
+  .swipe{position:relative;overflow:hidden;border-radius:16px;margin-bottom:10px}
+  .swipe .del{position:absolute;top:0;right:0;bottom:0;width:96px;background:linear-gradient(135deg,#e11d48,#f43f5e);color:#fff;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;font-weight:700;border:0;cursor:pointer;font-family:inherit}
+  .swipe .del .ic{font-size:20px}
+  .swipe .front{position:relative;z-index:1;transition:transform .18s ease;will-change:transform;background:transparent;touch-action:pan-y}
+  .swipe .front>*{margin-bottom:0 !important}
+  .swipe.open .front{transform:translateX(-96px)}
+  .swipe .front .tool{margin-bottom:0}
   .tool{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:16px;margin-bottom:12px;
     border-radius:18px;border:1px solid var(--line);background:#fff;cursor:pointer;font-family:inherit;position:relative;overflow:hidden}
   .tool .em{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;background:#f5f5f4;flex-shrink:0;color:#fff}
@@ -264,7 +273,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='26';
+var APP_VERSION='27';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -364,7 +373,9 @@ function render(){
       else appEl.classList.remove('anim');
     }
   }catch(e){}
-  return render_(); }
+  var r=render_();
+  try{ afterRender(); }catch(e){}
+  return r; }
 function render_(){
   var hd=document.getElementById('hd'),app=document.getElementById('app'),nav=document.getElementById('nav');
   nav.innerHTML='';
@@ -378,7 +389,7 @@ function render_(){
     hd.innerHTML='<span style="width:38px"></span><h1>En Jeux<span class="sub">Votre maître du jeu de poche</span></h1>'+
       '<button class="icobtn" onclick="go(\'save\')">⚙︎</button>';
     app.innerHTML=banner+
-      '<div class="hero"><span class="dice">🎲</span><h2>En Jeux</h2><p><b>Votre maître du jeu de poche.</b> Il anime, il compte, il arbitre — et il retient qui gagne. Posez le téléphone au milieu de la table, et que le meilleur gagne. <b>Alors, qui décroche la couronne ? 👑</b></p>'+
+      '<div class="hero"><span class="dice">🎲</span><h2>En Jeux</h2><p><b>Votre maître du jeu de poche.</b> Il anime, il compte, il arbitre — et il retient qui gagne. Un animateur, un chrono et un compteur — tout pour jouer ensemble, où que vous soyez. <b>Alors, qui va décrocher la couronne ? 👑</b></p>'+
         '<div class="pills"><span>🍿 Soirées</span><span>🍽️ À table</span><span>🌳 En balade</span><span>🚗 En voiture</span><span>🏖️ En vacances</span></div></div>'+tip+
       '<div class="trust"><span><b>🚫</b>Sans pub</span><span><b>📶</b>Hors-ligne</span><span><b>🆓</b>Gratuit</span></div>'+
       (function(){
@@ -395,7 +406,7 @@ function render_(){
         D.tictac.length?pl(D.tictac.length,'duel')+' au palmarès':'','Chrono & duel')+
       tool('quizz','🎙️','Le Micro','Ton animateur de quiz personnel. Des questions à l\'oral, sur mesure, et jamais deux fois la même — même dans dix ans.','t-micro',
         D.journal.length?pl(D.journal.length,'question')+' au journal':'','Quiz vocal · IA')+
-      '<div class="card" style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-color:#ddd6fe;margin-top:16px"><p style="margin:0;font-size:13px;color:#5b21b6;line-height:1.5"><b>✨ La pépite : Le Micro.</b> Aucun autre jeu ne fait ça — un animateur qui s\'adapte à chaque joueur et retient tout, pour ne jamais reposer la même question. Vos soirées et vos trajets ne se ressembleront plus.</p></div>'+
+      '<div class="card" style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-color:#ddd6fe;margin-top:16px"><p style="margin:0;font-size:13px;color:#5b21b6;line-height:1.5"><b>✨ La pépite : Le Micro.</b> Un animateur qui s\'adapte à chaque joueur et se souvient des questions déjà posées — pour ne jamais reposer deux fois la même, même dans des années. Vos soirées et vos trajets changent de dimension.</p></div>'+
       '<div class="row" style="margin-top:14px;gap:10px">'+
         '<button class="miniact" onclick="whoStart()"><span class="e">🎯</span><span><b>Qui commence ?</b><small>Tirage au sort</small></span></button>'+
         '<button class="miniact" onclick="go(\'champions\')"><span class="e">🏅</span><span><b>Mur des champions</b><small>Tous les jeux</small></span></button>'+
@@ -411,7 +422,43 @@ function render_(){
   if(S.view==='match') return renderMatch(hd,app,nav,banner);
   if(S.view==='champions') return renderChampions(hd,app,banner);
 }
-function afterRender(){ if(S.whoSheet) drawWhoSheet(); }
+function afterRender(){ if(S.whoSheet) drawWhoSheet(); if(S.confirm && S.confirm.indexOf('delmatch:')===0) drawDelMatch(); bindSwipe(); }
+function drawDelMatch(){
+  if(document.getElementById('dmsh')) return;
+  var id=S.confirm.split(':')[1];
+  var m=D.matches.filter(function(x){return x.id===id;})[0]; if(!m){S.confirm=null;return;}
+  var el=document.createElement('div'); el.className='sheet'; el.id='dmsh'; el.onclick=function(){S.confirm=null;var e=document.getElementById('dmsh');if(e)e.remove();};
+  el.innerHTML='<div class="in" onclick="event.stopPropagation()"><div class="grab"></div>'+
+    '<div style="text-align:center;font-size:38px">🗑</div>'+
+    '<h2 style="text-align:center;margin:4px 0 4px;font-size:19px">Supprimer « '+esc(m.name)+' » ?</h2>'+
+    '<p class="mini" style="text-align:center;margin:0 0 14px">'+pl(m.rounds.length,'manche')+' seront définitivement perdues. Cette action est irréversible.</p>'+
+    '<button class="btn red" onclick="delMatch()">Supprimer définitivement</button>'+
+    '<button class="btn grey" style="margin-top:8px" onclick="S.confirm=null;var e=document.getElementById(\'dmsh\');if(e)e.remove();render()">Annuler</button></div>';
+  document.body.appendChild(el);
+}
+/* Rend "glissable vers la gauche" tout élément .swipe présent à l'écran */
+function bindSwipe(){
+  var nodes=document.querySelectorAll('.swipe:not([data-bound])');
+  nodes.forEach(function(el){
+    el.setAttribute('data-bound','1');
+    var front=el.querySelector('.front'); if(!front) return;
+    var x0=null,y0=null,open=false,lock=null;
+    front.addEventListener('touchstart',function(e){ var t=e.touches[0]; x0=t.clientX; y0=t.clientY; lock=null; },{passive:true});
+    front.addEventListener('touchmove',function(e){
+      if(x0===null) return; var t=e.touches[0]; var dx=t.clientX-x0, dy=t.clientY-y0;
+      if(lock===null){ lock = Math.abs(dx)>Math.abs(dy)+4 ? 'x' : (Math.abs(dy)>Math.abs(dx)+4 ? 'y' : null); }
+      if(lock!=='x') return;
+      var base=open?-96:0; var tx=Math.max(-96,Math.min(0,base+dx));
+      front.style.transform='translateX('+tx+'px)';
+    },{passive:true});
+    front.addEventListener('touchend',function(e){
+      if(x0===null) return; var tx=0;
+      var m=/translateX\((-?\d+(?:\.\d+)?)px\)/.exec(front.style.transform); if(m) tx=parseFloat(m[1]);
+      open = tx < -48; el.classList.toggle('open',open);
+      front.style.transform=''; x0=y0=null;
+    });
+  });
+}
 function back(){return '<button class="icobtn" onclick="go(\''+(S.view==='match'?'points':'home')+'\')">‹</button>';}
 function tool(k,em,t,d,cls,note,tag){
   return '<button class="tool '+cls+'" onclick="go(\''+k+'\')"><span class="wm">'+em+'</span><span class="em" style="position:relative;z-index:1">'+em+'</span>'+
@@ -442,11 +489,16 @@ function renderPoints(hd,app,banner){
 function mcard(m){
   var r=rank(m),ld=leaders(r.byCumul,'points',m.winRule);
   var nm=ld.length?r.byCumul.filter(function(p){return ld.indexOf(p.id)>=0;}).map(function(p){return p.name;}).join(' & '):'—';
-  return '<button class="tool on" onclick="openMatch(\''+m.id+'\')"><span class="em" style="background:#d1fae5;font-size:20px">🧮</span>'+
+  return '<div class="swipe"><button class="del" onclick="askDelMatch(\''+m.id+'\')"><span class="ic">🗑</span>Supprimer</button>'+
+    '<div class="front"><button class="tool on" style="width:100%" onclick="openMatch(\''+m.id+'\')"><span class="em" style="background:#d1fae5;font-size:20px">🧮</span>'+
     '<span style="flex:1;min-width:0"><b>'+esc(m.name)+'</b><small>'+pl(m.players.length,'joueur')+' · '+pl(r.count,'manche')+
     (m.winRule==='low'?' · moins gagne':'')+'</small></span>'+
     '<span style="text-align:right;flex-shrink:0"><b style="font-size:13px">'+(r.count?'🏆 '+esc(nm):'—')+'</b>'+
-    '<small style="display:block;font-size:10px;color:#a8a29e;text-transform:uppercase">'+(r.count?'en tête':'à démarrer')+'</small></span></button>';
+    '<small style="display:block;font-size:10px;color:#a8a29e;text-transform:uppercase">'+(r.count?'en tête':'à démarrer')+'</small></span></button></div></div>';
+}
+function askDelMatch(id){
+  var m=D.matches.filter(function(x){return x.id===id;})[0]; if(!m) return;
+  S.confirm='delmatch:'+id; S.matchId=id; render();
 }
 function openMatch(id){S.matchId=id;S.view='match';S.tab='rank';S.inputs={};S.date=today();window.scrollTo(0,0);render();}
 function openSheet(){S.sheet=true;render();}
@@ -493,7 +545,7 @@ function renderMatch(hd,app,nav,banner){
   if(S.tab==='set')  h+=tabSet(m);
   app.innerHTML=h;
   nav.innerHTML='<nav><div class="in">'+
-    nb('rank','🏅','Classement')+nb('play','➕','Manche')+nb('hist','📋','Manches')+nb('set','⚙︎','Réglages')+'</div></nav>';
+    nb('rank','🏅','Classement')+nb('play','➕','Saisir')+nb('hist','▦','Tableau')+nb('set','⚙︎','Réglages')+'</div></nav>';
 }
 function nb(k,i,l){return '<button class="'+(S.tab===k?'on':'')+'" onclick="S.tab=\''+k+'\';window.scrollTo(0,0);render()"><span class="i">'+i+'</span>'+l+'</button>';}
 function keeper(){
@@ -614,9 +666,9 @@ function tabHist(m){
   var shown=truncated? all.slice(-LIMIT) : all;
   // bascule Liste / Grille (grille = tableau récapitulatif comme le PDF)
   var out='<div class="row" style="gap:8px;margin-bottom:10px">'+
-    '<button class="chip'+(S.histGrid?'':' on')+'" style="flex:1;text-align:center" onclick="S.histGrid=false;render()">☰ Liste</button>'+
-    '<button class="chip'+(S.histGrid?' on':'')+'" style="flex:1;text-align:center" onclick="S.histGrid=true;render()">▦ Grille</button></div>';
-  if(S.histGrid) return out+histGrid(m);
+    '<button class="chip'+(S.histGrid===false?' on':'')+'" style="flex:1;text-align:center" onclick="S.histGrid=false;render()">☰ Liste</button>'+
+    '<button class="chip'+(S.histGrid!==false?' on':'')+'" style="flex:1;text-align:center" onclick="S.histGrid=true;render()">▦ Grille</button></div>';
+  if(S.histGrid!==false) return out+histGrid(m);
   out+=(truncated?'<button class="sm" style="width:100%;margin-bottom:10px" onclick="S.histAll=true;render()">Afficher les '+all.length+' manches (les '+LIMIT+' dernières sont ci-dessous)</button>':'')+
     (all.length>LIMIT?'<p class="mini" style="margin:0 0 8px;text-align:center">💡 Pour une vue complète et lisible : <b>Classement → 📄 Exporter en PDF</b>.</p>':'');
   return out + shown.map(function(r){
@@ -675,7 +727,7 @@ function finishMatch(){
   if(champ) speak(champ.name+' remporte '+m.name);
   render();
 }
-function delMatch(){D.matches=D.matches.filter(function(m){return m.id!==S.matchId;});S.confirm=null;persist();go('points');}
+function delMatch(){D.matches=D.matches.filter(function(m){return m.id!==S.matchId;});S.confirm=null;var e=document.getElementById('dmsh');if(e)e.remove();persist();go('points');}
 
 /* ------------------------------ PARTAGE --------------------------- */
 function share(){
