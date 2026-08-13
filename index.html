@@ -117,12 +117,15 @@
   .gtab tbody tr:first-child .stick{color:#b45309}
   /* Glisser vers la gauche pour supprimer (geste iOS) */
   .swipe{position:relative;overflow:hidden;border-radius:16px;margin-bottom:10px}
-  .swipe .del{position:absolute;top:0;right:0;bottom:0;width:96px;background:linear-gradient(135deg,#e11d48,#f43f5e);color:#fff;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;font-weight:700;border:0;cursor:pointer;font-family:inherit}
-  .swipe .del .ic{font-size:20px}
+  .swipe .acts{position:absolute;top:0;right:0;bottom:0;display:flex}
+  .swipe .acts button{width:84px;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    font-size:11.5px;font-weight:700;border:0;cursor:pointer;font-family:inherit}
+  .swipe .acts .ic{font-size:20px}
+  .swipe .del{background:linear-gradient(135deg,#e11d48,#f43f5e)}
+  .swipe .arch{background:linear-gradient(135deg,#d97706,#f59e0b)}
   .swipe .front{position:relative;z-index:1;transition:transform .18s ease;will-change:transform;background:transparent;touch-action:pan-y}
   .swipe .front>*{margin-bottom:0 !important}
-  .swipe.open .front{transform:translateX(-96px)}
+  .swipe.open .front{transform:translateX(calc(-1*var(--reveal,96px)))}
   .swipe .front .tool{margin-bottom:0}
   .tool{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:16px;margin-bottom:12px;
     border-radius:18px;border:1px solid var(--line);background:#fff;cursor:pointer;font-family:inherit;position:relative;overflow:hidden}
@@ -281,7 +284,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='28';
+var APP_VERSION='29';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -294,6 +297,12 @@ function hashN(s){var x=0,f=fp(s);for(var i=0;i<f.length;i++)x=(x*31+f.charCodeA
 function avFor(name){
   var k=fp(name);
   for(var i=0;i<D.lib.length;i++) if(fp(D.lib[i].name)===k && D.lib[i].emoji) return D.lib[i].emoji;
+  // équipe (nom en plusieurs mots) : initiales, plus claires qu'un personnage
+  var words=String(name||'').trim().split(/\s+/).filter(function(x){return x.length;});
+  if(words.length>=2){
+    var ini=words.slice(0,2).map(function(x){return x[0].toUpperCase();}).join('');
+    return '<b style="font-size:15px;letter-spacing:.5px">'+ini+'</b>';
+  }
   return AV_POOL[hashN(name)%AV_POOL.length];
 }
 function avBg(name){return AV_BG[hashN(name)%AV_BG.length];}
@@ -351,7 +360,7 @@ function leaders(sorted,key,rule){
 
 /* ============================== ÉTAT UI =========================== */
 var S={view:'home',matchId:null,tab:'rank',qtab:'play',period:'all',from:'',to:'',inputs:{},date:today(),sheet:false,confirm:null,detail:null,avPick:null,tipOff:0,microSheet:false,chTab:'play',whoSheet:false};
-function go(v){S.view=v;S.tab='rank';S.qtab='play';S.histAll=false;S.ceremony=false;window.scrollTo(0,0);render();}
+function go(v){S.view=v;S.tab='rank';S.qtab='play';S.histAll=false;S.ceremony=false;S.histMode=Object.prototype.hasOwnProperty.call(S,'histGrid')?(S.histGrid===false?'list':'grid'):(S.histMode||'grid');window.scrollTo(0,0);render();}
 function cur(){return D.matches.filter(function(m){return m.id===S.matchId;})[0];}
 function setVoice(b){
   D.voice=b; persist();
@@ -408,16 +417,16 @@ function render_(){
           '<small>'+pl(live.rounds.length,'manche')+' · la partie continue</small></span>'+
           '<span style="color:#d6d3d1">›</span></button>' : '';
       })()+
-      tool('points','🏆','La Coupe','Le compteur qui n\'oublie jamais. Chaque partie, chaque manche, et vos champions couronnés saison après saison.','t-coupe',
+      tool('points','🏆','La Coupe','Le compteur de points qui n\'oublie jamais. Une soirée (façon coupe) ou une saison entière (façon championnat) : manches, cumul et victoires.','t-coupe',
         D.matches.length?pl(D.matches.length,'partie')+' en mémoire':'','Scores & palmarès')+
       tool('chrono','⏱️','Tic-Tac','Le duel de temps qui met l\'ambiance. Chacun défend son chrono, le dernier debout l\'emporte.','t-tictac',
         D.tictac.length?pl(D.tictac.length,'duel')+' au palmarès':'','Chrono & duel')+
-      tool('quizz','🎙️','Le Micro','Ton animateur de quiz personnel. Des questions à l\'oral, sur mesure, et jamais deux fois la même — même dans dix ans.','t-micro',
+      tool('quizz','🎙️','Le Micro','Ton animateur de quiz à la voix. Sur mesure, et jamais deux fois la même question — même dans dix ans. Fonctionne avec l\'app Claude (gratuite).','t-micro',
         D.journal.length?pl(D.journal.length,'question')+' au journal':'','Quiz vocal · IA')+
       '<div class="card" style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-color:#ddd6fe;margin-top:16px"><p style="margin:0;font-size:13px;color:#5b21b6;line-height:1.5"><b>✨ La pépite : Le Micro.</b> Un animateur qui s\'adapte à chaque joueur et se souvient des questions déjà posées — pour ne jamais reposer deux fois la même, même dans des années. Vos soirées et vos trajets changent de dimension.</p></div>'+
-      '<div class="row" style="margin-top:14px;gap:10px">'+
-        '<button class="miniact" onclick="whoStart()"><span class="e">🎯</span><span><b>Qui commence ?</b><small>Tirage au sort</small></span></button>'+
-        '<button class="miniact" onclick="go(\'champions\')"><span class="e">🏅</span><span><b>Mur des champions</b><small>Tous les jeux</small></span></button>'+
+      '<div style="margin-top:14px;display:flex;flex-direction:column;gap:9px">'+
+        '<button class="miniact" style="width:100%" onclick="go(\'champions\')"><span class="e">🏅</span><span><b>Mur des champions</b><small>Les couronnes de tous les jeux, réunies</small></span><span style="margin-left:auto;color:#d6d3d1">›</span></button>'+
+        '<button class="miniact" style="width:100%" onclick="whoStart()"><span class="e">🎯</span><span><b>Qui commence ?</b><small>Tirage au sort animé</small></span><span style="margin-left:auto;color:#d6d3d1">›</span></button>'+
       '</div>'+
       (canSave?'<p class="mini" style="margin-top:12px;color:#059669">✓ Sauvegardé sur cet iPhone</p>':'');
     return;
@@ -456,13 +465,15 @@ function bindSwipe(){
       if(x0===null) return; var t=e.touches[0]; var dx=t.clientX-x0, dy=t.clientY-y0;
       if(lock===null){ lock = Math.abs(dx)>Math.abs(dy)+4 ? 'x' : (Math.abs(dy)>Math.abs(dx)+4 ? 'y' : null); }
       if(lock!=='x') return;
-      var base=open?-96:0; var tx=Math.max(-96,Math.min(0,base+dx));
+      var rev=parseInt(el.getAttribute('data-reveal')||'96');
+      var base=open?-rev:0; var tx=Math.max(-rev,Math.min(0,base+dx));
       front.style.transform='translateX('+tx+'px)';
     },{passive:true});
     front.addEventListener('touchend',function(e){
       if(x0===null) return; var tx=0;
       var m=/translateX\((-?\d+(?:\.\d+)?)px\)/.exec(front.style.transform); if(m) tx=parseFloat(m[1]);
-      open = tx < -48; el.classList.toggle('open',open);
+      var rev2=parseInt(el.getAttribute('data-reveal')||'96');
+      open = tx < -rev2/2; el.classList.toggle('open',open);
       front.style.transform=''; x0=y0=null;
     });
   });
@@ -497,12 +508,19 @@ function renderPoints(hd,app,banner){
 function mcard(m){
   var r=rank(m),ld=leaders(r.byCumul,'points',m.winRule);
   var nm=ld.length?r.byCumul.filter(function(p){return ld.indexOf(p.id)>=0;}).map(function(p){return p.name;}).join(' & '):'—';
-  return '<div class="swipe"><button class="del" onclick="askDelMatch(\''+m.id+'\')"><span class="ic">🗑</span>Supprimer</button>'+
+  var actv=m.status!=='done';
+  return '<div class="swipe" data-reveal="'+(actv?168:96)+'" style="--reveal:'+(actv?168:96)+'px"><div class="acts">'+
+    (actv?'<button class="arch" onclick="archMatch(\''+m.id+'\')"><span class="ic">🏁</span>Terminer</button>':'')+
+    '<button class="del" style="width:'+(actv?84:96)+'px" onclick="askDelMatch(\''+m.id+'\')"><span class="ic">🗑</span>Supprimer</button></div>'+
     '<div class="front"><button class="tool on" style="width:100%" onclick="openMatch(\''+m.id+'\')"><span class="em" style="background:#d1fae5;font-size:20px">🧮</span>'+
     '<span style="flex:1;min-width:0"><b>'+esc(m.name)+'</b><small>'+pl(m.players.length,'joueur')+' · '+pl(r.count,'manche')+
     (m.winRule==='low'?' · moins gagne':'')+'</small></span>'+
     '<span style="text-align:right;flex-shrink:0"><b style="font-size:13px">'+(r.count?'🏆 '+esc(nm):'—')+'</b>'+
     '<small style="display:block;font-size:10px;color:#a8a29e;text-transform:uppercase">'+(r.count?'en tête':'à démarrer')+'</small></span></button></div></div>';
+}
+function archMatch(id){
+  S.matchId=id; S.view='match';
+  finishMatch(); // cérémonie de couronnement incluse
 }
 function askDelMatch(id){
   var m=D.matches.filter(function(x){return x.id===id;})[0]; if(!m) return;
@@ -652,6 +670,36 @@ function saveRound(){
   m.rounds.unshift({id:uid(),date:S.date||today(),scores:sc});
   persist();S.inputs={};S.date=today();S.tab='rank';toast('Manche enregistrée ✓');window.scrollTo(0,0);render();
 }
+var GCOLORS=['#059669','#7c3aed','#d97706','#e11d48','#2563eb','#0d9488','#c026d3','#65a30d'];
+function histGraph(m){
+  if(m.rounds.length<2) return '<div class="empty"><div class="e">📈</div><h3>Encore un peu de jeu…</h3><p>La courbe apparaît à partir de 2 manches : on y voit qui s\'envole, qui recolle, et le moment où tout a basculé.</p></div>';
+  var rounds=m.rounds.slice().reverse(); // chronologique
+  var cum={}, series=[];
+  m.players.forEach(function(p,pi){ cum[p.id]=0; series.push({id:p.id,name:p.name,color:GCOLORS[pi%GCOLORS.length],pts:[0]}); });
+  rounds.forEach(function(rd){ series.forEach(function(s){ var v=rd.scores[s.id]; if(v!==undefined&&!isNaN(v)) cum[s.id]+=v; s.pts.push(cum[s.id]); }); });
+  var maxV=1,minV=0;
+  series.forEach(function(s){ s.pts.forEach(function(v){ if(v>maxV)maxV=v; if(v<minV)minV=v; }); });
+  var W=320,H=170,P=10, n=rounds.length;
+  function X(i){ return P + i*(W-2*P)/n; }
+  function Y(v){ return H-P - (v-minV)*(H-2*P)/((maxV-minV)||1); }
+  var grid=''; for(var g=1;g<4;g++){ var gy=P+g*(H-2*P)/4; grid+='<line x1="'+P+'" y1="'+gy+'" x2="'+(W-P)+'" y2="'+gy+'" stroke="#f0efee" stroke-width="1"/>'; }
+  var lines=series.map(function(s){
+    var d=s.pts.map(function(v,i){ return (i?'L':'M')+X(i).toFixed(1)+','+Y(v).toFixed(1); }).join(' ');
+    var last=s.pts[s.pts.length-1];
+    return '<path d="'+d+'" fill="none" stroke="'+s.color+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'+
+           '<circle cx="'+X(s.pts.length-1).toFixed(1)+'" cy="'+Y(last).toFixed(1)+'" r="3.5" fill="'+s.color+'"/>';
+  }).join('');
+  var leader=series.slice().sort(function(a,b){ var la=a.pts[a.pts.length-1], lb=b.pts[b.pts.length-1]; return m.winRule==='low'?la-lb:lb-la; })[0];
+  var leg='<div style="display:flex;flex-wrap:wrap;gap:7px 14px;margin-top:10px;padding:0 4px">'+series.map(function(s){
+    var last=s.pts[s.pts.length-1];
+    return '<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600">'+
+      '<span style="width:10px;height:10px;border-radius:3px;background:'+s.color+';flex-shrink:0"></span>'+esc(s.name)+
+      ' <b style="color:'+s.color+'">'+nf(last)+'</b>'+(s.id===leader.id?' 👑':'')+'</span>';
+  }).join('')+'</div>';
+  return '<div class="card"><h2>📈 La course aux points</h2>'+
+    '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">'+grid+lines+'</svg>'+leg+
+    '<p class="mini" style="margin-top:10px">Cumul manche après manche — on voit qui s\'envole et le moment où tout a basculé.</p></div>';
+}
 function histGrid(m){
   if(!m.rounds.length) return '<div class="empty"><div class="e">▦</div><h3>Aucune manche</h3></div>';
   var r=rank(m,function(){return true;});
@@ -673,10 +721,14 @@ function tabHist(m){
   var all=m.rounds, LIMIT=20, truncated=(!S.histAll && all.length>LIMIT);
   var shown=truncated? all.slice(-LIMIT) : all;
   // bascule Liste / Grille (grille = tableau récapitulatif comme le PDF)
+  var mode=S.histMode||'grid';
   var out='<div class="row" style="gap:8px;margin-bottom:10px">'+
-    '<button class="chip'+(S.histGrid===false?' on':'')+'" style="flex:1;text-align:center" onclick="S.histGrid=false;render()">☰ Liste</button>'+
-    '<button class="chip'+(S.histGrid!==false?' on':'')+'" style="flex:1;text-align:center" onclick="S.histGrid=true;render()">▦ Grille</button></div>';
-  if(S.histGrid!==false) return out+histGrid(m);
+    '<button class="chip'+(mode==='grid'?' on':'')+'" style="flex:1;text-align:center" onclick="S.histMode=\'grid\';render()">▦ Grille</button>'+
+    '<button class="chip'+(mode==='graph'?' on':'')+'" style="flex:1;text-align:center" onclick="S.histMode=\'graph\';render()">📈 Courbe</button>'+
+    '<button class="chip'+(mode==='list'?' on':'')+'" style="flex:1;text-align:center" onclick="S.histMode=\'list\';render()">☰ Liste</button></div>';
+  if(S.histGrid===false){mode='list';S.histGrid=undefined;}
+  if(mode==='grid') return out+histGrid(m);
+  if(mode==='graph') return out+histGraph(m);
   out+=(truncated?'<button class="sm" style="width:100%;margin-bottom:10px" onclick="S.histAll=true;render()">Afficher les '+all.length+' manches (les '+LIMIT+' dernières sont ci-dessous)</button>':'')+
     (all.length>LIMIT?'<p class="mini" style="margin:0 0 8px;text-align:center">💡 Pour une vue complète et lisible : <b>Classement → 📄 Exporter en PDF</b>.</p>':'');
   return out + shown.map(function(r){
@@ -710,6 +762,13 @@ function tabSet(m){
   h+='<div class="card"><h2>Règle</h2><div class="row">'+
      '<button class="chip'+(m.winRule==='high'?' on':'')+'" style="flex:1;text-align:center" onclick="setRule(\'high\')">Le plus de points</button>'+
      '<button class="chip'+(m.winRule==='low'?' on':'')+'" style="flex:1;text-align:center" onclick="setRule(\'low\')">Le moins de points</button></div></div>';
+  h+='<div class="card"><h2>Joueurs de cette partie ('+m.players.length+')</h2>'+
+     '<p class="mini" style="margin-bottom:8px">'+m.players.map(function(p){return esc(p.name);}).join(' · ')+'</p>'+
+     (m.status!=='done'
+       ? '<div class="row"><input id="addp" placeholder="Un invité arrive ? Son prénom…" style="flex:1">'+
+         '<button class="sm g" onclick="addPlayerToMatch()">Ajouter</button></div>'+
+         '<p class="mini" style="margin-top:6px">Il entre au classement dès sa première manche — les manches déjà jouées ne comptent pas contre lui.</p>'
+       : '')+'</div>';
   h+='<div class="card"><h2>État</h2>'+(m.status==='done'?
      '<button class="sm g" onclick="setStatus(\'active\')">▶ Reprendre la partie</button>':
      '<button class="btn" style="background:linear-gradient(135deg,#d97706,#f59e0b)" onclick="finishMatch()">🏁 Terminer & couronner le champion</button>')+'</div>';
@@ -724,9 +783,24 @@ function addPlayer(id){var m=cur(),p=D.lib.filter(function(x){return x.id===id;}
 function addNew(){var m=cur(),v=document.getElementById('np').value.trim();if(!v)return;
   v.split(',').forEach(function(s){s=s.trim();if(s)m.players.push({id:uid(),name:s});});persist();render();}
 function setRule(r){cur().winRule=r;persist();render();}
+function addPlayerToMatch(){
+  var el=document.getElementById('addp'); var name=(el&&el.value||'').trim();
+  if(!name){toast('Écris un prénom ou un nom d\'équipe');return;}
+  var m=cur();
+  if(m.players.some(function(p){return fp(p.name)===fp(name);})){toast(name+' est déjà dans la partie');return;}
+  // relier à la bibliothèque commune (avatar partagé), sinon l'y créer
+  var lib=D.lib.filter(function(p){return fp(p.name)===fp(name);})[0];
+  if(!lib){ lib={id:uid(),name:name}; D.lib.push(lib); }
+  m.players.push({id:lib.id,name:lib.name});
+  persist(); toast(lib.name+' rejoint la partie 👋'); render();
+}
 function setStatus(s){cur().status=s;persist();render();}
+/* Point d'ancrage App Store : aux moments de joie (couronnement, victoire),
+   la version native appellera ici SKStoreReviewController.requestReview(). */
+function reviewMoment(){ /* no-op en version web */ }
 function finishMatch(){
   var m=cur(); if(!m) return;
+  reviewMoment();
   m.status='done'; persist();
   S.ceremony=true; S.tab='rank';
   fanfare(); if(navigator.vibrate){ try{navigator.vibrate([80,60,80,60,200]);}catch(e){} }
@@ -1059,6 +1133,9 @@ function renderSave(hd,app,banner){
      '<p class="mini" style="margin-top:8px">Quand elle est activée, l\'app annonce à voix haute qui doit jouer et qui gagne (Tic-Tac, tirage au sort). Pratique en voiture ou en balade.</p></div>';
   var nb=D.matches.length+D.micro.length+D.tictac.length;
   var lastB=D.lastBackup?fr(D.lastBackup):null;
+  h+='<div class="card"><h2>💛 Ton avis compte</h2>'+
+     '<p class="mini" style="margin-bottom:8px">Une idée, un bug, un jeu à ajouter ? Dis-le : cette app grandit avec vos soirées. Et si elle te plaît, garde ta note pour sa sortie sur l\'App Store 😉</p>'+
+     '<a class="sm" style="display:block;text-align:center;text-decoration:none" href="mailto:enjeux.app@gmail.com?subject=En%20Jeux%20—%20mon%20avis&body=Ce%20que%20j\'aime%20%3A%0A%0ACe%20qui%20manque%20%3A%0A">✉️ Envoyer une idée ou un bug</a></div>';
   h+='<div class="card"><h2>Sauvegarde de secours</h2>'+
      (nb>=3 && (!D.lastBackup || (Date.now()-new Date(D.lastBackup).getTime())>1000*60*60*24*30)
        ? '<div class="warn" style="background:#fffbeb;border-color:#fde68a;color:#92400e;margin-bottom:10px"><b>💾 Pense à sauvegarder</b> — '+pl(nb,'partie')+' en mémoire'+(lastB?' · dernière sauvegarde le '+lastB:' · jamais sauvegardé')+'.</div>'
