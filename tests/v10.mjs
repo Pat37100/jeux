@@ -10,7 +10,7 @@ const w=dom.window;
 L('[1] Marketing accueil');
 const home=w.document.getElementById('app').innerHTML;
 ok('« trois jeux indépendants » retiré', !home.includes('Trois jeux indépendants') && !home.includes('trois jeux indépendants'));
-ok('accroche pépite « Le Micro » présente', home.includes('La pépite'));
+ok('accueil sans carte pépite redondante', !w.document.getElementById('app').innerHTML.includes('La pépite'));
 ok('hero : positionnement maître du jeu de poche', home.includes('maître du jeu de poche'));
 
 L('[2] Tic-Tac : compteur de bonnes réponses');
