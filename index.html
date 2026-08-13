@@ -187,7 +187,10 @@
   nav button.on{color:var(--gr)}
   .navbar{position:fixed;bottom:0;left:0;right:0;z-index:20;background:#fff;border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
   .navbar .in{max-width:520px;margin:0 auto}
-  .rank{display:flex;align-items:center;gap:12px;border-radius:12px;padding:10px;background:#fafaf9;margin-bottom:5px}
+  .rank{display:flex;align-items:center;gap:12px;border-radius:12px;padding:10px 10px 13px;background:#fafaf9;margin-bottom:5px;position:relative}
+  .rank .rbar{position:absolute;left:50px;right:12px;bottom:5px;height:3px;border-radius:99px;background:#e7e5e4;overflow:hidden}
+  .rank .rbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#059669,#34d399)}
+  .rank.first .rbar i{background:linear-gradient(90deg,#d97706,#fbbf24)}
   .rank.lead{background:var(--gr-l)}
   .rank .pos{width:28px;height:28px;border-radius:99px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;background:#fff;border:1px solid var(--line);color:var(--soft);flex-shrink:0}
   .rank.first .pos{background:var(--gr);color:#fff;border-color:var(--gr)}
@@ -284,7 +287,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='29';
+var APP_VERSION='30';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -427,6 +430,7 @@ function render_(){
       '<div style="margin-top:14px;display:flex;flex-direction:column;gap:9px">'+
         '<button class="miniact" style="width:100%" onclick="go(\'champions\')"><span class="e">🏅</span><span><b>Mur des champions</b><small>Les couronnes de tous les jeux, réunies</small></span><span style="margin-left:auto;color:#d6d3d1">›</span></button>'+
         '<button class="miniact" style="width:100%" onclick="whoStart()"><span class="e">🎯</span><span><b>Qui commence ?</b><small>Tirage au sort animé</small></span><span style="margin-left:auto;color:#d6d3d1">›</span></button>'+
+        '<button class="miniact" style="width:100%" onclick="openBuzzer()"><span class="e">🔴</span><span><b>Le Buzzer</b><small>Premier à taper — parfait pour vos quiz</small></span><span style="margin-left:auto;color:#d6d3d1">›</span></button>'+
       '</div>'+
       (canSave?'<p class="mini" style="margin-top:12px;color:#059669">✓ Sauvegardé sur cet iPhone</p>':'');
     return;
@@ -628,7 +632,14 @@ function tabRankBody(m){
     h+='<div class="rank'+(tp?' lead':'')+(i===0?' first':'')+'" style="cursor:pointer" onclick="S.detail=S.detail===\''+p.id+'\'?null:\''+p.id+'\';render()"><div class="pos">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1))+'</div>'+
       av(p.name,'sm')+'<div class="nm" style="margin-left:8px"><b>'+esc(p.name)+(tp?' 🏆':'')+(tw?' 👑':'')+'</b>'+
       '<small>'+pl(p.played,'manche')+' · '+pl(p.wins,'victoire')+(p.played?' · moy. '+nf(p.points/p.played):'')+' · voir le détail ›</small></div>'+
-      '<div class="pts"><b>'+nf(p.points)+'</b><small>points</small></div></div>';
+      '<div class="pts"><b>'+nf(p.points)+'</b><small>points</small></div>'+
+      (function(){
+        var lead0=r.byCumul[0]; if(!lead0||!r.count) return '';
+        var pctb = m.winRule==='low'
+          ? (p.points>0 ? Math.max(6,Math.min(100,100*lead0.points/p.points)) : 100)
+          : (lead0.points>0 ? Math.max(6,Math.min(100,100*p.points/lead0.points)) : 6);
+        return '<div class="rbar"><i style="width:'+pctb.toFixed(0)+'%"></i></div>';
+      })()+'</div>';
     if(opendetail){
       var det=m.rounds.filter(keeper()).filter(function(r){return r.scores[p.id]!==undefined;});
       h+='<div style="background:#fafaf9;border-radius:12px;padding:10px 12px;margin:-2px 0 6px">'+
@@ -649,14 +660,22 @@ function tabPlay(m){
   var prev={},k;
   for(k in S.inputs){var n=parseFloat(String(S.inputs[k]).replace(',','.'));if(!isNaN(n))prev[k]=n;}
   var w=winners({scores:prev},m.players,m.winRule);
+  var rAll=rank(m,function(){return true;});
+  var cumOf={}; rAll.byCumul.forEach(function(p){cumOf[p.id]=p;});
+  var step=S.step||1;
   var h='<div class="card row" style="justify-content:space-between"><span style="font-size:14px;color:var(--mut)">Date de la manche</span>'+
     '<input type="date" style="width:auto" value="'+S.date+'" onchange="S.date=this.value"></div>';
+  h+='<div class="row" style="margin-bottom:10px;gap:6px"><span class="mini" style="flex:1">Pas des boutons − / +</span>'+
+    [1,5,10].map(function(v){return '<button class="chip'+(step===v?' on':'')+'" onclick="S.step='+v+';render()">±'+v+'</button>';}).join('')+'</div>';
   m.players.forEach(function(p){
     var on=w.indexOf(p.id)>=0;
-    h+='<div class="plr'+(on?' win':'')+'"><span class="n" style="display:flex;align-items:center;gap:7px">'+av(p.name,'sm')+esc(p.name)+(on?' 👑':'')+'</span>'+
-      '<button class="stp" onclick="bump(\''+p.id+'\',-1)">−</button>'+
+    var c=cumOf[p.id]||{points:0,played:0};
+    h+='<div class="plr'+(on?' win':'')+'"><span class="n" style="display:flex;align-items:center;gap:7px;min-width:0">'+av(p.name,'sm')+
+      '<span style="min-width:0"><span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name)+(on?' 👑':'')+'</span>'+
+      '<small style="display:block;font-size:10.5px;color:#a8a29e">total '+nf(c.points)+' · '+pl(c.played,'manche')+'</small></span></span>'+
+      '<button class="stp" onclick="bump(\''+p.id+'\',-'+step+')">−'+(step>1?step:'')+'</button>'+
       '<input inputmode="decimal" placeholder="—" value="'+(S.inputs[p.id]!==undefined?S.inputs[p.id]:'')+'" oninput="S.inputs[\''+p.id+'\']=this.value" onchange="render()">'+
-      '<button class="stp p" onclick="bump(\''+p.id+'\',1)">+</button></div>';
+      '<button class="stp p" onclick="bump(\''+p.id+'\','+step+')">+'+(step>1?step:'')+'</button></div>';
   });
   h+='<p class="mini" style="margin:4px 0 12px">Laisse vide si un joueur n\'a pas joué cette manche.</p>'+
      '<button class="btn" onclick="saveRound()">Enregistrer la manche</button>';
@@ -1194,6 +1213,24 @@ function obReplay(){ var e; while((e=document.getElementById('obsh'))) e.remove(
 
 /* ---- « Qui commence ? » : tirage au sort universel (sert n'importe quel jeu) ---- */
 var WHO={picked:null, roster:null};
+function openBuzzer(){
+  var el=document.createElement('div'); el.className='sheet'; el.id='bzsh';
+  el.onclick=function(){ try{el.remove();}catch(e){} };
+  el.innerHTML='<div class="in" onclick="event.stopPropagation()" style="text-align:center"><div class="grab"></div>'+
+    '<h2 style="margin:2px 0 2px">🔴 Le Buzzer</h2>'+
+    '<p class="mini" style="margin:0 0 14px">Pose le téléphone au centre — premier à taper a la main !</p>'+
+    '<button onclick="buzz(this)" style="width:200px;height:200px;border-radius:50%;border:0;cursor:pointer;margin:0 auto 6px;display:block;'+
+      'background:radial-gradient(circle at 35% 30%,#f87171,#dc2626 55%,#991b1b);box-shadow:0 14px 30px rgba(220,38,38,.45), inset 0 -8px 18px rgba(0,0,0,.28);'+
+      'color:#fff;font-size:30px;font-weight:800;font-family:inherit;letter-spacing:.03em">BUZZ</button>'+
+    '<p class="mini" style="margin-top:10px">Un grand bruit + une vibration. Rien n\'est enregistré : juste le réflexe.</p>'+
+    '<button class="btn grey" style="margin-top:12px" onclick="document.getElementById(\'bzsh\').remove()">Fermer</button></div>';
+  document.body.appendChild(el);
+}
+function buzz(btn){
+  tone(160,.55,.5); setTimeout(function(){tone(120,.4,.4);},80);
+  if(navigator.vibrate){ try{navigator.vibrate([180,40,120]);}catch(e){} }
+  if(btn){ btn.style.transform='scale(.93)'; setTimeout(function(){ btn.style.transform=''; },140); }
+}
 function whoStart(){
   if(!WHO.roster){ WHO.roster={}; D.lib.forEach(function(p){WHO.roster[p.id]=true;}); }
   WHO.picked=null; S.whoSheet=true; drawWhoSheet();
@@ -1685,6 +1722,26 @@ function chStart(){
 }
 function chStopTick(){ if(chTick){clearInterval(chTick); chTick=null;} }
 function chRun(){
+  if(CH.running) return;
+  if(!CH.startedOnce){ CH.startedOnce=true; chCountdown(function(){ chRunNow(); }); return; }
+  chRunNow();
+}
+function chCountdown(done){
+  var ov=document.createElement('div'); ov.id='cnt321';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(6,78,59,.92);z-index:60;display:flex;align-items:center;justify-content:center';
+  ov.innerHTML='<div id="cnum" style="font-size:110px;font-weight:800;color:#fff;text-shadow:0 6px 30px rgba(0,0,0,.35)">3</div>';
+  document.body.appendChild(ov);
+  var steps=[['3',760],['2',760],['1',760],['GO !',1180]], i=0;
+  function next(){
+    if(i>0){ var el=document.getElementById('cnum'); if(el){ el.textContent=steps[i][0]; el.style.fontSize=steps[i][0]==='GO !'?'72px':'110px'; } }
+    if(CH&&CH.sound) tone(steps[i][1], i===3?.5:.18, i===3?.4:.25);
+    i++;
+    if(i<steps.length){ setTimeout(next,600); }
+    else setTimeout(function(){ try{ov.remove();}catch(e){} if(done)done(); },550);
+  }
+  next();
+}
+function chRunNow(){
   if(CH.running) return;
   CH.running=true; chStopTick();
   var last=Date.now();
