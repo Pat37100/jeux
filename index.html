@@ -31,11 +31,19 @@
   .icobtn{background:none;border:0;font-size:22px;padding:6px 10px;color:var(--mut);cursor:pointer;line-height:1}
   .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:0 1px 2px rgba(0,0,0,.04);margin-bottom:12px}
   .card h2{font-size:13px;margin:0 0 8px;color:var(--mut);font-weight:600}
-  .hero{border-radius:20px;padding:22px 18px;margin-bottom:16px;color:#fff;position:relative;overflow:hidden;
-    background:linear-gradient(135deg,#065f46 0%,#059669 55%,#34d399 130%)}
-  .hero h2{margin:0;font-size:26px;font-weight:800;letter-spacing:-.02em}
-  .hero p{margin:4px 0 0;font-size:13.5px;opacity:.92}
-  .hero .dice{position:absolute;right:10px;top:6px;font-size:64px;opacity:.22;transform:rotate(12deg)}
+  .hero{border-radius:22px;padding:26px 20px 22px;margin-bottom:16px;color:#fff;position:relative;overflow:hidden;
+    background:linear-gradient(135deg,#064e3b 0%,#059669 48%,#34d399 100%);
+    box-shadow:0 12px 30px -8px rgba(5,150,105,.5)}
+  .hero::before{content:'';position:absolute;top:-40%;left:-20%;width:70%;height:180%;
+    background:radial-gradient(circle,rgba(255,255,255,.22),transparent 70%);pointer-events:none}
+  .hero::after{content:'';position:absolute;right:-30px;bottom:-30px;width:140px;height:140px;
+    background:radial-gradient(circle,rgba(52,211,153,.5),transparent 70%);pointer-events:none}
+  .hero h2{margin:0;font-size:30px;font-weight:800;letter-spacing:-.03em;position:relative;z-index:1}
+  .hero p{margin:6px 0 0;font-size:13.5px;opacity:.94;position:relative;z-index:1;line-height:1.5}
+  .hero .dice{position:absolute;right:12px;top:10px;font-size:72px;opacity:.28;transform:rotate(12deg);
+    animation:diceFloat 4s ease-in-out infinite;transform-origin:center}
+  @keyframes diceFloat{0%,100%{transform:rotate(10deg) translateY(0)}50%{transform:rotate(16deg) translateY(-6px)}}
+  @media (prefers-reduced-motion:reduce){.hero .dice{animation:none}}
   .hero .pills{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;position:relative;z-index:1}
   .hero .pills span{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.28);border-radius:99px;padding:3px 11px;font-size:11.5px;font-weight:600;backdrop-filter:blur(2px)}
   .trust{display:flex;gap:6px;margin:-6px 0 16px}
@@ -273,7 +281,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='27';
+var APP_VERSION='28';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -389,7 +397,7 @@ function render_(){
     hd.innerHTML='<span style="width:38px"></span><h1>En Jeux<span class="sub">Votre maître du jeu de poche</span></h1>'+
       '<button class="icobtn" onclick="go(\'save\')">⚙︎</button>';
     app.innerHTML=banner+
-      '<div class="hero"><span class="dice">🎲</span><h2>En Jeux</h2><p><b>Votre maître du jeu de poche.</b> Il anime, il compte, il arbitre — et il retient qui gagne. Un animateur, un chrono et un compteur — tout pour jouer ensemble, où que vous soyez. <b>Alors, qui va décrocher la couronne ? 👑</b></p>'+
+      '<div class="hero"><span class="dice">🎲</span><h2>En Jeux</h2><p><b>Votre maître du jeu de poche.</b> En famille ou entre amis, il anime, il compte, il arbitre — et retient qui gagne. <b>Alors, qui va décrocher la couronne ? 👑</b></p>'+
         '<div class="pills"><span>🍿 Soirées</span><span>🍽️ À table</span><span>🌳 En balade</span><span>🚗 En voiture</span><span>🏖️ En vacances</span></div></div>'+tip+
       '<div class="trust"><span><b>🚫</b>Sans pub</span><span><b>📶</b>Hors-ligne</span><span><b>🆓</b>Gratuit</span></div>'+
       (function(){
@@ -779,10 +787,7 @@ function renderQuizz(hd,app,banner){
           av(p.name,'sm')+'<span style="font-size:11px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name)+'</span></button>';
       }).join('')+'</div>'+
       '<p class="mini" style="margin-top:8px">Ces participants partent avec le lancement : l\'animateur démarre directement, sans demander qui joue.</p></div>';
-    h+='<div class="card"><h2>Après la partie — 2 réflexes</h2>'+
-      '<p class="mini" style="margin-bottom:8px"><b>🏆 Le classement</b> — enregistre le résultat final annoncé par l\'animateur : il rejoint le palmarès du Micro.</p>'+
-      '<button class="btn" style="margin:0 0 12px" onclick="microOpen()">🏆 Enregistrer un résultat</button>'+
-      '<p class="mini"><b>📖 Les questions</b> — demande à Claude « Donne-moi la liste des questions posées » et colle-la dans le Journal : c\'est ce qui évite les répétitions dans les années à venir.</p></div>';
+    h+='<p class="mini" style="text-align:center;margin:4px 2px 0;line-height:1.6">Envie de garder une trace ? Le <b>classement</b> se note dans l\'onglet <b>🏆 Palmarès</b>, les <b>questions</b> dans le <b>📖 Journal</b> — quand tu veux, jamais obligatoire.</p>';
     h+='<div class="card"><h2>Règles</h2><ul class="lst">'+
       ['Objectif 15 points · niveau de départ ~5/8','2 pts en réponse directe, 1 pt avec les propositions','Cash, Vol, Tour Défi, Question mystère, Duel','Rotation stricte, difficulté adaptée à chacun','Score tenu par l\'animateur, séparé du décompte de points']
       .map(function(t){return '<li>✓ '+t+'</li>';}).join('')+'</ul></div>';
@@ -941,7 +946,7 @@ function microPalmares(){
       '<div class="pts"><b>'+p.wins+'</b><small>victoire'+(p.wins>1?'s':'')+'</small></div></div>';
   });
   h+='</div>';
-  h+='<button class="btn" onclick="microOpen()">+ Enregistrer un résultat</button>';
+  h+='<button class="btn" onclick="microOpen()">+ Enregistrer le classement d\'une partie</button>';
   h+='<button class="btn dark" style="margin-top:8px" onclick="microShare()">📤 Partager le palmarès</button>'+
      '<button class="sm" style="width:100%;margin-top:8px" onclick="exportMicroPDF()">📄 Exporter en PDF</button>';
   h+='<div class="card" style="margin-top:12px"><h2>Historique des parties</h2>'+
@@ -1190,33 +1195,42 @@ function avDelPhoto(){
   closeAv();render();
 }
 function avPhoto(inp){
-  var f=inp.files&&inp.files[0]; if(!f) return;
+  var f=inp.files&&inp.files[0];
+  if(!f){ toast('Aucune image sélectionnée'); return; }
+  if(!/^image\//.test(f.type||'')){ toast('Ce fichier n\'est pas une image'); return; }
+  toast('Traitement de la photo…');
   var rd=new FileReader();
+  rd.onerror=function(){ toast('Lecture du fichier impossible — réessaie'); };
   rd.onload=function(){
     var img=new Image();
+    img.onerror=function(){ toast('Image illisible — essaie une autre photo (JPEG/PNG)'); };
     img.onload=function(){
       try{
-        var S2=96,c=document.createElement('canvas');c.width=S2;c.height=S2;
+        var S2=96, c=document.createElement('canvas'); c.width=S2; c.height=S2;
         var x=c.getContext('2d');
+        if(!x){ throw new Error('canvas'); }
         var m=Math.min(img.width,img.height);
+        if(!m){ throw new Error('dimensions'); }
         x.drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,S2,S2);
+        var data;
+        try{ data=c.toDataURL('image/jpeg',.72); }
+        catch(e1){ try{ data=c.toDataURL('image/png'); }catch(e2){ data=null; } }
         var p=D.lib.filter(function(q){return q.id===S.avPick;})[0];
-        if(p){p.photo=c.toDataURL('image/jpeg',.72);persist();}
-        closeAv();render();toast('Photo enregistrée ✓');
-      }catch(e){
-        // dernier recours : garder l'image telle quelle si elle est raisonnable
-        try{
-          var p2=D.lib.filter(function(q){return q.id===S.avPick;})[0];
-          if(p2 && rd.result && rd.result.length<400000){ p2.photo=rd.result; persist(); closeAv(); render(); toast('Photo enregistrée ✓'); }
-          else toast('Photo trop lourde — essaie une image plus petite');
-        }catch(e2){ toast('Photo impossible — choisis un personnage'); }
+        if(!p){ toast('Joueur introuvable'); return; }
+        if(data && data.length>50){
+          p.photo=data; persist(); closeAv(); render(); toast('Photo enregistrée ✓');
+        } else if(rd.result && rd.result.length<300000){
+          p.photo=rd.result; persist(); closeAv(); render(); toast('Photo enregistrée ✓');
+        } else {
+          toast('Conversion impossible sur cet appareil — choisis un personnage à la place');
+        }
+      }catch(err){
+        toast('Photo impossible ici ('+(err&&err.message||'?')+') — essaie une image plus petite ou un personnage');
       }
     };
-    img.onerror=function(){ toast('Image illisible — essaie une autre photo'); };
     img.src=rd.result;
   };
-  rd.onerror=function(){ toast('Lecture impossible — réessaie'); };
-  rd.readAsDataURL(f);
+  try{ rd.readAsDataURL(f); }catch(e){ toast('Impossible d\'ouvrir l\'image'); }
 }
 function addLib(){var v=document.getElementById('nl').value.trim();if(!v)return;
   v.split(',').forEach(function(s){s=s.trim();if(s)D.lib.push({id:uid(),name:s});});persist();render();}
@@ -1552,12 +1566,13 @@ function chConfig(){
     '</div>'+
     '<div class="row"><span class="mini" style="flex:1">Personnalisé (secondes)</span>'+
     '<input type="number" inputmode="numeric" style="width:90px;text-align:center" value="'+s.secs+'" onchange="chSetSecs(parseInt(this.value)||60)"></div>'+
-    '<p class="mini" style="margin-top:6px">Actuel : <b>'+durLabel+'</b> pour chaque joueur.</p></div>';
+    '<p class="mini" style="margin-top:6px">Temps par défaut : <b>'+durLabel+'</b>. Tu peux donner un temps différent à chaque joueur ci-dessous (utile pour équilibrer petits et grands).</p></div>';
   h+='<div class="card"><h2>Joueurs ou équipes ('+s.players.length+')</h2>';
   s.players.forEach(function(n,i){
     h+='<div class="row" style="margin-bottom:8px;gap:9px;align-items:center">'+
        '<button style="border:0;background:none;padding:0;cursor:pointer;flex-shrink:0" onclick="chAv('+i+')" title="Photo ou personnage">'+av(n)+'</button>'+
-       '<input style="flex:1" value="'+n.replace(/"/g,'&quot;')+'" onchange="chRename('+i+',this.value)">'+
+       '<input style="flex:1;min-width:0" value="'+n.replace(/"/g,'&quot;')+'" onchange="chRename('+i+',this.value)">'+
+       '<input type="number" inputmode="numeric" title="Temps de ce joueur (s)" placeholder="'+s.secs+'" value="'+(s.custom&&s.custom[i]?s.custom[i]:'')+'" onchange="chSetPlayerSecs('+i+',this.value)" style="width:56px;text-align:center;flex-shrink:0">'+
        (s.players.length>2?'<button class="sm r" onclick="chDelP('+i+')">✕</button>':'')+'</div>';
   });
   h+='<p class="mini" style="margin-top:2px">Chaque ligne peut être une personne <b>ou une équipe</b>. Touche un avatar pour une photo ou un personnage — il est partagé avec La Coupe et Le Micro.</p>';
@@ -1572,15 +1587,21 @@ function chConfig(){
 }
 function chAv(i){ var s=chSettings(); if(!s.players[i]||!s.players[i].trim()){ s.players[i]='Joueur '+(i+1); } openAv(libIdForName(s.players[i])); }
 function chSetSecs(v){ chSettings().secs=Math.max(5,v||60); persist(); render(); }
+function chSetPlayerSecs(i,v){
+  var s=chSettings(); if(!s.custom) s.custom={};
+  var n=parseInt(v);
+  if(!v||isNaN(n)||n<=0){ delete s.custom[i]; } else { s.custom[i]=Math.max(5,n); }
+  persist(); render();
+}
 function chRename(i,v){ chSettings().players[i]=v.trim()||('Joueur '+(i+1)); persist(); }
 function chAddP(){ var s=chSettings(); s.players.push('Joueur '+(s.players.length+1)); persist(); render(); }
-function chDelP(i){ var s=chSettings(); if(s.players.length>2){ s.players.splice(i,1); persist(); render(); } }
+function chDelP(i){ var s=chSettings(); if(s.players.length>2){ s.players.splice(i,1); if(s.custom) s.custom={}; persist(); render(); } }
 function chSound(b){ chSettings().sound=b; persist(); render(); }
 
 /* ---- Démarrage d'une manche ---- */
 function chStart(){
   var s=chSettings();
-  CH={ players:s.players.map(function(n){return {name:n, left:s.secs, out:false, good:0};}),
+  CH={ players:s.players.map(function(n,i){var t=(s.custom&&s.custom[i])?s.custom[i]:s.secs; return {name:n, left:t, out:false, good:0, start:t};}),
        active:0, running:false, sound:s.sound, total:s.secs, winner:null };
   chStopTick();
   render();
@@ -1658,7 +1679,7 @@ function chGame(){
       '</div></div>'+
       (CH.saved
         ? '<p class="mini" style="text-align:center;color:#059669;margin-top:12px">✓ Manche enregistrée au palmarès</p>'
-        : '<button class="btn" style="margin-top:12px;background:linear-gradient(135deg,#d97706,#fbbf24)" onclick="chSaveDuel()">🏆 Enregistrer cette manche</button>')+
+        : '<button class="sm" style="width:100%;margin-top:12px" onclick="chSaveDuel()">🏆 Garder cette manche au palmarès (facultatif)</button>')+
       '<button class="btn" style="margin-top:8px" onclick="chStart()">Rejouer (mêmes réglages)</button>'+
       '<button class="btn grey" style="margin-top:8px" onclick="chReset()">Changer les réglages</button>';
   }
@@ -1677,7 +1698,8 @@ function chGame(){
   // ARÈNE : une colonne par joueur/équipe, remplie par son temps restant
   h+='<div class="duel '+nCol+'">';
   CH.players.forEach(function(pl,i){
-    var pc = CH.total>0 ? Math.max(0,Math.min(1,pl.left/CH.total)) : 0;
+    var base = pl.start || CH.total;
+    var pc = base>0 ? Math.max(0,Math.min(1,pl.left/base)) : 0;
     var live = (i===CH.active && !pl.out);
     var cc = pl.out ? '#d6d3d1' : (pl.left<=5 ? '#e11d48' : pl.left<=20 ? '#f59e0b' : '#059669');
     var cls = 'lane'+(live?' live':'')+(pl.out?' ko':'')+(!pl.out&&pl.left<=5?' danger':(!pl.out&&pl.left<=20?' warn':''));
