@@ -43,7 +43,7 @@ ok('saisie : avatars affichés', w.document.getElementById('app').innerHTML.incl
 w.go('palmares');
 ok('palmarès : avatar champion en grand', w.document.getElementById('app').innerHTML.includes('av big'));
 w.go('chrono'); w.chStart();
-ok('Tic-Tac : avatar au centre de l\'anneau', w.document.getElementById('app').innerHTML.includes('class="av "'));
+ok('Tic-Tac : avatar au centre de l\'anneau', w.document.querySelectorAll('.ring .face').length===w.CH.players.length && [...w.document.querySelectorAll('.ring .face')].every(f=>f.innerHTML.trim().length>0));
 
 L('[5] Persistance des avatars après fermeture/réouverture');
 const st=new Map(); let wa=boot({store:st}).window;
