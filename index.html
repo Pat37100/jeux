@@ -54,7 +54,7 @@
   .tool.t-coupe .tag{background:#d1fae5;color:#047857}
   .tool.t-tictac .tag{background:#fef3c7;color:#b45309}
   .tool.t-micro .tag{background:#ede9fe;color:#6d28d9}
-  .miniact{flex:1 1 150px;min-width:0;display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:11px 12px;cursor:pointer;font-family:inherit;text-align:left;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  .miniact{flex:0 0 auto;min-width:0;width:100%;display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:11px 12px;cursor:pointer;font-family:inherit;text-align:left;box-shadow:0 1px 2px rgba(0,0,0,.03)}
   .miniact>span:last-child{min-width:0}
   .miniact b,.miniact small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .miniact .e{font-size:22px;flex-shrink:0}
@@ -83,10 +83,17 @@
   .duel.n3{grid-template-columns:repeat(3,1fr)}
   .duel.n4{grid-template-columns:repeat(4,1fr)}
   .duel.nx{grid-template-columns:repeat(auto-fill,minmax(84px,1fr))}
-  .lane{position:relative;border-radius:16px;overflow:hidden;background:#f5f5f4;border:2px solid #e7e5e4;
-        padding:10px 4px 8px;text-align:center;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s}
-  .lane .fillbar{position:absolute;left:0;right:0;bottom:0;z-index:0;transition:height .25s linear}
+  .lane{position:relative;border-radius:18px;background:#fff;border:2px solid #e7e5e4;
+        padding:12px 5px 9px;text-align:center;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s}
+  .lane .fillbar{display:none}
   .lane>*{position:relative;z-index:1}
+  /* anneau de temps autour de l'avatar : on identifie le joueur ET on compare d'un regard */
+  .ring{position:relative;width:100%;max-width:86px;margin:0 auto;aspect-ratio:1}
+  .ring svg{width:100%;height:100%;transform:rotate(-90deg);display:block}
+  .ring .face{position:absolute;inset:16%;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    overflow:hidden;background:#f5f5f4;font-size:26px}
+  .ring .face img{width:100%;height:100%;object-fit:cover}
+  .lane.live .ring{filter:drop-shadow(0 4px 10px rgba(5,150,105,.45))}
   .lane .who{font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px;padding:0 2px}
   .lane .tt{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em;margin-top:2px}
   .lane .gd{font-size:11px;font-weight:700;color:#047857;margin-top:1px}
@@ -287,7 +294,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='32';
+var APP_VERSION='33';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -426,7 +433,7 @@ function render_(){
         D.tictac.length?pl(D.tictac.length,'duel')+' au palmarès':'','Chrono & duel')+
       tool('quizz','🎙️','Le Micro','<b>Il anime.</b> Un quiz à la voix, sur mesure, jamais deux fois la même question — même dans dix ans. Avec l\'app Claude (gratuite).','t-micro',
         D.journal.length?pl(D.journal.length,'question')+' au journal':'','Quiz vocal · IA')+
-      '<div class="card" style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-color:#ddd6fe;margin-top:16px"><p style="margin:0;font-size:13px;color:#5b21b6;line-height:1.5"><b>✨ La pépite : Le Micro.</b> Un animateur qui s\'adapte à chaque joueur et se souvient des questions déjà posées — pour ne jamais reposer deux fois la même, même dans des années. Vos soirées et vos trajets changent de dimension.</p></div>'+
+
       '<div style="margin-top:14px;display:flex;flex-direction:column;gap:9px">'+
         '<button class="miniact" style="width:100%" onclick="go(\'champions\')"><span class="e">🏅</span><span><b>Mur des champions</b><small>Les couronnes de tous les jeux, réunies</small></span><span style="margin-left:auto;color:#d6d3d1">›</span></button>'+
         '<button class="miniact" style="width:100%" onclick="whoStart()"><span class="e">🎯</span><span><b>Qui commence ?</b><small>Tirage au sort animé</small></span><span style="margin-left:auto;color:#d6d3d1">›</span></button>'+
@@ -962,6 +969,7 @@ function briefText(){
   return t;
 }
 /* Équipe sélectionnée pour Le Micro (par défaut : toute la bibliothèque) */
+function openBuzzerRefresh(){ var e=document.getElementById('bzsh'); if(e){ e.remove(); openBuzzer(); } }
 function buzzTest(){ tone(659,.12,.3); setTimeout(function(){tone(880,.2,.32);},90); }
 function setMicroStyle(id){ D.microStyle=id; persist(); render(); }
 function microTeam(){
@@ -1263,17 +1271,52 @@ function openBuzzer(){
     '<button onclick="buzz(this)" style="width:min(76vw,340px);height:min(76vw,340px);border-radius:50%;border:0;cursor:pointer;margin:6px auto 6px;display:block;transition:transform .12s;'+
       'background:radial-gradient(circle at 35% 30%,#f87171,#dc2626 55%,#991b1b);box-shadow:0 14px 30px rgba(220,38,38,.45), inset 0 -8px 18px rgba(0,0,0,.28);'+
       'color:#fff;font-size:44px;font-weight:800;font-family:inherit;letter-spacing:.04em">BUZZ</button>'+
-    '<p class="mini" style="margin-top:10px">Un grand bruit + une vibration. Rien n\'est enregistré : juste le réflexe.</p>'+
+    '<p class="mini" style="margin:10px 0 6px">Choisis ton buzz — touche pour l\'entendre :</p>'+
+    '<div class="chips" style="justify-content:center">'+BUZZ_KITS.map(function(k){
+      return '<button class="chip'+((D.buzzKit||'tv')===k.id?' on':'')+'" onclick="setBuzzKit(\''+k.id+'\');openBuzzerRefresh()">'+k.label+'</button>';
+    }).join('')+'</div>'+
+    '<p class="mini" style="margin-top:8px">Rien n\'est enregistré : juste le réflexe (et le fou rire).</p>'+
     '<button class="btn grey" style="margin-top:12px" onclick="document.getElementById(\'bzsh\').remove()">Fermer</button></div>';
   document.body.appendChild(el);
 }
+var BUZZ_KITS=[
+  {id:'tv',    label:'📺 Erreur TV',   desc:'Le « EHHH » de plateau'},
+  {id:'klaxon',label:'📯 Klaxon',      desc:'Deux notes bien grasses'},
+  {id:'boing', label:'🤸 Boing',       desc:'Cartoon, ça fait rire'},
+  {id:'arcade',label:'👾 Arcade',      desc:'8-bit rétro'},
+  {id:'sad',   label:'🎺 Trombone',    desc:'Wah-wah-wah… la loose'},
+  {id:'siren', label:'🚨 Sirène',      desc:'Alerte rouge'}
+];
+function playBuzz(kit){
+  kit=kit||D.buzzKit||'tv';
+  if(kit==='tv'){
+    tone(92,.8,.85,'sawtooth'); tone(123,.8,.7,'sawtooth'); tone(61,.8,.6,'square'); noiseBurst(.12,.5);
+  } else if(kit==='klaxon'){
+    tone(233,.28,.8,'square'); tone(311,.28,.6,'square');
+    setTimeout(function(){ tone(196,.42,.8,'square'); tone(262,.42,.6,'square'); },260);
+    noiseBurst(.06,.3);
+  } else if(kit==='boing'){
+    sweep(700,90,.5,.75,'sine',18);
+    setTimeout(function(){ sweep(420,70,.35,.5,'sine',22); },260);
+  } else if(kit==='arcade'){
+    [[880,0],[660,70],[440,140],[220,210],[110,300]].forEach(function(n){
+      setTimeout(function(){ tone(n[0],.12,.6,'square'); },n[1]);
+    });
+    noiseBurst(.08,.25);
+  } else if(kit==='sad'){
+    [[311,0,.34],[277,300,.34],[233,600,.5]].forEach(function(n){
+      setTimeout(function(){ sweep(n[0],n[0]*.86,n[2],.7,'sawtooth',7); },n[1]);
+    });
+  } else if(kit==='siren'){
+    [0,300,600].forEach(function(d){
+      setTimeout(function(){ sweep(600,1100,.16,.55,'sawtooth'); setTimeout(function(){ sweep(1100,600,.16,.55,'sawtooth'); },160); },d);
+    });
+  }
+}
+function setBuzzKit(id){ D.buzzKit=id; persist(); playBuzz(id); render(); }
 function buzz(btn){
-  // le « EHHH » de plateau TV : deux scies dissonantes + basse + impact de bruit, bien fort
-  tone(160,.55,.5);                       // couche historique (compat)
-  tone(92,.8,.85,'sawtooth');
-  tone(123,.8,.7,'sawtooth');
-  tone(61,.8,.6,'square');
-  noiseBurst(.12,.5);
+  tone(160,.55,.5);            // couche historique (compat tests)
+  playBuzz(D.buzzKit||'tv');   // le kit choisi par l'utilisateur
   setTimeout(function(){tone(120,.4,.4);},80);
   if(navigator.vibrate){ try{navigator.vibrate([220,50,160]);}catch(e){} }
   if(btn){ btn.style.transform='scale(.9)'; setTimeout(function(){ btn.style.transform=''; },150); }
@@ -1646,6 +1689,27 @@ function tone(freq,dur,vol,wave){
     o.start(); o.stop(a.currentTime+(dur||.4));
   }catch(e){}
 }
+/* Glissando : la note glisse d'une fréquence à l'autre (boing, sirène, laser, trombone) */
+function sweep(f1,f2,dur,vol,wave,vibHz){
+  if(D.fx===0) return;
+  try{
+    var a=audioCtx(); if(!a) return;
+    var o=a.createOscillator(), g=a.createGain();
+    o.type=wave||'sine';
+    o.frequency.setValueAtTime(f1,a.currentTime);
+    o.frequency.exponentialRampToValueAtTime(Math.max(20,f2),a.currentTime+dur);
+    g.gain.setValueAtTime(.001,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(vol||.4,a.currentTime+.02);
+    g.gain.exponentialRampToValueAtTime(.001,a.currentTime+dur);
+    o.connect(g); g.connect(outNode(a));
+    if(vibHz){ // vibrato : donne le côté cartoon/comique
+      var lfo=a.createOscillator(), lg=a.createGain();
+      lfo.frequency.value=vibHz; lg.gain.value=f1*.06;
+      lfo.connect(lg); lg.connect(o.frequency); lfo.start(); lfo.stop(a.currentTime+dur);
+    }
+    o.start(); o.stop(a.currentTime+dur);
+  }catch(e){}
+}
 /* Bruit blanc court (roulement de tambour, impact) */
 function noiseBurst(dur,vol){
   if(D.fx===0) return;
@@ -1876,15 +1940,26 @@ function chAdvance(auto){
   if(auto) render();
 }
 /* Boutons animateur */
-function chGood(){ if(CH.winner) return; CH.players[CH.active].good++; chRun(); }
-function chWrong(){ chStopTick(); CH.running=false; chAdvance(false);
-  // enchaîne directement sur le nouveau joueur
-  if(!CH.winner) chRun(); else render(); }
+function chGood(){
+  if(CH.winner) return;
+  CH.players[CH.active].good++;
+  tone(784,.09,.3); setTimeout(function(){tone(1047,.16,.28);},70);   // ding « validé »
+  chRun();
+}
+function chWrong(){
+  chStopTick(); CH.running=false;
+  sweep(330,180,.22,.5,'sawtooth');   // « raté ! » court, façon plateau
+  chAdvance(false);
+  if(!CH.winner){ setTimeout(function(){ swoosh(); },140); chRun(); } else render();
+}
+/* whoosh : la main passe d'un joueur à l'autre — on l'entend, on le voit */
+function swoosh(){ sweep(220,660,.16,.28,'triangle'); noiseBurst(.06,.12); }
 function chJump(i){
   if(!CH||CH.winner!==null) return;
   if(!CH.players[i]||CH.players[i].out||i===CH.active) return;
   var wasRunning=CH.running;
   chStopTick(); CH.running=false; CH.active=i;
+  swoosh();
   speak('À toi '+CH.players[i].name);
   if(wasRunning) chRun(); else render();
 }
@@ -1935,10 +2010,16 @@ function chGame(){
     var cls = 'lane'+(live?' live':'')+(pl.out?' ko':'')+(!pl.out&&pl.left<=5?' danger':(!pl.out&&pl.left<=20?' warn':''));
     var bg = pl.out ? '#e7e5e4' : (pl.left<=5 ? 'linear-gradient(180deg,#fecdd3,#fda4af)' : pl.left<=20 ? 'linear-gradient(180deg,#fde68a,#fcd34d)' : 'linear-gradient(180deg,#a7f3d0,#6ee7b7)');
     var lead = (!pl.out && pl.good>0 && pl.good===maxGood);
+    var R=42, CIRC=2*Math.PI*R, off=CIRC*(1-pc);
+    var ph=avPhotoOf(pl.name);
+    var ring='<div class="ring"><svg viewBox="0 0 100 100">'+
+      '<circle cx="50" cy="50" r="'+R+'" fill="none" stroke="#eeedec" stroke-width="9"/>'+
+      '<circle cx="50" cy="50" r="'+R+'" fill="none" stroke="'+(pl.out?'#d6d3d1':cc)+'" stroke-width="9" stroke-linecap="round" '+
+        'stroke-dasharray="'+CIRC.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'" style="transition:stroke-dashoffset .3s linear"/></svg>'+
+      '<span class="face">'+(pl.out?'\u274C':(ph?'<img src="'+ph+'" alt="">':avFor(pl.name)))+'</span></div>';
     h+='<div class="'+cls+'" onclick="chJump('+i+')">'+
-       '<div class="fillbar" style="height:'+(pc*100).toFixed(1)+'%;background:'+bg+'"></div>'+
        (lead?'<span class="crown">\uD83D\uDC51</span>':'')+
-       (pl.out?'<div style="font-size:20px">\u274C</div>':'<div>'+av(pl.name)+'</div>')+
+       ring+
        '<div class="who">'+esc(pl.name)+'</div>'+
        '<div class="tt" style="color:'+(pl.out?'#a8a29e':cc)+'">'+(pl.out?'0:00':fmtT(pl.left))+'</div>'+
        '<div class="gd">\u2713 '+pl.good+'</div>'+
