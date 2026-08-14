@@ -349,7 +349,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='38';
+var APP_VERSION='39';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -1075,67 +1075,32 @@ function renderQuizz(hd,app,banner){
   hd.innerHTML=back()+'<h1>🎙️ Le Micro<span class="sub">Quiz animé à la voix</span></h1><span style="width:38px"></span>';
   var h=banner;
   if(S.qtab==='play'){
-    // ─── 1. Le principe (court) ───
-    h+='<div class="card" style="background:var(--gr-l);border-color:var(--gr-b)">'+
-      '<div class="l" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#047857;text-align:center">Le principe</div>'+
-      '<p style="margin:6px 0 0;font-size:13.5px;color:#065f46;line-height:1.55;text-align:center">Tu prépares la partie ici. L\'app <b>assemble alors ton texte de lancement</b> : les règles du jeu, vos prénoms, le style choisi et les questions déjà posées. '+
-      'Tu le colles dans l\'IA de ton choix : elle devient <b>l\'animateur</b> et mène la partie à la voix.</p></div>';
-
-    // ─── 2. QUI JOUE ───
     var sel=D.microTeam||D.lib.map(function(p){return p.id;});
-    h+='<div class="card"><h2><span class="stepn">1</span>Qui joue ? ('+microTeam().length+')</h2>'+
+    var team=microTeam();
+    h+='<div class="card"><h2><span class="stepn">1</span>Qui joue ? ('+team.length+')</h2>'+
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'+
       D.lib.map(function(p){ var on=sel.indexOf(p.id)>=0;
         return '<button onclick="microToggleP(\''+p.id+'\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;border:2px solid '+(on?'var(--gr)':'var(--line)')+';background:'+(on?'var(--gr-l)':'#fff')+';border-radius:14px;padding:8px 4px;cursor:pointer;opacity:'+(on?'1':'.5')+';min-width:0">'+
           av(p.name,'sm')+'<span style="font-size:11px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name)+'</span></button>';
+      }).join('')+'</div></div>';
+    h+='<div class="card"><h2><span class="stepn">2</span>Style de l\'animateur</h2>'+
+      '<div class="chips" style="margin-bottom:8px">'+MICRO_STYLES.map(function(sx){
+        return '<button class="chip'+((D.microStyle||'classique')===sx.id?' on':'')+'" onclick="setMicroStyle(\''+sx.id+'\')">'+sx.label+'</button>';
       }).join('')+'</div>'+
-      '<p class="mini" style="margin-top:8px">Leurs prénoms partent dans le lancement : l\'animateur démarre directement, sans demander qui joue.</p></div>';
-
-    // ─── 3. STYLE ───
-    h+='<div class="card"><h2><span class="stepn">2</span>Le style de ton animateur</h2>'+
-      '<div class="chips" style="margin-bottom:8px">'+MICRO_STYLES.map(function(s){
-        return '<button class="chip'+((D.microStyle||'classique')===s.id?' on':'')+'" onclick="setMicroStyle(\''+s.id+'\')">'+s.label+'</button>';
-      }).join('')+'</div>'+
-      '<input placeholder="Ta touche perso (ex. « thème années 90 », « spécial ados »…)" value="'+(D.microCustom||'').replace(/"/g,'&quot;')+'" onchange="D.microCustom=this.value;persist();render()">'+
-      '<p class="mini" style="margin-top:6px">Le style et ta consigne <b>s\'ajoutent</b> au lancement — les règles du jeu, elles, ne bougent jamais.</p></div>';
-
-    // ─── 4. ASSISTANT ───
+      '<input placeholder="Ta touche perso (ex. « années 90 », « spécial ados »…)" value="'+(D.microCustom||'').replace(/"/g,'&quot;')+'" onchange="D.microCustom=this.value;persist();render()"></div>';
     h+='<div class="card"><h2><span class="stepn">3</span>Ton assistant IA</h2>'+
       '<div class="chips">'+AI_APPS.map(function(a){
         return '<button class="chip'+((D.aiApp||'claude')===a.id?' on':'')+'" onclick="setAiApp(\''+a.id+'\')">'+a.label+'</button>';
       }).join('')+'</div>'+
-      '<p class="mini" style="margin-top:8px">Il suffit qu\'il sache parler à voix haute. Le texte est le même pour tous.</p>'+
-      '<div style="margin-top:10px;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:10px 12px">'+
-        '<p class="mini" style="margin:0;color:#92400e"><b>À savoir avant de lancer :</b> il te faut l\'app (ou le site) de cet assistant, et un compte chez lui. '+
-        'Les versions gratuites suffisent pour jouer. En Jeux ne te fait rien payer et n\'envoie rien : le texte part dans <b>ton</b> assistant, avec <b>ton</b> compte.</p></div></div>';
-
-    // ─── 5. GÉNÉRATION : récapitulatif de ce qui va partir, puis le bouton ───
-    var st=MICRO_STYLES.filter(function(s){return s.id===(D.microStyle||'classique');})[0];
-    var team=microTeam();
-    h+='<div class="card" style="border-color:var(--gr-b);background:linear-gradient(135deg,#ecfdf5,#f0fdf4)">'+
-      '<h2 style="color:#065f46">🚀 Prêt à lancer</h2>'+
-      '<p class="mini" style="margin:0 0 10px;color:#047857">Voici ce que l\'app va assembler pour toi :</p>'+
-      '<ul class="lst" style="margin-bottom:10px">'+
-        '<li>✓ <b>Les règles complètes</b> du jeu (21 sections, inchangées)</li>'+
-        '<li>✓ <b>'+pl(team.length,'joueur')+'</b> : '+esc(team.slice(0,6).join(', '))+(team.length>6?'…':'')+'</li>'+
-        '<li>✓ <b>Style</b> : '+esc(st?st.label:'Classique')+(D.microCustom&&D.microCustom.trim()?' + « '+esc(D.microCustom.trim())+' »':'')+'</li>'+
-        (D.journal.length?'<li>✓ <b>'+Math.min(D.journal.length,120)+' questions à éviter</b> (anti-répétition)</li>':'<li style="opacity:.6">○ Journal vide — aucune question à éviter pour l\'instant</li>')+
-      '</ul>'+
-      '<button class="btn" style="font-size:17px" onclick="briefGo()" aria-label="Générer le texte de lancement et ouvrir l assistant">🚀 Générer et lancer la partie</button>'+
-      '<div class="steps" style="margin-top:12px">'+
-        '<div class="stp1"><span class="n">›</span><span>Le texte est <b>copié</b> et ton assistant <b>s\'ouvre</b>.</span></div>'+
-        '<div class="stp1"><span class="n">›</span><span><b>Colle</b> (appui long → Coller) puis envoie.</span></div>'+
-        '<div class="stp1"><span class="n">›</span><span>Passe en <b>mode voix</b> 🎙️ — et jouez !</span></div>'+
-      '</div>'+
+      '<p class="mini" style="margin-top:8px">Il te faut son app et un compte — les versions gratuites suffisent. Rien n\'est payant ni envoyé par En Jeux.</p></div>';
+    var stl=MICRO_STYLES.filter(function(x){return x.id===(D.microStyle||'classique');})[0];
+    h+='<p class="mini" style="text-align:center;margin:2px 2px 8px">'+pl(team.length,'joueur')+' · '+esc(stl?stl.label:'Classique')+(D.journal.length?' · anti-répétition ✓':'')+'</p>';
+    h+='<button class="btn" style="font-size:17px" onclick="briefGo()" aria-label="Générer le texte de lancement et ouvrir l assistant">🚀 Générer et lancer</button>'+
+      '<p class="mini" style="text-align:center;margin:8px 2px 0">Le texte est copié et ton assistant s\'ouvre — colle-le, puis passe en mode voix 🎙️.</p>'+
       '<div class="row" style="margin-top:10px;gap:8px">'+
-        '<button class="sm" style="flex:1;background:var(--card)" onclick="briefCopy()">📋 Copier seulement</button>'+
+        '<button class="sm" style="flex:1;background:var(--card)" onclick="briefCopy()">📋 Copier</button>'+
         '<button class="sm" style="flex:1;background:var(--card)" onclick="briefShare()">📤 Envoyer</button>'+
-      '</div></div>';
-
-    h+='<div class="card"><h2>Ce que l\'animateur gère pour vous</h2><ul class="lst">'+
-      ['Les questions : variées façon Trivial, jamais deux fois la même','La difficulté : adaptée à chaque joueur, domaine par domaine','Le score : 2 pts en direct, 1 pt avec propositions, objectif 15','Les mécaniques : Cash, Vol, Tour Défi, Duel, Quitte ou double','L\'arbitrage : rotation stricte, réponses officielles, zéro triche']
-      .map(function(t){return '<li>✓ '+t+'</li>';}).join('')+'</ul></div>';
-    h+='<p class="mini" style="text-align:center;margin:4px 2px 0;line-height:1.6">Envie de garder une trace ? Le <b>classement</b> se note dans l\'onglet <b>🏆 Palmarès</b>, les <b>questions</b> dans le <b>📖 Journal</b> — quand tu veux, jamais obligatoire.</p>';
+      '</div>';
   }else if(S.qtab==='j'){
     h+='<div class="card"><h2>Ajouter les questions d\'une partie</h2>'+
       '<p class="mini" style="margin-bottom:8px">Colle la liste donnée en fin de partie (une par ligne). Les doublons sont détectés automatiquement.</p>'+
@@ -2070,23 +2035,15 @@ function chAggChrono(){
 }
 function chConfig(){
   var s=chSettings();
-  var mins=Math.floor(s.secs/60), secs=s.secs%60;
-  var durLabel = mins? (mins+' min'+(secs? ' '+secs:'')) : (secs+' s');
   var presets=[30,60,90,120,180];
-  var h='<div class="card"><h2>Temps par joueur</h2>'+
+  var h='<div class="card"><h2><span class="stepn">1</span>Temps par joueur</h2>'+
     '<div class="chips" style="margin-bottom:8px">'+presets.map(function(p){
       var lb=p<60?p+' s':(p/60)+' min'; if(p===90)lb='1 min 30'; if(p===180)lb='3 min';
       return '<button class="chip'+(s.secs===p?' on':'')+'" onclick="chSetSecs('+p+')">'+lb+'</button>';}).join('')+
     '</div>'+
     '<div class="row"><span class="mini" style="flex:1">Personnalisé (secondes)</span>'+
-    '<input type="number" inputmode="numeric" style="width:90px;text-align:center" value="'+s.secs+'" onchange="chSetSecs(parseInt(this.value)||60)"></div>'+
-    '<div class="card" style="background:var(--am-l);border-color:var(--am);margin-bottom:12px">'+
-      '<p style="margin:0;font-size:13.5px;color:#92400e;line-height:1.55"><b>⏱️ Un chrono par joueur, pour le jeu de votre choix.</b><br>'+
-      'Tic-Tac ne pose pas de questions : <b>c\'est vous qui apportez le jeu</b> — vos propres questions, les cartes d\'un jeu de société, des défis, un « qui dira le dernier mot ».<br>'+
-      'L\'app fait le reste : chacun a son temps, il descend quand c\'est à lui, à zéro il est éliminé. <b>Le dernier debout gagne.</b></p></div>'+
-    (D.tictac.length?'<button class="sm" style="width:100%;margin-bottom:10px;background:var(--card)" onclick="go(\'champions\')">🏅 '+pl(D.tictac.length,'duel')+' au Mur des champions</button>':'')+
-    '<p class="mini" style="margin-top:6px">Temps par défaut : <b>'+durLabel+'</b>. Tu peux donner un temps différent à chaque joueur ci-dessous (utile pour équilibrer petits et grands).</p></div>';
-  h+='<div class="card"><h2>Joueurs ou équipes ('+s.players.length+')</h2>';
+    '<input type="number" inputmode="numeric" style="width:90px;text-align:center" value="'+s.secs+'" onchange="chSetSecs(parseInt(this.value)||60)"></div></div>';
+  h+='<div class="card"><h2><span class="stepn">2</span>Joueurs ou équipes ('+s.players.length+')</h2>';
   s.players.forEach(function(n,i){
     h+='<div class="row" style="margin-bottom:8px;gap:9px;align-items:center">'+
        '<button style="border:0;background:none;padding:0;cursor:pointer;flex-shrink:0" onclick="chAv('+i+')" title="Photo ou personnage">'+av(n)+'</button>'+
@@ -2094,25 +2051,23 @@ function chConfig(){
        '<input type="number" inputmode="numeric" title="Temps de ce joueur (s)" placeholder="'+s.secs+'" value="'+(s.custom&&s.custom[i]?s.custom[i]:'')+'" onchange="chSetPlayerSecs('+i+',this.value)" style="width:56px;text-align:center;flex-shrink:0">'+
        (s.players.length>2?'<button class="sm r" onclick="chDelP('+i+')">✕</button>':'')+'</div>';
   });
-  h+='<p class="mini" style="margin-top:2px">Chaque ligne peut être une personne <b>ou une équipe</b>. Touche un avatar pour une photo ou un personnage — il est partagé avec La Coupe et Le Micro.</p>';
-  if(s.players.length<8) h+='<button class="sm g" style="width:100%;margin-top:4px" onclick="chAddP()">+ Ajouter un joueur ou une équipe</button>';
+  if(s.players.length<8) h+='<button class="sm g" style="width:100%;margin-top:4px" onclick="chAddP()">+ Ajouter</button>';
   h+='</div>';
-  h+='<div class="card"><h2>Son</h2><div class="row">'+
-     '<button class="chip'+(s.sound?' on':'')+'" style="flex:1;text-align:center" onclick="chSound(true)">🔔 Bip activé</button>'+
-     '<button class="chip'+(!s.sound?' on':'')+'" style="flex:1;text-align:center" onclick="chSound(false)">🔕 Silencieux</button></div></div>';
-  h+='<button class="btn" onclick="chStart()">Démarrer la manche</button>'+
-     '<p class="mini" style="text-align:center;margin-top:8px">Chaque joueur défend son temps : quand il a la main, son chrono tourne.</p>';
-  // Règle de passation : elle change selon les jeux
   var pr=s.pass||'wrong';
-  h+='<div class="card"><h2>Quand passe-t-on la main ?</h2>'+
+  h+='<div class="card"><h2><span class="stepn">3</span>Quand passe-t-on la main ?</h2>'+
     '<div style="display:flex;flex-direction:column;gap:8px">'+
-    [['wrong','❌ Après une erreur','Il garde la main tant qu\'il répond juste (quiz, culture générale)'],
-     ['good','✅ Après une bonne réponse','Chacun son tour dès qu\'il a réussi (énumération, mots à trouver)'],
-     ['both','🔀 Au choix pendant le jeu','Les deux boutons restent disponibles, tu décides sur le moment']]
+    [['wrong','❌ Après une erreur','Garde la main tant qu\'il répond juste'],
+     ['good','✅ Après une bonne réponse','Chacun son tour dès qu\'il réussit'],
+     ['both','🔀 Au choix pendant le jeu','Tu décides sur le moment']]
     .map(function(o){
       return '<button class="chip'+(pr===o[0]?' on':'')+'" style="text-align:left;padding:10px 12px;white-space:normal" onclick="chSetPass(\''+o[0]+'\')">'+
         '<b>'+o[1]+'</b><br><span style="font-weight:400;font-size:11.5px;opacity:.85">'+o[2]+'</span></button>';
     }).join('')+'</div></div>';
+  h+='<div class="row" style="gap:8px;margin-bottom:10px">'+
+     '<button class="chip'+(s.sound?' on':'')+'" style="flex:1;text-align:center" onclick="chSound(true)">🔔 Son</button>'+
+     '<button class="chip'+(!s.sound?' on':'')+'" style="flex:1;text-align:center" onclick="chSound(false)">🔕 Silencieux</button></div>';
+  if(D.tictac.length) h+='<button class="sm" style="width:100%;margin-bottom:10px;background:var(--card)" onclick="go(\'champions\')">🏅 '+pl(D.tictac.length,'duel')+' au Mur des champions</button>';
+  h+='<button class="btn" onclick="chStart()">Démarrer la manche</button>';
   return h;
 }
 function chAv(i){ var s=chSettings(); if(!s.players[i]||!s.players[i].trim()){ s.players[i]='Joueur '+(i+1); } openAv(libIdForName(s.players[i])); }
