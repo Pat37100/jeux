@@ -349,7 +349,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='37';
+var APP_VERSION='38';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -1007,11 +1007,6 @@ function dropPlayerFull(id){
   });
 }
 function renameMatch(){var m=cur(),v=document.getElementById('rn').value.trim();if(v)m.name=v;persist();toast('Nom mis à jour');render();}
-function dropPlayer(id){var m=cur();m.players=m.players.filter(function(p){return p.id!==id;});persist();render();}
-function addPlayer(id){var m=cur(),p=D.lib.filter(function(x){return x.id===id;})[0];if(p)m.players.push({id:p.id,name:p.name});persist();render();}
-function addNew(){var m=cur(),v=document.getElementById('np').value.trim();if(!v)return;
-  v.split(',').forEach(function(s){s=s.trim();if(s)m.players.push({id:uid(),name:s});});persist();render();}
-function setRule(r){cur().winRule=r;persist();render();}
 function addPlayerToMatch(){
   var el=document.getElementById('addp'); var name=(el&&el.value||'').trim();
   if(!name){toast('Écris un prénom ou un nom d\'équipe');return;}
@@ -1072,7 +1067,7 @@ function copy(t,msg){
 }
 function fallbackCopy(t,msg){
   var a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);
-  a.select();a.setSelectionRange(0,999999);try{document.execCommand('copy');toast(msg);}catch(e){toast('Copie impossible');}a.remove();
+  a.select();a.setSelectionRange(0,999999);try{document.execCommand('copy');toast(msg);}catch(e){toast('Copie impossible — sélectionne le texte et copie-le à la main');}a.remove();
 }
 
 /* ------------------------------- QUIZZ ---------------------------- */
@@ -1691,12 +1686,12 @@ function avPhoto(inp){
           toast('Conversion impossible sur cet appareil — choisis un personnage à la place');
         }
       }catch(err){
-        toast('Photo impossible ici ('+(err&&err.message||'?')+') — essaie une image plus petite ou un personnage');
+        toast('Photo non convertie — essaie une image plus petite, ou choisis un personnage');
       }
     };
     img.src=rd.result;
   };
-  try{ rd.readAsDataURL(f); }catch(e){ toast('Impossible d\'ouvrir l\'image'); }
+  try{ rd.readAsDataURL(f); }catch(e){ toast('Image inaccessible — réessaie, ou choisis un personnage'); }
 }
 function addLib(){var v=document.getElementById('nl').value.trim();if(!v)return;
   v.split(',').forEach(function(s){s=s.trim();if(s)D.lib.push({id:uid(),name:s});});persist();render();}
@@ -1720,14 +1715,23 @@ function backupFile(){
 function restoreFile(inp){
   var f=inp.files&&inp.files[0]; if(!f) return;
   var rd=new FileReader();
+  var __avant=null;
+  try{ __avant=JSON.parse(JSON.stringify(D)); }catch(e){}
   rd.onload=function(){
     try{
       var o=JSON.parse(rd.result);
       if(!o||typeof o!=='object'||!('lib' in o)) throw new Error('format');
+      // Garde-fou : on annonce ce qu'on va écraser et par quoi
+      var actuel=(__avant&&__avant.matches?__avant.matches.length:0);
+      var nouveau=(o.matches?o.matches.length:0);
+      var msg='Remplacer le contenu actuel ('+pl(actuel,'partie')+') par cette sauvegarde ('+pl(nouveau,'partie')+') ?';
+      if(actuel>0 && !confirmish(msg)){ toast('Restauration annulée'); return; }
       D=o; if(!D.lib)D.lib=[]; if(!D.matches)D.matches=[]; if(!D.journal)D.journal=[];
       if(!D.micro)D.micro=[]; if(!D.tictac)D.tictac=[]; D.onboarded=1;
-      persist(); go('home'); toast('Sauvegarde restaurée ✓');
-    }catch(e){ toast('Fichier illisible — vérifie que c\'est bien une sauvegarde En Jeux'); }
+      persist(); go('home');
+      if(__avant) offerUndo('Sauvegarde restaurée', function(){ D=__avant; });
+      else toast('Sauvegarde restaurée ✓');
+    }catch(e){ toast('Fichier non reconnu — choisis un fichier créé par En Jeux — vérifie que c\'est bien une sauvegarde En Jeux'); }
   };
   rd.readAsText(f);
 }
@@ -1833,12 +1837,6 @@ function microShare(){
   var t='🎙️ Maître du Micro — En Jeux\n\n';
   agg.forEach(function(p,i){ t+=(med[i]||'   ')+' '+p.name+' — '+pl(p.wins,'victoire')+' / '+pl(p.games,'partie')+'\n'; });
   if(navigator.share){navigator.share({text:t}).catch(function(){});} else copy(t,'Palmarès du Micro copié');
-}
-function chShareP(){
-  var agg=chAggChrono(), med=['🥇','🥈','🥉'];
-  var t='⏱️ Roi du chrono — En Jeux\n\n';
-  agg.forEach(function(p,i){ t+=(med[i]||'   ')+' '+p.name+' — '+pl(p.wins,'duel gagné')+' / '+pl(p.duels,'joué')+'\n'; });
-  if(navigator.share){navigator.share({text:t}).catch(function(){});} else copy(t,'Palmarès du chrono copié');
 }
 function palShare(){
   var list=palData(PAL.year), med=['🥇','🥈','🥉'];
