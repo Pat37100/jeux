@@ -111,15 +111,28 @@
   .hero h2{text-shadow:0 1px 2px rgba(0,0,0,.12)}
   .whowheel{font-size:56px;text-align:center;padding:8px 0}
   .whoname{font-size:30px;font-weight:800;text-align:center;letter-spacing:-.02em}
+  .steps{display:flex;flex-direction:column;gap:9px;margin-top:10px}
+  .stp1{display:flex;gap:9px;align-items:flex-start;font-size:13.5px;color:#065f46;line-height:1.45}
+  .stp1 .n{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#059669;color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;margin-top:1px}
   .gridwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .gtab{border-collapse:separate;border-spacing:0;font-size:13px;width:max-content;min-width:100%}
   .gtab th,.gtab td{padding:7px 9px;text-align:center;white-space:nowrap;border-bottom:1px solid #f0efee}
   .gtab th{font-size:11px;color:var(--mut);font-weight:700;background:#fafaf9}
-  .gtab .stick{position:sticky;left:0;background:#fff;text-align:left;font-weight:700;z-index:2;box-shadow:1px 0 0 #e7e5e4;max-width:120px;overflow:hidden;text-overflow:ellipsis}
+  .gtab .stick{position:sticky;left:0;background:#fff;text-align:left;font-weight:700;z-index:2;box-shadow:1px 0 0 #e7e5e4;min-width:126px;max-width:150px}
+  .gtab .nmwrap{display:flex;align-items:center;gap:7px;min-width:0}
+  .gtab .nmtxt{min-width:0;display:block;flex:1}
+  .gtab .nmtxt b{display:block;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .gtab .nmbar{display:block;height:3px;border-radius:99px;background:#eeedec;margin-top:3px;overflow:hidden}
+  .gtab .nmbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#059669,#34d399)}
+  .gtab tr.lead .nmbar i{background:linear-gradient(90deg,#d97706,#fbbf24)}
+  .gtab tr.lead .stick{background:linear-gradient(90deg,#fffbeb,#fff)}
+  .gtab td.none{color:#d6d3d1}
+  .gtab .win{background:#ecfdf5;color:#047857;font-weight:800;border-radius:6px}
+  .gtab .tot small{display:block;font-size:9.5px;font-weight:700;color:#a8a29e;text-transform:uppercase;letter-spacing:.04em}
   .gtab thead .stick{background:#fafaf9}
   .gtab .nmcell{font-size:13px}
-  .gtab .win{color:#059669;font-weight:800}
-  .gtab .win::after{content:" 👑";font-size:10px}
+  .gtab .win::after{content:" 👑";font-size:9px;vertical-align:top}
   .gtab .tot{background:#f0fdf4;font-weight:800;color:#065f46;position:sticky;right:0;box-shadow:-1px 0 0 #e7e5e4}
   .gtab tbody tr:first-child .stick{color:#b45309}
   /* Glisser vers la gauche pour supprimer (geste iOS) */
@@ -294,7 +307,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='33';
+var APP_VERSION='34';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -431,7 +444,7 @@ function render_(){
         D.matches.length?pl(D.matches.length,'partie')+' en mémoire':'','Scores & palmarès')+
       tool('chrono','⏱️','Tic-Tac','<b>Il chronomètre.</b> Le duel de temps façon plateau TV : chacun défend son chrono, le dernier debout l\'emporte.','t-tictac',
         D.tictac.length?pl(D.tictac.length,'duel')+' au palmarès':'','Chrono & duel')+
-      tool('quizz','🎙️','Le Micro','<b>Il anime.</b> Un quiz à la voix, sur mesure, jamais deux fois la même question — même dans dix ans. Avec l\'app Claude (gratuite).','t-micro',
+      tool('quizz','🎙️','Le Micro','<b>Il anime.</b> Un quiz à la voix, sur mesure, jamais deux fois la même question — même dans dix ans. Fonctionne avec ton assistant IA.','t-micro',
         D.journal.length?pl(D.journal.length,'question')+' au journal':'','Quiz vocal · IA')+
 
       '<div style="margin-top:14px;display:flex;flex-direction:column;gap:9px">'+
@@ -610,7 +623,6 @@ function tabRank(m){
         '<p style="margin:0;font-size:13px;opacity:.92">'+nf(champC.points)+' pts · '+pl(champC.wins,'manche gagnée')+' — sa couronne rejoint le Mur des champions</p>':'')+
       '<div class="row" style="margin-top:12px;gap:8px;justify-content:center">'+
         '<button class="sm" style="background:rgba(255,255,255,.92)" onclick="share()">📤 Partager</button>'+
-        '<button class="sm" style="background:rgba(255,255,255,.92)" onclick="exportMatchPDF()">📄 PDF</button>'+
         '<button class="sm" style="background:rgba(255,255,255,.92)" onclick="S.ceremony=false;go(\'champions\')">🏅 Voir le Mur</button>'+
       '</div></div>';
   }
@@ -648,6 +660,9 @@ function tabRankBody(m){
       if(lead2&&lead2.points>0) h+='<p class="mini" style="text-align:center;margin:0 0 10px">🎯 Objectif : <b>'+nf(m.target)+' points</b> — '+esc(lead2.name)+' en est à '+nf(lead2.points)+'.</p>';
     }
   }
+  if(m.rounds.length>=2){
+    h+='<button class="sm" style="width:100%;margin-bottom:10px;background:#fff" onclick="S.tab=\'hist\';S.histMode=\'grid\';window.scrollTo(0,0);render()">▦ Voir le tableau de toutes les manches</button>';
+  }
   h+='<div class="card"><h2>🏅 Classement'+(m.winRule==='low'?' (le moins de points gagne)':'')+'</h2>';
   r.byCumul.forEach(function(p,i){
     var tp=lp.indexOf(p.id)>=0,tw=lw.indexOf(p.id)>=0;
@@ -673,7 +688,6 @@ function tabRankBody(m){
     }
   });
   h+='</div><button class="btn dark" onclick="share()">📤  Envoyer les résultats</button>'+
-     '<button class="sm" style="width:100%;margin-top:8px" onclick="exportMatchPDF()">📄 Exporter en PDF (imprimable)</button>'+
      '<p class="mini" style="text-align:center;margin-top:8px">Messages, WhatsApp, mail…</p>';
   return h;
 }
@@ -710,7 +724,7 @@ function saveRound(){
   for(k in S.inputs){var n=parseFloat(String(S.inputs[k]).replace(',','.'));if(!isNaN(n)){sc[k]=n;any=true;}}
   if(!any){toast('Saisis au moins un score');return;}
   m.rounds.unshift({id:uid(),date:S.date||today(),scores:sc});
-  persist();S.inputs={};S.date=today();S.tab='rank';tone(880,.1,.22);setTimeout(function(){tone(1318,.16,.2);},70);toast('Manche enregistrée ✓');window.scrollTo(0,0);render();
+  persist();S.inputs={};S.date=today();S.tab='rank';hit(PENTA[4],{dur:.18,vol:.26,fm:.5,fmRatio:3.01,cut:6000,rev:.3});hit(PENTA[6],{delay:.07,dur:.32,vol:.22,fm:.6,fmRatio:3.01,cut:7000,rev:.35});toast('Manche enregistrée ✓');window.scrollTo(0,0);render();
 }
 var GCOLORS=['#059669','#7c3aed','#d97706','#e11d48','#2563eb','#0d9488','#c026d3','#65a30d'];
 function histGraph(m){
@@ -743,20 +757,35 @@ function histGraph(m){
     '<p class="mini" style="margin-top:10px">Cumul manche après manche — on voit qui s\'envole et le moment où tout a basculé.</p></div>';
 }
 function histGrid(m){
-  if(!m.rounds.length) return '<div class="empty"><div class="e">▦</div><h3>Aucune manche</h3></div>';
+  if(!m.rounds.length) return '<div class="empty"><div class="e">▦</div><h3>Aucune manche</h3><p>Le tableau se remplit dès la première manche saisie.</p></div>';
   var r=rank(m,function(){return true;});
-  var order=r.byCumul; // meilleurs en haut
-  var head='<tr><th class="stick">Joueur</th>'+m.rounds.map(function(rd,i){return '<th title="'+fr(rd.date)+'">M'+(i+1)+'</th>';}).join('')+'<th class="tot">Total</th></tr>';
-  var body=order.map(function(p){
-    var cells=m.rounds.map(function(rd){
+  var order=r.byCumul;
+  var rounds=m.rounds.slice().reverse();     // chronologique : M1 à gauche
+  var maxPts=Math.max.apply(null,order.map(function(p){return Math.abs(p.points)||0;}))||1;
+  // en-têtes : M1, M2… + total
+  var head='<tr><th class="stick">Joueur / équipe</th>'+
+    rounds.map(function(rd,i){return '<th title="'+fr(rd.date)+'">M'+(i+1)+'</th>';}).join('')+
+    '<th class="tot">Total</th></tr>';
+  var body=order.map(function(p,pi){
+    var cells=rounds.map(function(rd){
       var v=rd.scores[p.id];
       var w=winners(rd,m.players,m.winRule).indexOf(p.id)>=0;
-      return '<td'+(w?' class="win"':'')+'>'+(v===undefined?'·':nf(v))+'</td>';
+      if(v===undefined) return '<td class="none">·</td>';
+      return '<td'+(w?' class="win"':'')+'>'+nf(v)+'</td>';
     }).join('');
-    return '<tr><td class="stick nmcell">'+esc(p.name)+'</td>'+cells+'<td class="tot"><b>'+nf(p.points)+'</b></td></tr>';
+    var medal=pi===0?'🥇':(pi===1?'🥈':(pi===2?'🥉':''));
+    var barW=Math.max(4,Math.round(100*Math.abs(p.points)/maxPts));
+    return '<tr class="'+(pi===0?'lead':'')+'">'+
+      '<td class="stick nmcell"><span class="nmwrap">'+av(p.name,'sm')+
+        '<span class="nmtxt"><b>'+esc(p.name)+medal+'</b>'+
+        '<span class="nmbar"><i style="width:'+barW+'%"></i></span></span></span></td>'+
+      cells+'<td class="tot"><b>'+nf(p.points)+'</b><small>'+pl(p.wins,'V')+'</small></td></tr>';
   }).join('');
-  return '<div class="card" style="padding:10px 0 6px"><div class="gridwrap"><table class="gtab"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>'+
-    '<p class="mini" style="text-align:center;margin:8px 12px 0">Fais glisser le tableau horizontalement · 👑 = manche gagnée · classement par cumul.</p></div>';
+  return '<div class="card" style="padding:12px 0 8px">'+
+    '<h2 style="padding:0 14px">▦ Le tableau de la partie</h2>'+
+    '<div class="gridwrap"><table class="gtab"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>'+
+    '<p class="mini" style="text-align:center;margin:10px 14px 0">Fais glisser vers la gauche pour voir toutes les manches · '+
+    '<b style="color:#059669">vert 👑</b> = manche gagnée · la barre montre l\'écart de cumul.</p></div>';
 }
 function tabHist(m){
   if(!m.rounds.length) return '<div class="empty"><div class="e">📋</div><h3>Aucune manche</h3><p>Rien d\'enregistré pour l\'instant.</p></div>';
@@ -886,18 +915,25 @@ function renderQuizz(hd,app,banner){
   var h=banner;
   if(S.qtab==='play'){
     h+='<div class="card" style="background:var(--gr-l);border-color:var(--gr-b);text-align:center">'+
-      '<div class="l" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#047857">Pour lancer une partie</div>'+
-      '<div style="display:flex;flex-direction:column;gap:7px;margin-top:8px;color:#065f46;font-size:14px">'+
-        '<div><b>1.</b> Touche <b>Lancer la partie</b> : le message est copié et Claude s\'ouvre.</div>'+
-        '<div><b>2.</b> <b>Colle</b> (appui long → Coller), envoie, puis passe en <b>mode voix</b> 🎙️.</div>'+
+      '<div class="l" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#047857">Comment ça marche</div>'+
+      '<div class="steps">'+
+        '<div class="stp1"><span class="n">1</span><span><b>Choisis qui joue</b> et ton assistant IA (ci-dessous).</span></div>'+
+        '<div class="stp1"><span class="n">2</span><span><b>Touche « Lancer la partie »</b> : le texte est copié, l\'assistant s\'ouvre.</span></div>'+
+        '<div class="stp1"><span class="n">3</span><span><b>Colle</b> (appui long → Coller), envoie, puis passe en <b>mode voix</b> 🎙️ — et jouez !</span></div>'+
       '</div>'+
       '<button class="btn" style="margin-top:12px;font-size:17px" onclick="briefGo()">🚀 Lancer la partie</button>'+
-      '<p class="mini" style="text-align:center;margin:8px 0 0;color:#065f46">L\'animateur connaît déjà vos prénoms et toutes les règles'+(D.journal.length?', et évitera '+Math.min(D.journal.length,120)+' questions déjà posées':'')+'.</p>'+
+      '<p class="mini" style="text-align:center;margin:8px 0 0;color:#065f46">Ton animateur connaît déjà vos prénoms et toutes les règles'+(D.journal.length?', et évitera '+Math.min(D.journal.length,120)+' questions déjà posées':'')+'.</p>'+
       '<div class="row" style="margin-top:10px;gap:8px">'+
         '<button class="sm" style="flex:1;background:#fff" onclick="briefCopy()">📋 Copier seulement</button>'+
         '<button class="sm" style="flex:1;background:#fff" onclick="briefShare()">📤 Envoyer</button>'+
       '</div>'+
       '</div>';
+    // Assistant IA au choix — l'app ne dépend d'aucune marque en particulier
+    h+='<div class="card"><h2>Ton assistant IA</h2>'+
+      '<div class="chips">'+AI_APPS.map(function(a){
+        return '<button class="chip'+((D.aiApp||'claude')===a.id?' on':'')+'" onclick="setAiApp(\''+a.id+'\')">'+a.label+'</button>';
+      }).join('')+'</div>'+
+      '<p class="mini" style="margin-top:8px">Le Micro fonctionne avec l\'assistant que tu préfères — il suffit qu\'il sache parler à voix haute. Le texte du lancement est le même pour tous.</p></div>';
     // Équipe qui joue (embarquée dans le lancement)
     var sel=D.microTeam||D.lib.map(function(p){return p.id;});
     h+='<div class="card"><h2>Qui joue ? ('+microTeam().length+')</h2>'+
@@ -942,6 +978,14 @@ function renderQuizz(hd,app,banner){
     '</div></nav>';
   if(S.microSheet) microDrawSheet();
 }
+var AI_APPS=[
+  {id:'claude', label:'Claude',  url:'https://claude.ai/new'},
+  {id:'chatgpt',label:'ChatGPT', url:'https://chatgpt.com/'},
+  {id:'gemini', label:'Gemini',  url:'https://gemini.google.com/app'},
+  {id:'other',  label:'Autre',   url:null}
+];
+function aiApp(){ var id=D.aiApp||'claude'; return AI_APPS.filter(function(a){return a.id===id;})[0]||AI_APPS[0]; }
+function setAiApp(id){ D.aiApp=id; persist(); render(); }
 var MICRO_STYLES=[
   {id:'classique', label:'🎙️ Classique', txt:null},
   {id:'show',      label:'🎤 Grand show', txt:"Adopte un ton de présentateur de grand show télévisé : très énergique, punchlines courtes, suspense marqué avant chaque révélation de réponse."},
@@ -970,7 +1014,7 @@ function briefText(){
 }
 /* Équipe sélectionnée pour Le Micro (par défaut : toute la bibliothèque) */
 function openBuzzerRefresh(){ var e=document.getElementById('bzsh'); if(e){ e.remove(); openBuzzer(); } }
-function buzzTest(){ tone(659,.12,.3); setTimeout(function(){tone(880,.2,.32);},90); }
+function buzzTest(){ hit(PENTA[2],{dur:.18,vol:.3,fm:.5,fmRatio:3.01,cut:6000,rev:.3}); hit(PENTA[4],{delay:.08,dur:.34,vol:.26,fm:.6,fmRatio:3.01,cut:7000,rev:.35}); }
 function setMicroStyle(id){ D.microStyle=id; persist(); render(); }
 function microTeam(){
   if(!D.microTeam) return D.lib.map(function(p){return p.name;});
@@ -985,7 +1029,7 @@ function microToggleP(id){
   persist(); render();
 }
 function briefShare(){ if(navigator.share){navigator.share({text:briefText()}).catch(function(){});} else briefCopy(); }
-function briefCopy(){ copy(briefText(),'Lancement copié — colle-le dans Claude et passe en voix'); }
+function briefCopy(){ copy(briefText(),'Lancement copié — colle-le dans ton assistant IA, puis passe en voix'); }
 /* Un seul geste : copie le lancement PUIS ouvre Claude (il ne reste qu'à coller) */
 function briefGo(){
   var t=briefText();
@@ -994,9 +1038,10 @@ function briefGo(){
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(t).catch(function(){ try{fallbackCopy(t,'Lancement copié');}catch(e){} });
   } else { try{fallbackCopy(t,'Lancement copié');}catch(e){} }
-  var wnd=null;
-  try{ wnd=window.open('https://claude.ai/new','_blank'); }catch(e){}
-  toast(wnd ? 'Copié ✓ — colle dans Claude, puis mode voix 🎙️' : 'Copié ✓ — ouvre Claude et colle');
+  var app=aiApp(), wnd=null;
+  if(app.url){ try{ wnd=window.open(app.url,'_blank'); }catch(e){} }
+  toast(wnd ? 'Copié ✓ — colle dans '+app.label+', puis passe en voix 🎙️'
+            : 'Copié ✓ — ouvre ton assistant IA et colle le texte');
 }
 function addJournal(){
   var t=document.getElementById('jp').value;
@@ -1085,8 +1130,7 @@ function microPalmares(){
   });
   h+='</div>';
   h+='<button class="btn" onclick="microOpen()">+ Enregistrer le classement d\'une partie</button>';
-  h+='<button class="btn dark" style="margin-top:8px" onclick="microShare()">📤 Partager le palmarès</button>'+
-     '<button class="sm" style="width:100%;margin-top:8px" onclick="exportMicroPDF()">📄 Exporter en PDF</button>';
+  h+='<button class="btn dark" style="margin-top:8px" onclick="microShare()">📤 Partager le palmarès</button>';
   h+='<div class="card" style="margin-top:12px"><h2>Historique des parties</h2>'+
     D.micro.map(function(g){
       var cf=S.confirm==='mq'+g.id;
@@ -1166,7 +1210,6 @@ function renderChampions(hd,app,banner){
   h+='</div>';
   h+='<p class="mini" style="text-align:center">Une couronne = un titre à La Coupe, une partie du Micro gagnée, ou un duel Tic-Tac remporté.</p>';
   h+='<button class="btn dark" style="margin-top:10px" onclick="champShare()">📤 Partager le mur</button>';
-  h+='<button class="sm" style="width:100%;margin-top:8px" onclick="exportChampionsPDF()">📄 Exporter en PDF</button>';
   app.innerHTML=h;
 }
 function champShare(){
@@ -1273,51 +1316,70 @@ function openBuzzer(){
       'color:#fff;font-size:44px;font-weight:800;font-family:inherit;letter-spacing:.04em">BUZZ</button>'+
     '<p class="mini" style="margin:10px 0 6px">Choisis ton buzz — touche pour l\'entendre :</p>'+
     '<div class="chips" style="justify-content:center">'+BUZZ_KITS.map(function(k){
-      return '<button class="chip'+((D.buzzKit||'tv')===k.id?' on':'')+'" onclick="setBuzzKit(\''+k.id+'\');openBuzzerRefresh()">'+k.label+'</button>';
+      return '<button class="chip'+((D.buzzKit||'drop')===k.id?' on':'')+'" onclick="setBuzzKit(\''+k.id+'\');openBuzzerRefresh()">'+k.label+'</button>';
     }).join('')+'</div>'+
     '<p class="mini" style="margin-top:8px">Rien n\'est enregistré : juste le réflexe (et le fou rire).</p>'+
     '<button class="btn grey" style="margin-top:12px" onclick="document.getElementById(\'bzsh\').remove()">Fermer</button></div>';
   document.body.appendChild(el);
 }
 var BUZZ_KITS=[
+  {id:'drop',  label:'🔊 Drop',        desc:'Basse qui claque'},
   {id:'tv',    label:'📺 Erreur TV',   desc:'Le « EHHH » de plateau'},
-  {id:'klaxon',label:'📯 Klaxon',      desc:'Deux notes bien grasses'},
+  {id:'zap',   label:'⚡️ Zap',         desc:'Coup de laser net'},
   {id:'boing', label:'🤸 Boing',       desc:'Cartoon, ça fait rire'},
   {id:'arcade',label:'👾 Arcade',      desc:'8-bit rétro'},
   {id:'sad',   label:'🎺 Trombone',    desc:'Wah-wah-wah… la loose'},
+  {id:'klaxon',label:'📯 Klaxon',      desc:'Deux notes bien grasses'},
   {id:'siren', label:'🚨 Sirène',      desc:'Alerte rouge'}
 ];
 function playBuzz(kit){
-  kit=kit||D.buzzKit||'tv';
-  if(kit==='tv'){
-    tone(92,.8,.85,'sawtooth'); tone(123,.8,.7,'sawtooth'); tone(61,.8,.6,'square'); noiseBurst(.12,.5);
-  } else if(kit==='klaxon'){
-    tone(233,.28,.8,'square'); tone(311,.28,.6,'square');
-    setTimeout(function(){ tone(196,.42,.8,'square'); tone(262,.42,.6,'square'); },260);
-    noiseBurst(.06,.3);
+  kit=kit||D.buzzKit||'drop';
+  if(kit==='drop'){
+    /* Le son "moderne" par excellence : sub-bass qui plonge + clap large réverbéré */
+    sub(150,.55,.85);
+    perc({dur:.22,f1:2200,f2:600,vol:.5,decay:1.6,rev:.5});
+    hit(98,{dur:.5,vol:.45,bend:.45,wave:'triangle',cut:900,rev:.35});
+    perc({delay:.055,dur:.18,f1:1500,vol:.32,rev:.5});
+  } else if(kit==='tv'){
+    sub(70,.75,.7);
+    hit(92,{dur:.7,vol:.7,wave:'sawtooth',cut:1300,rev:.3});
+    hit(123,{dur:.7,vol:.55,wave:'sawtooth',cut:1500,rev:.3});
+    perc({dur:.14,f1:900,f2:300,vol:.4,filter:'lowpass',rev:.3});
+  } else if(kit==='zap'){
+    /* laser net et sec, sans nappe : très actuel */
+    hit(2400,{dur:.16,vol:.4,bend:.08,wave:'square',cut:9000,rev:.3,atk:.001});
+    perc({dur:.1,f1:5000,f2:900,vol:.3,decay:1.4,rev:.35});
+    sub(130,.22,.5);
   } else if(kit==='boing'){
-    sweep(700,90,.5,.75,'sine',18);
-    setTimeout(function(){ sweep(420,70,.35,.5,'sine',22); },260);
+    hit(760,{dur:.45,vol:.6,bend:.12,wave:'sine',cut:4000,rev:.3});
+    hit(430,{delay:.22,dur:.34,vol:.4,bend:.16,wave:'sine',cut:3000,rev:.3});
+    perc({delay:.02,dur:.06,f1:1200,vol:.14,rev:.2});
   } else if(kit==='arcade'){
-    [[880,0],[660,70],[440,140],[220,210],[110,300]].forEach(function(n){
-      setTimeout(function(){ tone(n[0],.12,.6,'square'); },n[1]);
+    [0,1,2,3,4].forEach(function(k){
+      hit(880/Math.pow(1.5,k),{delay:k*.062,dur:.11,vol:.42,wave:'square',cut:6000,rev:.18});
     });
-    noiseBurst(.08,.25);
+    perc({dur:.07,f1:2400,vol:.18,rev:.2}); sub(120,.25,.4);
   } else if(kit==='sad'){
-    [[311,0,.34],[277,300,.34],[233,600,.5]].forEach(function(n){
-      setTimeout(function(){ sweep(n[0],n[0]*.86,n[2],.7,'sawtooth',7); },n[1]);
+    [311,277,233].forEach(function(f,k){
+      hit(f,{delay:k*.28,dur:.42,vol:.5,bend:.86,wave:'sawtooth',cut:1700,q:1.4,rev:.4});
     });
+    sub(100,.5,.35);
+  } else if(kit==='klaxon'){
+    hit(233,{dur:.26,vol:.6,wave:'square',cut:2600,rev:.25});
+    hit(311,{dur:.26,vol:.45,wave:'square',cut:2600,rev:.25});
+    hit(196,{delay:.25,dur:.4,vol:.6,wave:'square',cut:2400,rev:.3});
+    hit(262,{delay:.25,dur:.4,vol:.45,wave:'square',cut:2400,rev:.3});
+    sub(110,.5,.4);
   } else if(kit==='siren'){
-    [0,300,600].forEach(function(d){
-      setTimeout(function(){ sweep(600,1100,.16,.55,'sawtooth'); setTimeout(function(){ sweep(1100,600,.16,.55,'sawtooth'); },160); },d);
+    [0,.28,.56].forEach(function(d){
+      hit(700,{delay:d,dur:.15,vol:.42,bend:1.6,wave:'sawtooth',cut:5000,rev:.3});
+      hit(1120,{delay:d+.15,dur:.15,vol:.42,bend:.62,wave:'sawtooth',cut:5000,rev:.3});
     });
   }
 }
 function setBuzzKit(id){ D.buzzKit=id; persist(); playBuzz(id); render(); }
 function buzz(btn){
-  tone(160,.55,.5);            // couche historique (compat tests)
-  playBuzz(D.buzzKit||'tv');   // le kit choisi par l'utilisateur
-  setTimeout(function(){tone(120,.4,.4);},80);
+  playBuzz(D.buzzKit||'drop');  // le kit choisi par l'utilisateur
   if(navigator.vibrate){ try{navigator.vibrate([220,50,160]);}catch(e){} }
   if(btn){ btn.style.transform='scale(.9)'; setTimeout(function(){ btn.style.transform=''; },150); }
   // flash rouge plein écran
@@ -1342,11 +1404,12 @@ function whoSpin(){
   var n=0, ticks=14+Math.floor(Math.random()*8);
   function step(){
     WHO.picked=pool[Math.floor(Math.random()*pool.length)];
-    noiseBurst(.05,.22); // roulement de tambour
+    perc({dur:.05,f1:1500,vol:.2,decay:3,rev:.15}); // roulement moderne (snaps filtrés)
     drawWhoSheet(); n++;
     if(n<ticks){ setTimeout(step, 60+n*14); }
     else { WHO.spinning=false; WHO.picked=pool[Math.floor(Math.random()*pool.length)]; drawWhoSheet();
-      tone(523,.14,.3); setTimeout(function(){tone(784,.4,.35); tone(659,.4,.25);},130); // ta-da !
+      [0,2,5].forEach(function(idx,k){ hit(PENTA[idx],{delay:k*.07,dur:.55,vol:.34,fm:.7,fmRatio:3.01,cut:7000,rev:.45}); });
+      sub(120,.35,.4); perc({delay:.14,dur:.14,f1:2200,f2:900,vol:.26,rev:.4});
       speak((WHO.picked?WHO.picked.name:'')+' commence'); try{if(navigator.vibrate)navigator.vibrate(30);}catch(e){} }
   }
   step();
@@ -1571,72 +1634,12 @@ function renderPalmares(hd,app,banner){
          '<div class="pts"><b>'+p.titles+'</b><small>titre'+(p.titles>1?'s':'')+'</small></div>'+
          '<div class="pts" style="margin-left:10px"><b>'+p.wins+'</b><small>manches</small></div></div>';
     });
-    h+='</div><button class="btn dark" onclick="palShare()">📤 Envoyer le palmarès</button>'+
-       '<button class="sm" style="width:100%;margin-top:8px" onclick="exportPalmaresPDF()">📄 Exporter le palmarès en PDF</button>';
+    h+='</div><button class="btn dark" onclick="palShare()">📤 Envoyer le palmarès</button>';
   }
   app.innerHTML=h;
   document.getElementById('nav').innerHTML='';
 }
 /* ---- EXPORT PDF (via impression navigateur -> Enregistrer en PDF) ---- */
-function pdfRender(inner){
-  var el=document.getElementById('pdf'); if(!el) return;
-  el.innerHTML=inner+'<div class="pdf-foot">Généré avec En Jeux · '+fr(today())+'</div>';
-  setTimeout(function(){ try{ window.print(); }catch(e){ toast('Impression indisponible ici'); } }, 60);
-}
-function pdfMedal(i){ return ['🥇','🥈','🥉'][i]||(i+1); }
-function exportMatchPDF(){
-  var m=cur(); if(!m){toast('Aucune partie');return;}
-  var r=rank(m,function(){return true;});
-  var rounds=m.rounds.slice();
-  var head='<div class="pdf-h"><h1>🏆 '+esc(m.name)+'</h1><p>'+pl(rounds.length,'manche')+' · '+pl(m.players.length,'joueur')+(m.winRule==='low'?' · le moins de points gagne':'')+'</p></div>';
-  // classement
-  var cl='<div class="pdf-sec"><h2>Classement final</h2><table><thead><tr><th>#</th><th>Joueur</th><th>Points</th><th>Victoires</th><th>Moyenne</th></tr></thead><tbody>';
-  r.byCumul.forEach(function(p,i){ cl+='<tr class="'+(i===0?'pdf-top':'')+'"><td class="pdf-medal">'+pdfMedal(i)+'</td><td>'+esc(p.name)+'</td><td>'+nf(p.points)+'</td><td>'+p.wins+'</td><td>'+(p.played?nf(p.points/p.played):'—')+'</td></tr>'; });
-  cl+='</tbody></table></div>';
-  // détail des manches
-  var det='';
-  if(rounds.length){
-    det='<div class="pdf-sec"><h2>Détail des manches</h2><table><thead><tr><th>Date</th>'+m.players.map(function(p){return '<th>'+esc(p.name)+'</th>';}).join('')+'</tr></thead><tbody>';
-    rounds.forEach(function(rd){
-      det+='<tr><td>'+fr(rd.date)+'</td>'+m.players.map(function(p){ var w=winners(rd,m.players,m.winRule).indexOf(p.id)>=0; var v=rd.scores[p.id]; return '<td>'+(v===undefined?'—':nf(v)+(w?' 👑':''))+'</td>';}).join('')+'</tr>';
-    });
-    det+='</tbody></table></div>';
-  }
-  pdfRender(head+cl+det);
-}
-function exportPalmaresPDF(){
-  var list=palData(PAL.year);
-  var lb={all:'depuis le début',d1:'de la soirée',d7:'des 7 derniers jours',d30:'des 30 derniers jours'}[PAL.year]||('saison '+PAL.year);
-  var head='<div class="pdf-h"><h1>🏅 Palmarès</h1><p>La Coupe · '+lb+'</p></div>';
-  var t='<div class="pdf-sec"><h2>Classement '+lb+'</h2><table><thead><tr><th>#</th><th>Joueur</th><th>Titres</th><th>Manches gagnées</th><th>Parties</th></tr></thead><tbody>';
-  list.forEach(function(p,i){ t+='<tr class="'+(i===0?'pdf-top':'')+'"><td class="pdf-medal">'+pdfMedal(i)+'</td><td>'+esc(p.name)+'</td><td>'+p.titles+'</td><td>'+p.wins+'</td><td>'+p.matches+'</td></tr>'; });
-  t+='</tbody></table></div>';
-  pdfRender(head+t);
-}
-function exportChampionsPDF(){
-  var list=championsAgg().filter(function(p){return p.crowns||p.coupeManches||p.quizGames||p.duels;});
-  var head='<div class="pdf-h" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)"><h1>🏅 Mur des champions</h1><p>Tous les jeux réunis · '+pl(list.length,'joueur')+'</p></div>';
-  var t='<div class="pdf-sec"><h2>Classement général (couronnes)</h2><table><thead><tr><th>#</th><th>Joueur</th><th>👑 Total</th><th>🏆 Coupe</th><th>🎙️ Micro</th><th>⏱️ Tic-Tac</th></tr></thead><tbody>';
-  list.forEach(function(p,i){ t+='<tr class="'+(i===0?'pdf-top':'')+'"><td class="pdf-medal">'+pdfMedal(i)+'</td><td>'+esc(p.name)+'</td><td>'+p.crowns+'</td><td>'+p.coupes+'</td><td>'+p.quizWins+'</td><td>'+p.duelWins+'</td></tr>'; });
-  t+='</tbody></table></div>';
-  pdfRender(head+t);
-}
-function exportChronoPDF(){
-  var agg=chAggChrono(); if(!agg.length){toast('Rien à exporter');return;}
-  var head='<div class="pdf-h" style="background:linear-gradient(135deg,#d97706,#fbbf24)"><h1>⏱️ Roi du chrono</h1><p>Tic-Tac · '+pl(D.tictac.length,'duel enregistré')+'</p></div>';
-  var t='<div class="pdf-sec"><h2>Classement</h2><table><thead><tr><th>#</th><th>Joueur / équipe</th><th>Victoires</th><th>Duels</th><th>✓ Total</th><th>Record</th></tr></thead><tbody>';
-  agg.forEach(function(p,i){ t+='<tr class="'+(i===0?'pdf-top':'')+'"><td class="pdf-medal">'+pdfMedal(i)+'</td><td>'+esc(p.name)+'</td><td>'+p.wins+'</td><td>'+p.duels+'</td><td>'+p.good+'</td><td>'+p.best+'</td></tr>'; });
-  t+='</tbody></table></div>';
-  pdfRender(head+t);
-}
-function exportMicroPDF(){
-  var agg=microAgg(); if(!agg.length){toast('Rien à exporter');return;}
-  var head='<div class="pdf-h" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)"><h1>🎙️ Maître du Micro</h1><p>Quiz vocal · '+pl(D.micro.length,'partie enregistrée')+'</p></div>';
-  var t='<div class="pdf-sec"><h2>Classement</h2><table><thead><tr><th>#</th><th>Joueur / équipe</th><th>Victoires</th><th>Parties</th></tr></thead><tbody>';
-  agg.forEach(function(p,i){ t+='<tr class="'+(i===0?'pdf-top':'')+'"><td class="pdf-medal">'+pdfMedal(i)+'</td><td>'+esc(p.name)+'</td><td>'+p.wins+'</td><td>'+p.games+'</td></tr>'; });
-  t+='</tbody></table></div>';
-  pdfRender(head+t);
-}
 function microShare(){
   var agg=microAgg(), med=['🥇','🥈','🥉'];
   var t='🎙️ Maître du Micro — En Jeux\n\n';
@@ -1678,6 +1681,87 @@ function audioCtx(){
   return a;
 }
 function outNode(a){ return __comp||a.destination; }
+/* ── Réverbération courte : c'est ce qui distingue un son "app 2026"
+      d'un bip de vieux téléphone. Un son sec paraît daté. ── */
+var __rev=null;
+function revNode(a){
+  if(__rev) return __rev;
+  try{
+    var len=Math.floor(a.sampleRate*1.1), buf=a.createBuffer(2,len,a.sampleRate);
+    for(var c=0;c<2;c++){ var d=buf.getChannelData(c);
+      for(var i=0;i<len;i++){ d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.6); } }
+    var cv=a.createConvolver(); cv.buffer=buf;
+    var wet=a.createGain(); wet.gain.value=.34;
+    cv.connect(wet); wet.connect(outNode(a));
+    __rev=cv;
+  }catch(e){ __rev=null; }
+  return __rev;
+}
+/* Voix percussive moderne : attaque immédiate, extinction rapide, filtrée, réverbérée.
+   C'est la signature sonore des apps actuelles (pop, blip, marimba). */
+function hit(freq,opts){
+  if(D.fx===0) return;
+  opts=opts||{};
+  try{
+    var a=audioCtx(); if(!a) return;
+    var t=a.currentTime+(opts.delay||0);
+    var dur=opts.dur||.22, vol=opts.vol||.4;
+    var o=a.createOscillator(); o.type=opts.wave||'sine';
+    o.frequency.setValueAtTime(freq,t);
+    if(opts.bend) o.frequency.exponentialRampToValueAtTime(Math.max(20,freq*opts.bend),t+dur*.9);
+    // synthèse FM : donne le timbre marimba/cloche (bien plus riche qu'une sinusoïde nue)
+    if(opts.fm){
+      var m=a.createOscillator(), mg=a.createGain();
+      m.frequency.value=freq*(opts.fmRatio||2.4); mg.gain.value=freq*(opts.fm||.6);
+      m.connect(mg); mg.connect(o.frequency); m.start(t); m.stop(t+dur);
+    }
+    var g=a.createGain();
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(vol,t+(opts.atk||.006));   // attaque nette
+    g.gain.exponentialRampToValueAtTime(.0001,t+dur);          // extinction percussive
+    var f=a.createBiquadFilter();
+    f.type=opts.filter||'lowpass'; f.frequency.value=opts.cut||5200; f.Q.value=opts.q||.9;
+    o.connect(f); f.connect(g); g.connect(outNode(a));
+    if(opts.rev!==false){ var r=revNode(a); if(r){ var rg=a.createGain(); rg.gain.value=(opts.rev||.3)*vol; g.connect(rg); rg.connect(r); } }
+    o.start(t); o.stop(t+dur+.02);
+  }catch(e){}
+}
+/* Percussion à base de bruit : clap, snap, whoosh — indispensable au son moderne */
+function perc(opts){
+  if(D.fx===0) return;
+  opts=opts||{};
+  try{
+    var a=audioCtx(); if(!a) return;
+    var t=a.currentTime+(opts.delay||0), dur=opts.dur||.12;
+    var len=Math.max(1,Math.floor(a.sampleRate*dur));
+    var buf=a.createBuffer(1,len,a.sampleRate), d=buf.getChannelData(0);
+    for(var i=0;i<len;i++){ d[i]=(Math.random()*2-1)*Math.pow(1-i/len,opts.decay||2); }
+    var s=a.createBufferSource(); s.buffer=buf;
+    var f=a.createBiquadFilter(); f.type=opts.filter||'bandpass';
+    f.frequency.setValueAtTime(opts.f1||1400,t); f.Q.value=opts.q||1.1;
+    if(opts.f2) f.frequency.exponentialRampToValueAtTime(opts.f2,t+dur); // balayage = whoosh
+    var g=a.createGain(); g.gain.value=opts.vol||.3;
+    s.connect(f); f.connect(g); g.connect(outNode(a));
+    if(opts.rev!==false){ var r=revNode(a); if(r){ var rg=a.createGain(); rg.gain.value=(opts.rev||.25)*(opts.vol||.3); g.connect(rg); rg.connect(r); } }
+    s.start(t); s.stop(t+dur+.02);
+  }catch(e){}
+}
+/* Sub-bass : le "boum" qu'on sent plus qu'on entend — signature des sons modernes */
+function sub(freq,dur,vol){
+  if(D.fx===0) return;
+  try{
+    var a=audioCtx(); if(!a) return; var t=a.currentTime;
+    var o=a.createOscillator(); o.type='sine';
+    o.frequency.setValueAtTime(freq||110,t);
+    o.frequency.exponentialRampToValueAtTime(Math.max(20,(freq||110)*.4),t+(dur||.3));
+    var g=a.createGain(); g.gain.setValueAtTime(vol||.6,t);
+    g.gain.exponentialRampToValueAtTime(.0001,t+(dur||.3));
+    o.connect(g); g.connect(outNode(a)); o.start(t); o.stop(t+(dur||.3)+.02);
+  }catch(e){}
+}
+/* Gamme pentatonique : impossible de faire une fausse note — c'est le secret
+   des mélodies d'app qui sonnent "sympa" au lieu de "sonnerie Nokia". */
+var PENTA=[523.25,587.33,698.46,783.99,932.33,1046.50,1174.66,1396.91];
 function tone(freq,dur,vol,wave){
   if(D.fx===0) return;
   try{
@@ -1724,23 +1808,26 @@ function noiseBurst(dur,vol){
   }catch(e){}
 }
 function chBeep(){
-  tone(880,.5,.4);
-  tone(330,.3,.45,'sawtooth');
-  setTimeout(function(){tone(220,.32,.4,'sawtooth');},170);
-  setTimeout(function(){tone(147,.5,.42,'sawtooth');noiseBurst(.1,.3);},360);
+  /* Élimination : impact sourd et descente feutrée — dramatique sans agresser */
+  sub(90,.42,.62);
+  perc({dur:.2,f1:700,f2:180,vol:.3,filter:'lowpass',q:.8,rev:.35});
+  hit(220,{dur:.5,vol:.3,bend:.5,wave:'triangle',cut:1400,rev:.4});
+  hit(146,{delay:.14,dur:.7,vol:.26,bend:.55,wave:'triangle',cut:1100,rev:.45});
   if(navigator.vibrate) navigator.vibrate(300);
 }
 function fanfare(){
-  // arpège de victoire + accords en nappe + étincelle de bruit : ça sonne GRAND
+  /* Victoire moderne : montée pentatonique en marimba (FM), sub-bass à l'impact,
+     clap réverbéré et éclat cristallin. Rien de tenu, tout percussif. */
   try{
-    [ [523,.14,.28,0], [659,.14,.3,140], [784,.16,.32,280], [1047,.5,.4,430] ].forEach(function(n){
-      setTimeout(function(){ tone(n[0],n[1],n[2]); }, n[3]);
+    [0,1,3,5].forEach(function(idx,i){
+      hit(PENTA[idx],{delay:i*.085,dur:.5,vol:.34,fm:.7,fmRatio:3.01,cut:6500,rev:.45});
     });
-    setTimeout(function(){ tone(262,.7,.22,'triangle'); tone(330,.7,.18,'triangle'); tone(392,.7,.18,'triangle'); },430);
-    setTimeout(function(){ noiseBurst(.25,.18); tone(2093,.3,.12); },480);
+    sub(120,.5,.5);
+    perc({delay:.26,dur:.16,f1:2000,f2:900,vol:.3,rev:.5});
+    hit(PENTA[5],{delay:.34,dur:1.1,vol:.3,fm:.9,fmRatio:2.01,cut:8000,rev:.6});
+    hit(PENTA[7],{delay:.42,dur:1.2,vol:.22,fm:.5,fmRatio:4.02,cut:9000,rev:.6});
   }catch(e){}
 }
-/* Réglages persistés du chrono */
 function chSettings(){
   if(!D.chrono) D.chrono={secs:60, players:['Joueur 1','Joueur 2','Joueur 3'], sound:true};
   return D.chrono;
@@ -1749,11 +1836,10 @@ function renderChrono(hd,app,nav,banner){
   chSettings();
   hd.innerHTML=back()+'<h1>⏱️ Tic-Tac<span class="sub">Duel de temps</span></h1><span style="width:38px"></span>';
   if(CH){ nav.innerHTML=''; app.innerHTML = banner + chGame(); return; }
-  app.innerHTML = banner + (S.chTab==='pal' ? chPalmares() : chConfig());
-  nav.innerHTML='<nav><div class="in">'+
-    '<button class="'+(S.chTab!=='pal'?'on':'')+'" onclick="S.chTab=\'play\';window.scrollTo(0,0);render()"><span class="i">⏱️</span>Duel</button>'+
-    '<button class="'+(S.chTab==='pal'?'on':'')+'" onclick="S.chTab=\'pal\';window.scrollTo(0,0);render()"><span class="i">🏆</span>Palmarès'+(D.tictac.length?' ('+D.tictac.length+')':'')+'</button>'+
-    '</div></nav>';
+  /* Un seul palmarès dans l'app : le Mur des champions.
+     Les duels enregistrés y envoient leurs couronnes — pas de classement parallèle. */
+  app.innerHTML = banner + chConfig();
+  nav.innerHTML='';
 }
 /* ---- Historique optionnel des duels Tic-Tac ---- */
 function chFinishNow(){
@@ -1789,42 +1875,6 @@ function chAggChrono(){
   list.sort(function(a,b){return b.wins-a.wins||b.good-a.good||b.duels-a.duels;});
   return list;
 }
-function chPalmares(){
-  if(!D.tictac.length){
-    return '<div class="empty"><div class="e">🏆</div><h3>Aucune manche enregistrée</h3><p>Le duel reste vif sur le moment. Mais si tu veux en garder la trace, touche « Enregistrer cette manche » à la fin d\'un duel — ton palmarès se construira ici.</p></div>';
-  }
-  var agg=chAggChrono(), champ=agg[0];
-  var conf='<div class="confetti" style="position:absolute;inset:0;pointer-events:none;overflow:hidden">'+
-    ['🎉','⏱️','⭐️','✨'].map(function(e,i){return '<span style="left:'+(10+i*24)+'%;animation-delay:'+(i*.4)+'s">'+e+'</span>';}).join('')+'</div>';
-  var h='<div class="hero" style="text-align:center;position:relative;background:linear-gradient(135deg,#d97706,#fbbf24)">'+conf+
-    '<p style="margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.9">Roi du chrono</p>'+
-    '<div style="margin:6px 0 2px">'+av(champ.name,'big')+'</div>'+
-    '<h2 style="font-size:26px;margin:2px 0">👑 '+esc(champ.name)+'</h2>'+
-    '<p style="margin:0;font-size:13px;opacity:.92">'+pl(champ.wins,'duel gagné')+' sur '+pl(champ.duels,'joué')+'</p></div>';
-  h+='<div class="card"><h2>🏆 Classement</h2>';
-  agg.forEach(function(p,i){
-    h+='<div class="rank'+(i===0?' first lead':'')+'"><div class="pos">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1))+'</div>'+
-      av(p.name,'sm')+'<div class="nm" style="margin-left:8px"><b>'+esc(p.name)+'</b>'+
-      '<small>'+pl(p.duels,'duel')+' · '+p.good+' bonnes'+(p.best?' · record '+p.best:'')+'</small></div>'+
-      '<div class="pts"><b>'+p.wins+'</b><small>victoire'+(p.wins>1?'s':'')+'</small></div></div>';
-  });
-  h+='</div>';
-  h+='<button class="btn dark" onclick="chShareP()">📤 Partager le palmarès</button>'+
-     '<button class="sm" style="width:100%;margin-top:8px" onclick="exportChronoPDF()">📄 Exporter en PDF</button>';
-  h+='<div class="card" style="margin-top:12px"><h2>Historique des duels</h2>'+
-    D.tictac.map(function(d){
-      var cf=S.confirm==='ct'+d.id;
-      return '<div class="hist"><div class="top"><span class="dt">'+fr(d.date)+'</span>'+
-        '<span style="display:flex;gap:8px;align-items:center"><span class="w">👑 '+esc(d.winner||'—')+'</span>'+
-        '<button class="icobtn" style="font-size:16px;padding:2px 6px" onclick="S.confirm=\'ct'+d.id+'\';render()">🗑</button></span></div>'+
-        '<div class="sc">'+d.players.slice().sort(function(a,b){return b.good-a.good;}).map(function(p){return '<span>'+esc(p.name)+' <b>✓'+p.good+'</b></span>';}).join('')+'</div>'+
-        (cf?'<div style="margin-top:9px;background:var(--ro-l);padding:10px;border-radius:10px"><p style="margin:0 0 8px;font-size:12.5px;color:#9f1239;font-weight:600">Supprimer ce duel ?</p><div class="row" style="gap:8px"><button class="sm r" style="flex:1" onclick="chDelDuel(\''+d.id+'\')">Supprimer</button><button class="sm" style="flex:1" onclick="S.confirm=null;render()">Annuler</button></div></div>':'')+
-      '</div>';
-    }).join('')+'</div>';
-  return h;
-}
-
-/* ---- Écran de configuration ---- */
 function chConfig(){
   var s=chSettings();
   var mins=Math.floor(s.secs/60), secs=s.secs%60;
@@ -1837,6 +1887,7 @@ function chConfig(){
     '</div>'+
     '<div class="row"><span class="mini" style="flex:1">Personnalisé (secondes)</span>'+
     '<input type="number" inputmode="numeric" style="width:90px;text-align:center" value="'+s.secs+'" onchange="chSetSecs(parseInt(this.value)||60)"></div>'+
+    (D.tictac.length?'<button class="sm" style="width:100%;margin-bottom:10px;background:#fff" onclick="go(\'champions\')">🏅 '+pl(D.tictac.length,'duel')+' au Mur des champions</button>':'')+
     '<p class="mini" style="margin-top:6px">Temps par défaut : <b>'+durLabel+'</b>. Tu peux donner un temps différent à chaque joueur ci-dessous (utile pour équilibrer petits et grands).</p></div>';
   h+='<div class="card"><h2>Joueurs ou équipes ('+s.players.length+')</h2>';
   s.players.forEach(function(n,i){
@@ -1892,8 +1943,14 @@ function chCountdown(done){
   function next(){
     if(i>0){ var el=document.getElementById('cnum'); if(el){ el.textContent=steps[i][0]; el.style.fontSize=steps[i][0]==='GO !'?'72px':'110px'; } }
     if(CH&&CH.sound){
-      tone(steps[i][1], i===3?.5:.18, i===3?.45:.25);
-      if(i===3){ tone(880,.5,.3); tone(1318,.45,.22); noiseBurst(.15,.3); }
+      if(i===3){ // GO !
+        sub(110,.5,.6);
+        [0,2,4,5].forEach(function(idx,k){ hit(PENTA[idx],{delay:k*.05,dur:.6,vol:.34,fm:.7,fmRatio:3.01,cut:7000,rev:.45}); });
+        perc({dur:.2,f1:2400,f2:800,vol:.32,rev:.45});
+      } else {   // 3 · 2 · 1
+        hit(PENTA[2],{dur:.14,vol:.3,fm:.4,fmRatio:2.01,cut:4200,rev:.22});
+        perc({dur:.05,f1:1800,vol:.14,rev:.15});
+      }
     }
     i++;
     if(i<steps.length){ setTimeout(next,600); }
@@ -1913,8 +1970,8 @@ function chRunNow(){
     var afterSec=Math.ceil(p.left);
     // tension sonore façon plateau TV : tic-tac sous 10 s, plus pressant sous 5 s
     if(CH.sound && afterSec<beforeSec && afterSec>0){
-      if(afterSec<=5) tone(1180,.09,.32);
-      else if(afterSec<=10) tone(760,.07,.2);
+      if(afterSec<=5){ hit(1245,{dur:.07,vol:.3,cut:5000,rev:.12,atk:.002}); perc({dur:.03,f1:2600,vol:.1,rev:.1}); }
+      else if(afterSec<=10){ hit(830,{dur:.06,vol:.2,cut:3600,rev:.1,atk:.002}); }
     }
     if(p.left<=0){ p.left=0; p.out=true; if(CH.sound) chBeep(); chStopTick(); CH.running=false;
       var rest=chAlive().length;
@@ -1943,17 +2000,25 @@ function chAdvance(auto){
 function chGood(){
   if(CH.winner) return;
   CH.players[CH.active].good++;
-  tone(784,.09,.3); setTimeout(function(){tone(1047,.16,.28);},70);   // ding « validé »
+  hit(PENTA[3],{dur:.16,vol:.34,fm:.5,fmRatio:3.01,cut:6000,rev:.28});
+  hit(PENTA[5],{delay:.075,dur:.3,vol:.3,fm:.6,fmRatio:3.01,cut:7000,rev:.35});
+  perc({dur:.06,f1:3000,vol:.12,rev:.2});
   chRun();
 }
 function chWrong(){
   chStopTick(); CH.running=false;
-  sweep(330,180,.22,.5,'sawtooth');   // « raté ! » court, façon plateau
+  sub(140,.2,.45);
+  hit(196,{dur:.26,vol:.3,bend:.62,wave:'triangle',cut:1200,rev:.25});
+  perc({dur:.1,f1:600,f2:220,vol:.2,filter:'lowpass',rev:.2});
   chAdvance(false);
   if(!CH.winner){ setTimeout(function(){ swoosh(); },140); chRun(); } else render();
 }
 /* whoosh : la main passe d'un joueur à l'autre — on l'entend, on le voit */
-function swoosh(){ sweep(220,660,.16,.28,'triangle'); noiseBurst(.06,.12); }
+function swoosh(){
+  /* Vrai whoosh : bruit filtré balayé vers le haut + petit blip de repère */
+  perc({dur:.26,f1:400,f2:3600,vol:.26,filter:'bandpass',q:1.4,decay:1.2,rev:.3});
+  hit(PENTA[3],{delay:.1,dur:.16,vol:.2,fm:.4,cut:5000,rev:.25});
+}
 function chJump(i){
   if(!CH||CH.winner!==null) return;
   if(!CH.players[i]||CH.players[i].out||i===CH.active) return;
@@ -1984,7 +2049,7 @@ function chGame(){
       '</div></div>'+
       (CH.saved
         ? '<p class="mini" style="text-align:center;color:#059669;margin-top:12px">✓ Manche enregistrée au palmarès</p>'
-        : '<button class="sm" style="width:100%;margin-top:12px" onclick="chSaveDuel()">🏆 Garder cette manche au palmarès (facultatif)</button>')+
+        : '<button class="sm" style="width:100%;margin-top:12px" onclick="chSaveDuel()">🏅 Ajouter cette victoire au Mur des champions</button>')+
       '<button class="btn" style="margin-top:8px" onclick="chStart()">Rejouer (mêmes réglages)</button>'+
       '<button class="btn grey" style="margin-top:8px" onclick="chReset()">Changer les réglages</button>';
   }
