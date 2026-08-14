@@ -307,7 +307,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='34';
+var APP_VERSION='35';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -429,7 +429,7 @@ function render_(){
     hd.innerHTML='<span style="width:38px"></span><h1>En Jeux<span class="sub">Votre maître du jeu de poche</span></h1>'+
       '<button class="icobtn" onclick="go(\'save\')">⚙︎</button>';
     app.innerHTML=banner+
-      '<div class="hero"><span class="dice">🎲</span><h2>En Jeux</h2><p><b>Votre maître du jeu de poche.</b> En famille ou entre amis, il anime, il compte, il arbitre — et retient qui gagne. <b>Alors, qui va décrocher la couronne ? 👑</b></p>'+
+      '<div class="hero"><span class="dice">🎲</span><h2>En Jeux</h2><p><b>Vos jeux existent déjà. En Jeux s\'occupe du reste :</b> compter les points, chronométrer, animer — et retenir qui gagne. <b>Alors, qui va décrocher la couronne ? 👑</b></p>'+
         '<div class="pills"><span>🍿 Soirées</span><span>🍽️ À table</span><span>🌳 En balade</span><span>🚗 En voiture</span><span>🏖️ En vacances</span></div></div>'+tip+
       '<div class="trust"><span><b>🚫</b>Sans pub</span><span><b>📶</b>Hors-ligne</span><span><b>🆓</b>Gratuit</span></div>'+
       (function(){
@@ -440,16 +440,25 @@ function render_(){
           '<small>'+pl(live.rounds.length,'manche')+' · la partie continue</small></span>'+
           '<span style="color:#d6d3d1">›</span></button>' : '';
       })()+
-      tool('points','🏆','La Coupe','<b>Il compte.</b> Tous vos jeux à points — belote, tarot, Uno, molkky… Une soirée ou une saison : manches, cumul, victoires.','t-coupe',
+      tool('points','🏆','La Coupe','<b>Il compte les points.</b> Le carnet de scores de vos jeux : belote, tarot, Uno, molkky, jeux de société… Vous jouez, l\'app tient les comptes — sur une soirée ou toute une saison.','t-coupe',
         D.matches.length?pl(D.matches.length,'partie')+' en mémoire':'','Scores & palmarès')+
-      tool('chrono','⏱️','Tic-Tac','<b>Il chronomètre.</b> Le duel de temps façon plateau TV : chacun défend son chrono, le dernier debout l\'emporte.','t-tictac',
+      tool('chrono','⏱️','Tic-Tac','<b>Il chronomètre chacun.</b> Un compte à rebours par joueur, pour tout jeu où il faut répondre vite : vos propres questions, les cartes d\'un jeu, des défis. Vous fournissez le jeu, l\'app gère le temps.','t-tictac',
         D.tictac.length?pl(D.tictac.length,'duel')+' au palmarès':'','Chrono & duel')+
-      tool('quizz','🎙️','Le Micro','<b>Il anime.</b> Un quiz à la voix, sur mesure, jamais deux fois la même question — même dans dix ans. Fonctionne avec ton assistant IA.','t-micro',
+      tool('quizz','🎙️','Le Micro','<b>Il transforme une IA en animateur.</b> L\'app prépare le texte de lancement complet ; vous le collez dans votre assistant IA, qui anime alors un vrai jeu télé à la voix.','t-micro',
         D.journal.length?pl(D.journal.length,'question')+' au journal':'','Quiz vocal · IA')+
 
       '<div style="margin-top:14px;display:flex;flex-direction:column;gap:9px">'+
         '<button class="miniact" style="width:100%" onclick="go(\'champions\')"><span class="e">🏅</span><span><b>Mur des champions</b><small>Les couronnes de tous les jeux, réunies</small></span><span style="margin-left:auto;color:#d6d3d1">›</span></button>'+
         '<button class="miniact" style="width:100%" onclick="whoStart()"><span class="e">🎯</span><span><b>Qui commence ?</b><small>Tirage au sort animé</small></span><span style="margin-left:auto;color:#d6d3d1">›</span></button>'+
+        '<button class="miniact" style="width:100%" onclick="S.explain=!S.explain;render()"><span class="e">💡</span><span><b>C\'est quoi En Jeux ?</b><small>Comprendre en 20 secondes</small></span><span style="margin-left:auto;color:#d6d3d1">'+(S.explain?'▾':'›')+'</span></button>'+
+        (S.explain?'<div class="card" style="margin:0;background:#fafaf9"><p style="margin:0 0 10px;font-size:13.5px;line-height:1.55">'+
+          '<b>En Jeux n\'est pas un jeu.</b> C\'est la boîte à outils de tous les jeux que vous avez déjà — cartes, société, questions inventées, défis du quotidien.</p>'+
+          '<div class="steps">'+
+            '<div class="stp1"><span class="n" style="background:#059669">🏆</span><span><b>La Coupe</b> — vous jouez à la belote, au tarot, au Uno ? Elle note les points de chaque manche et désigne le champion.</span></div>'+
+            '<div class="stp1"><span class="n" style="background:#d97706">⏱️</span><span><b>Tic-Tac</b> — chacun a son chrono. Utile dès qu\'il faut répondre vite : vos questions, un jeu de cartes, des défis. <i>Le jeu vient de vous, le temps vient de l\'app.</i></span></div>'+
+            '<div class="stp1"><span class="n" style="background:#7c3aed">🎙️</span><span><b>Le Micro</b> — l\'app écrit un texte de lancement (règles, joueurs, mécaniques). Vous le collez dans une IA : elle devient l\'animateur d\'un jeu télé, à la voix.</span></div>'+
+          '</div>'+
+          '<p class="mini" style="margin:10px 0 0">Et tout ce que vous gagnez s\'accumule au 🏅 Mur des champions, tous jeux confondus.</p></div>':'')+
         '<button class="miniact" style="width:100%" onclick="openBuzzer()"><span class="e">🔴</span><span><b>Le Buzzer</b><small>Premier à taper — parfait pour vos quiz</small></span><span style="margin-left:auto;color:#d6d3d1">›</span></button>'+
       '</div>'+
       (canSave?'<p class="mini" style="margin-top:12px;color:#059669">✓ Sauvegardé sur cet iPhone</p>':'');
@@ -514,7 +523,11 @@ function tool(k,em,t,d,cls,note,tag){
 function renderPoints(hd,app,banner){
   hd.innerHTML=back()+'<h1>🏆 La Coupe<span class="sub">Tes parties</span></h1><span style="width:38px"></span>';
   var act=D.matches.filter(function(m){return m.status!=='done';}),dn=D.matches.filter(function(m){return m.status==='done';});
-  var h=banner;
+  var intro=(!D.matches.length)?'<div class="card" style="background:var(--gr-l);border-color:#a7f3d0;margin-bottom:12px">'+
+    '<p style="margin:0;font-size:13.5px;color:#065f46;line-height:1.55"><b>🏆 Le carnet de scores de tous vos jeux.</b><br>'+
+    'Belote, tarot, Uno, molkky, jeux de société, ou un jeu que vous avez inventé : créez une partie, saisissez les points à chaque manche, '+
+    'et l\'app tient le classement, le cumul et le palmarès. <b>Une soirée ou une saison entière.</b></p></div>':'';
+  var h=banner; h=intro+h;
   if(!D.matches.length){
     h+='<div class="empty"><div class="e">🏆</div><h3>Aucune partie</h3><p>Crée ta première partie avec le bouton ci-dessous 👇</p></div>';
   }else{
@@ -915,7 +928,10 @@ function renderQuizz(hd,app,banner){
   var h=banner;
   if(S.qtab==='play'){
     h+='<div class="card" style="background:var(--gr-l);border-color:var(--gr-b);text-align:center">'+
-      '<div class="l" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#047857">Comment ça marche</div>'+
+      '<div class="l" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#047857">Le principe</div>'+
+      '<p style="margin:6px 0 12px;font-size:13.5px;color:#065f46;line-height:1.55">L\'app <b>écrit pour vous un texte de lancement</b> : toutes les règles du jeu télé, les mécaniques, le barème, vos prénoms et les questions déjà posées. '+
+      'Vous le <b>collez dans une IA</b> (celle que vous utilisez déjà, avec ou sans abonnement) : elle devient alors <b>l\'animateur</b> et mène la partie à la voix.</p>'+
+      '<div class="l" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#047857">Les 3 étapes</div>'+
       '<div class="steps">'+
         '<div class="stp1"><span class="n">1</span><span><b>Choisis qui joue</b> et ton assistant IA (ci-dessous).</span></div>'+
         '<div class="stp1"><span class="n">2</span><span><b>Touche « Lancer la partie »</b> : le texte est copié, l\'assistant s\'ouvre.</span></div>'+
@@ -1887,6 +1903,10 @@ function chConfig(){
     '</div>'+
     '<div class="row"><span class="mini" style="flex:1">Personnalisé (secondes)</span>'+
     '<input type="number" inputmode="numeric" style="width:90px;text-align:center" value="'+s.secs+'" onchange="chSetSecs(parseInt(this.value)||60)"></div>'+
+    '<div class="card" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border-color:#fde68a;margin-bottom:12px">'+
+      '<p style="margin:0;font-size:13.5px;color:#92400e;line-height:1.55"><b>⏱️ Un chrono par joueur, pour le jeu de votre choix.</b><br>'+
+      'Tic-Tac ne pose pas de questions : <b>c\'est vous qui apportez le jeu</b> — vos propres questions, les cartes d\'un jeu de société, des défis, un « qui dira le dernier mot ».<br>'+
+      'L\'app fait le reste : chacun a son temps, il descend quand c\'est à lui, à zéro il est éliminé. <b>Le dernier debout gagne.</b></p></div>'+
     (D.tictac.length?'<button class="sm" style="width:100%;margin-bottom:10px;background:#fff" onclick="go(\'champions\')">🏅 '+pl(D.tictac.length,'duel')+' au Mur des champions</button>':'')+
     '<p class="mini" style="margin-top:6px">Temps par défaut : <b>'+durLabel+'</b>. Tu peux donner un temps différent à chaque joueur ci-dessous (utile pour équilibrer petits et grands).</p></div>';
   h+='<div class="card"><h2>Joueurs ou équipes ('+s.players.length+')</h2>';
