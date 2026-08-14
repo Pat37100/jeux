@@ -22,6 +22,6 @@ L('[3] L\'écran ne DÉVOILE pas le prompt');
 w.go('quizz'); w.S.qtab='play'; w.render();
 const screen=w.document.getElementById('app').innerHTML;
 ok('l\'écran n\'affiche PAS le texte du prompt', !screen.includes('RÈGLES NON NÉGOCIABLES') && !screen.includes('PRINCIPE DIRECTEUR'));
-ok('l\'écran propose le lancement en un geste + copie seule', screen.includes('Lancer la partie') && screen.includes('Copier seulement'));
+ok('l\'écran propose le lancement en un geste + copie seule', screen.includes('Générer et lancer') && screen.includes('Copier'));
 
 L(F===0?'\nTOUT PASSE':'\n*** '+F+' ECHEC(S) ***');
