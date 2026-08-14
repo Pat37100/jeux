@@ -349,7 +349,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='39';
+var APP_VERSION='40';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -425,7 +425,7 @@ function leaders(sorted,key,rule){
 
 /* ============================== ÉTAT UI =========================== */
 var S={view:'home',matchId:null,tab:'rank',qtab:'play',period:'all',from:'',to:'',inputs:{},date:today(),sheet:false,confirm:null,detail:null,avPick:null,tipOff:0,microSheet:false,chTab:'play',whoSheet:false};
-function go(v){S.view=v;S.tab='rank';S.qtab='play';S.histAll=false;S.ceremony=false;S.histMode=Object.prototype.hasOwnProperty.call(S,'histGrid')?(S.histGrid===false?'list':'grid'):(S.histMode||'grid');window.scrollTo(0,0);render();}
+function go(v){S.view=v;S.tab='rank';S.qtab='play';S.histAll=false;S.ceremony=false;S.histMode=Object.prototype.hasOwnProperty.call(S,'histGrid')?(S.histGrid===false?'list':'grid'):(S.histMode||'rank');window.scrollTo(0,0);render();}
 function cur(){return D.matches.filter(function(m){return m.id===S.matchId;})[0];}
 function setVoice(b){
   D.voice=b; persist();
@@ -627,7 +627,7 @@ function openMatch(id){
      Le classement joueur par joueur reste à un doigt, dans l'onglet 🏅. */
   var m=D.matches.filter(function(x){return x.id===id;})[0];
   S.tab=(m && m.rounds && m.rounds.length>=1) ? 'hist' : 'play';
-  S.histMode='grid';
+  S.histMode='rank';
   window.scrollTo(0,0); render();
 }
 function openSheet(){S.sheet=true;render();}
@@ -671,13 +671,12 @@ function renderMatch(hd,app,nav,banner){
   var m=cur(); if(!m){go('points');return;}
   hd.innerHTML=back()+'<h1>'+esc(m.name)+'<span class="sub">'+(m.status==='done'?'Terminée':'Décompte de points')+'</span></h1><span style="width:38px"></span>';
   var h=banner;
-  if(S.tab==='rank') h+=tabRank(m);
+  if(S.tab==='rank'||S.tab==='hist') h+=tabRes(m);
   if(S.tab==='play') h+=tabPlay(m);
-  if(S.tab==='hist') h+=tabHist(m);
   if(S.tab==='set')  h+=tabSet(m);
   app.innerHTML=h;
   nav.innerHTML='<nav><div class="in">'+
-    nb('rank','🏅','Classement')+nb('play','➕','Saisir')+nb('hist','▦','Tableau')+nb('set','⚙︎','Réglages')+'</div></nav>';
+    nb('rank','🏅','Résultats')+nb('play','➕','Saisir')+nb('set','⚙︎','Réglages')+'</div></nav>';
 }
 function nb(k,i,l){return '<button class="'+(S.tab===k?'on':'')+'" onclick="S.tab=\''+k+'\';window.scrollTo(0,0);render()"><span class="i">'+i+'</span>'+l+'</button>';}
 function keeper(){
@@ -689,13 +688,13 @@ function keeper(){
     return true;};
 }
 function tabRank(m){
-  var cerem='';
+  var cerem=resSelector('rank');
   if(S.ceremony){
     var rc=rank(m,function(){return true;});
     var champC=rc.byCumul[0];
     var confC='<div class="confetti" style="position:absolute;inset:0;pointer-events:none;overflow:hidden">'+
       ['🎉','🏆','⭐️','🎊','✨','👑'].map(function(e,i){return '<span style="left:'+(6+i*16)+'%;animation-delay:'+(i*.3)+'s">'+e+'</span>';}).join('')+'</div>';
-    cerem='<div class="hero" style="text-align:center;position:relative;background:linear-gradient(135deg,#b45309,#f59e0b)">'+confC+
+    cerem+='<div class="hero" style="text-align:center;position:relative;background:linear-gradient(135deg,#b45309,#f59e0b)">'+confC+
       '<p style="margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.92">Champion de la partie</p>'+
       '<div class="winbig" style="font-size:44px;margin:2px 0">🏆</div>'+
       (champC?'<div style="margin:2px 0">'+av(champC.name,'big')+'</div><h2 style="font-size:26px;margin:2px 0">👑 '+esc(champC.name)+'</h2>'+
@@ -738,9 +737,6 @@ function tabRankBody(m){
       var lead2=rAll2.byCumul[0];
       if(lead2&&lead2.points>0) h+='<p class="mini" style="text-align:center;margin:0 0 10px">🎯 Objectif : <b>'+nf(m.target)+' points</b> — '+esc(lead2.name)+' en est à '+nf(lead2.points)+'.</p>';
     }
-  }
-  if(m.rounds.length>=2){
-    h+='<button class="sm" style="width:100%;margin-bottom:10px;background:var(--card)" onclick="S.tab=\'hist\';S.histMode=\'grid\';window.scrollTo(0,0);render()">▦ Voir le tableau de toutes les manches</button>';
   }
   h+='<div class="card"><h2>🏅 Classement'+(m.winRule==='low'?' (le moins de points gagne)':'')+'</h2>';
   r.byCumul.forEach(function(p,i){
@@ -808,7 +804,7 @@ function saveRound(){
     var rd=m.rounds.filter(function(x){return x.id===S.editing;})[0];
     if(rd){ rd.scores=sc; rd.date=S.date||rd.date; }
     S.editing=null;
-    persist();S.inputs={};S.date=today();S.tab='hist';S.histMode='grid';
+    persist();S.inputs={};S.date=today();S.tab='rank';S.histMode='grid';
     hit(PENTA[4],{dur:.18,vol:.26,fm:.5,fmRatio:3.01,cut:6000,rev:.3});
     toast('Manche corrigée ✓');window.scrollTo(0,0);render();return;
   }
@@ -875,18 +871,29 @@ function histGrid(m){
     '<div class="gridwrap"><table class="gtab"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>'+
     '<p class="mini" style="text-align:center;margin:10px 14px 0">Fais glisser vers la gauche pour voir toutes les manches · '+
     '<b style="color:#059669">vert 👑</b> = manche gagnée · la barre montre l\'écart de cumul.</p>'+
-    '<div style="padding:0 14px"><button class="sm" style="width:100%;margin-top:10px;background:var(--card)" onclick="S.tab=\'rank\';window.scrollTo(0,0);render()">🏅 Voir le détail joueur par joueur</button></div></div>';
+    '</div>';
+}
+function resSelector(mode){
+  var modes=[['rank','🏅','Par joueur'],['grid','▦','Grille'],['graph','📈','Courbe'],['list','☰','Liste']];
+  return '<div class="row" style="gap:6px;margin-bottom:10px">'+modes.map(function(o){
+    return '<button class="chip'+(mode===o[0]?' on':'')+'" style="flex:1;text-align:center;padding:9px 4px" onclick="setResMode(\''+o[0]+'\')">'+o[1]+'<br><span style="font-size:10.5px;font-weight:600">'+o[2]+'</span></button>';
+  }).join('')+'</div>';
+}
+function setResMode(v){ S.histMode=v; window.scrollTo(0,0); render(); }
+/* Écran unique de résultats : les 4 lectures d'une même partie,
+   un seul geste. Chaque mode réutilise le rendu existant — pas de logique parallèle. */
+function tabRes(m){
+  var mode=S.histMode||'rank';
+  if(mode==='rank') return tabRank(m);
+  return tabHist(m);
 }
 function tabHist(m){
-  if(!m.rounds.length) return '<div class="empty"><div class="e">📋</div><h3>Aucune manche</h3><p>Rien d\'enregistré pour l\'instant.</p></div>';
+  if(!m.rounds.length) return resSelector(S.histMode||'grid')+'<div class="empty"><div class="e">📋</div><h3>Aucune manche</h3><p>Rien d\'enregistré pour l\'instant.</p></div>';
   var all=m.rounds, LIMIT=20, truncated=(!S.histAll && all.length>LIMIT);
   var shown=truncated? all.slice(-LIMIT) : all;
   // bascule Liste / Grille (grille = tableau récapitulatif comme le PDF)
   var mode=S.histMode||'grid';
-  var out='<div class="row" style="gap:8px;margin-bottom:10px">'+
-    '<button class="chip'+(mode==='grid'?' on':'')+'" style="flex:1;text-align:center" onclick="S.histMode=\'grid\';render()">▦ Grille</button>'+
-    '<button class="chip'+(mode==='graph'?' on':'')+'" style="flex:1;text-align:center" onclick="S.histMode=\'graph\';render()">📈 Courbe</button>'+
-    '<button class="chip'+(mode==='list'?' on':'')+'" style="flex:1;text-align:center" onclick="S.histMode=\'list\';render()">☰ Liste</button></div>';
+  var out=resSelector(mode);
   if(S.histGrid===false){mode='list';S.histGrid=undefined;}
   if(mode==='grid') return out+histGrid(m);
   if(mode==='graph') return out+histGraph(m);
