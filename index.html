@@ -14,7 +14,7 @@
 <meta name="description" content="En Jeux : trois jeux dans votre poche — scores, duel de temps et quiz animé. En famille, entre amis, en voiture.">
 <style>
   :root{
-    --bg:#f5f5f4; --card:#fff; --line:#e7e5e4; --ink:#1c1917; --mut:#78716c; --soft:#a8a29e;
+    --bg:#f5f5f4; --card:#fff; --line:#e7e5e4; --ink:#1c1917; --mut:#78716c; --soft:#78716c;
     --gr:#059669; --gr-l:#ecfdf5; --gr-b:#a7f3d0; --am:#f59e0b; --am-l:#fffbeb; --ro:#e11d48; --ro-l:#fff1f2;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -131,7 +131,7 @@
   .gtab tr.lead .stick{background:linear-gradient(90deg,#fffbeb,#fff)}
   .gtab td.none{color:#d6d3d1}
   .gtab .win{background:#ecfdf5;color:#047857;font-weight:800;border-radius:6px}
-  .gtab .tot small{display:block;font-size:9.5px;font-weight:700;color:#a8a29e;text-transform:uppercase;letter-spacing:.04em}
+  .gtab .tot small{display:block;font-size:9.5px;font-weight:700;color:#78716c;text-transform:uppercase;letter-spacing:.04em}
   .gtab thead .stick{background:#fafaf9}
   .gtab .nmcell{font-size:13px}
   .gtab .win::after{content:" 👑";font-size:9px;vertical-align:top}
@@ -273,7 +273,7 @@
     tr:nth-child(even) td{background:#fafaf9}
     .pdf-top td{font-weight:800;color:#065f46}
     .pdf-medal{font-size:15px}
-    .pdf-foot{margin-top:20px;text-align:center;color:#a8a29e;font-size:10px}
+    .pdf-foot{margin-top:20px;text-align:center;color:#78716c;font-size:10px}
   }
 </style>
 </head>
@@ -309,7 +309,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='35';
+var APP_VERSION='36';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -435,6 +435,16 @@ function render_(){
         '<div class="pills"><span>🍿 Soirées</span><span>🍽️ À table</span><span>🌳 En balade</span><span>🚗 En voiture</span><span>🏖️ En vacances</span></div></div>'+tip+
       '<div class="trust"><span><b>🚫</b>Sans pub</span><span><b>📶</b>Hors-ligne</span><span><b>🆓</b>Gratuit</span></div>'+
       (function(){
+        if(D.live && D.live.players && D.live.winner===null){
+          return '<button class="tool t-tictac" style="padding:12px 16px" onclick="go(\'chrono\')">'+
+            '<span class="em" style="width:44px;height:44px;font-size:22px">⏱️</span>'+
+            '<span style="flex:1;min-width:0;position:relative;z-index:1"><b>Duel en cours</b>'+
+            '<small>'+pl(D.live.players.filter(function(p){return !p.out;}).length,'joueur')+' encore en lice — reprends où vous en étiez</small></span>'+
+            '<span style="color:#d6d3d1">›</span></button>';
+        }
+        return '';
+      })()+
+      (function(){
         var live=D.matches.filter(function(m){return m.status!=='done' && m.rounds.length;})[0];
         return live ? '<button class="tool t-coupe" style="padding:12px 16px" onclick="S.matchId=\''+live.id+'\';go(\'match\')">'+
           '<span class="em" style="width:44px;height:44px;font-size:22px">▶︎</span>'+
@@ -451,7 +461,7 @@ function render_(){
 
       '<div style="margin-top:14px;display:flex;flex-direction:column;gap:9px">'+
         '<button class="miniact" style="width:100%" onclick="go(\'champions\')"><span class="e">🏅</span><span><b>Mur des champions</b><small>Les couronnes de tous les jeux, réunies</small></span><span style="margin-left:auto;color:#d6d3d1">›</span></button>'+
-        '<button class="miniact" style="width:100%" onclick="whoStart()"><span class="e">🎯</span><span><b>Qui commence ?</b><small>Tirage au sort animé</small></span><span style="margin-left:auto;color:#d6d3d1">›</span></button>'+
+        '<button class="miniact" style="width:100%" onclick="whoStart()" aria-label="Tirage au sort : qui commence"><span class="e">🎯</span><span><b>Qui commence ?</b><small>Tirage au sort animé</small></span><span style="margin-left:auto;color:#d6d3d1">›</span></button>'+
         '<button class="miniact" style="width:100%" onclick="S.explain=!S.explain;render()"><span class="e">💡</span><span><b>C\'est quoi En Jeux ?</b><small>Comprendre en 20 secondes</small></span><span style="margin-left:auto;color:#d6d3d1">'+(S.explain?'▾':'›')+'</span></button>'+
         (S.explain?'<div class="card" style="margin:0;background:#fafaf9"><p style="margin:0 0 10px;font-size:13.5px;line-height:1.55">'+
           '<b>En Jeux n\'est pas un jeu.</b> C\'est la boîte à outils de tous les jeux que vous avez déjà — cartes, société, questions inventées, défis du quotidien.</p>'+
@@ -461,7 +471,7 @@ function render_(){
             '<div class="stp1"><span class="n" style="background:#7c3aed">🎙️</span><span><b>Le Micro</b> — l\'app écrit un texte de lancement (règles, joueurs, mécaniques). Vous le collez dans une IA : elle devient l\'animateur d\'un jeu télé, à la voix.</span></div>'+
           '</div>'+
           '<p class="mini" style="margin:10px 0 0">Et tout ce que vous gagnez s\'accumule au 🏅 Mur des champions, tous jeux confondus.</p></div>':'')+
-        '<button class="miniact" style="width:100%" onclick="openBuzzer()"><span class="e">🔴</span><span><b>Le Buzzer</b><small>Premier à taper — parfait pour vos quiz</small></span><span style="margin-left:auto;color:#d6d3d1">›</span></button>'+
+        '<button class="miniact" style="width:100%" onclick="openBuzzer()" aria-label="Ouvrir le buzzer"><span class="e">🔴</span><span><b>Le Buzzer</b><small>Premier à taper — parfait pour vos quiz</small></span><span style="margin-left:auto;color:#d6d3d1">›</span></button>'+
       '</div>'+
       (canSave?'<p class="mini" style="margin-top:12px;color:#059669">✓ Sauvegardé sur cet iPhone</p>':'');
     return;
@@ -474,6 +484,12 @@ function render_(){
   if(S.view==='match') return renderMatch(hd,app,nav,banner);
   if(S.view==='champions') return renderChampions(hd,app,banner);
 }
+/* Filet de sécurité : l'iPhone qui se verrouille ou un appel entrant
+   déclenchent 'visibilitychange' — on sauvegarde le duel à cet instant précis. */
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='hidden'){ try{ if(typeof CH!=='undefined'&&CH) chPersist(); }catch(e){} }
+});
+window.addEventListener('pagehide',function(){ try{ if(typeof CH!=='undefined'&&CH) chPersist(); }catch(e){} });
 function afterRender(){ if(S.whoSheet) drawWhoSheet(); if(S.confirm && S.confirm.indexOf('delmatch:')===0) drawDelMatch(); bindSwipe(); }
 function drawDelMatch(){
   if(document.getElementById('dmsh')) return;
@@ -555,7 +571,7 @@ function mcard(m){
     '<span style="flex:1;min-width:0"><b>'+esc(m.name)+'</b><small>'+pl(m.players.length,'joueur')+' · '+pl(r.count,'manche')+
     (m.winRule==='low'?' · moins gagne':'')+'</small></span>'+
     '<span style="text-align:right;flex-shrink:0"><b style="font-size:13px">'+(r.count?'🏆 '+esc(nm):'—')+'</b>'+
-    '<small style="display:block;font-size:10px;color:#a8a29e;text-transform:uppercase">'+(r.count?'en tête':'à démarrer')+'</small></span></button></div></div>';
+    '<small style="display:block;font-size:10px;color:#78716c;text-transform:uppercase">'+(r.count?'en tête':'à démarrer')+'</small></span></button></div></div>';
 }
 function archMatch(id){
   S.matchId=id; S.view='match';
@@ -589,7 +605,7 @@ function drawSheet(){
     '<label class="lb" style="margin-top:14px">Règle</label><div class="row" style="margin-bottom:12px">'+
       '<button class="chip on" id="rh" style="flex:1;text-align:center" onclick="pickRule(1)">Le plus de points</button>'+
       '<button class="chip" id="rl" style="flex:1;text-align:center" onclick="pickRule(0)">Le moins de points</button></div>'+
-    '<label class="lb">Objectif de points <span style="font-weight:400;color:#a8a29e">(optionnel — ex. 500 au tarot, 100 au Uno)</span></label>'+
+    '<label class="lb">Objectif de points <span style="font-weight:400;color:#78716c">(optionnel — ex. 500 au tarot, 100 au Uno)</span></label>'+
     '<input id="mt" type="number" inputmode="numeric" placeholder="Aucun — partie libre" style="margin-bottom:18px">'+
     '<div class="row"><button class="btn grey" onclick="closeSheet()">Annuler</button><button class="btn" onclick="createMatch()">Créer</button></div></div>';
   el.onclick=closeSheet;document.body.appendChild(el);
@@ -704,7 +720,7 @@ function tabRankBody(m){
     if(opendetail){
       var det=m.rounds.filter(keeper()).filter(function(r){return r.scores[p.id]!==undefined;});
       h+='<div style="background:#fafaf9;border-radius:12px;padding:10px 12px;margin:-2px 0 6px">'+
-        (det.length?'<div style="font-size:11px;text-transform:uppercase;color:#a8a29e;font-weight:700;margin-bottom:6px">Détail de '+esc(p.name)+' — '+pl(det.length,'manche')+'</div>'+
+        (det.length?'<div style="font-size:11px;text-transform:uppercase;color:#78716c;font-weight:700;margin-bottom:6px">Détail de '+esc(p.name)+' — '+pl(det.length,'manche')+'</div>'+
           det.map(function(r){var w=winners(r,m.players,m.winRule).indexOf(p.id)>=0;
             return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 0"><span style="color:#78716c">'+fr(r.date)+'</span><b style="color:'+(w?'#059669':'#1c1917')+'">'+nf(r.scores[p.id])+(w?' 👑':'')+'</b></div>';}).join(''):
           '<p class="mini">Aucune manche sur la période.</p>')+'</div>';
@@ -720,10 +736,12 @@ function tabPlay(m){
   var prev={},k;
   for(k in S.inputs){var n=parseFloat(String(S.inputs[k]).replace(',','.'));if(!isNaN(n))prev[k]=n;}
   var w=winners({scores:prev},m.players,m.winRule);
+  var editing=!!S.editing;
   var rAll=rank(m,function(){return true;});
   var cumOf={}; rAll.byCumul.forEach(function(p){cumOf[p.id]=p;});
   var step=S.step||1;
-  var h='<div class="card row" style="justify-content:space-between"><span style="font-size:14px;color:var(--mut)">Date de la manche</span>'+
+  var h=(editing?'<div class="card" style="background:#fffbeb;border-color:#fde68a"><b style="color:#92400e">✏️ Correction d\'une manche</b><p class="mini" style="color:#b45309;margin:4px 0 8px">Modifie les scores puis valide — la manche sera remplacée, pas ajoutée.</p><button class="sm" style="width:100%" onclick="cancelEdit()">Annuler la correction</button></div>':'')+
+    '<div class="card row" style="justify-content:space-between"><span style="font-size:14px;color:var(--mut)">Date de la manche</span>'+
     '<input type="date" style="width:auto" value="'+S.date+'" onchange="S.date=this.value"></div>';
   h+='<div class="row" style="margin-bottom:10px;gap:6px"><span class="mini" style="flex:1">Pas des boutons − / +</span>'+
     [1,5,10].map(function(v){return '<button class="chip'+(step===v?' on':'')+'" onclick="S.step='+v+';render()">±'+v+'</button>';}).join('')+'</div>';
@@ -732,13 +750,13 @@ function tabPlay(m){
     var c=cumOf[p.id]||{points:0,played:0};
     h+='<div class="plr'+(on?' win':'')+'"><span class="n" style="display:flex;align-items:center;gap:7px;min-width:0">'+av(p.name,'sm')+
       '<span style="min-width:0"><span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name)+(on?' 👑':'')+'</span>'+
-      '<small style="display:block;font-size:10.5px;color:#a8a29e">total '+nf(c.points)+' · '+pl(c.played,'manche')+'</small></span></span>'+
-      '<button class="stp" onclick="bump(\''+p.id+'\',-'+step+')">−'+(step>1?step:'')+'</button>'+
+      '<small style="display:block;font-size:10.5px;color:#78716c">total '+nf(c.points)+' · '+pl(c.played,'manche')+'</small></span></span>'+
+      '<button class="stp" aria-label="Retirer '+step+' points à '+esc(p.name)+'" onclick="bump(\''+p.id+'\',-'+step+')">−'+(step>1?step:'')+'</button>'+
       '<input inputmode="decimal" placeholder="—" value="'+(S.inputs[p.id]!==undefined?S.inputs[p.id]:'')+'" oninput="S.inputs[\''+p.id+'\']=this.value" onchange="render()">'+
-      '<button class="stp p" onclick="bump(\''+p.id+'\','+step+')">+'+(step>1?step:'')+'</button></div>';
+      '<button class="stp p" aria-label="Ajouter '+step+' points à '+esc(p.name)+'" onclick="bump(\''+p.id+'\','+step+')">+'+(step>1?step:'')+'</button></div>';
   });
   h+='<p class="mini" style="margin:4px 0 12px">Laisse vide si un joueur n\'a pas joué cette manche.</p>'+
-     '<button class="btn" onclick="saveRound()">Enregistrer la manche</button>';
+     '<button class="btn" onclick="saveRound()" aria-label="Enregistrer la manche">'+(editing?'✓ Valider la correction':'Enregistrer la manche')+'</button>';
   return h;
 }
 function bump(id,d){var c=parseFloat(String(S.inputs[id]||'').replace(',','.'))||0;S.inputs[id]=String(c+d);render();}
@@ -746,6 +764,14 @@ function saveRound(){
   var m=cur(),sc={},any=false,k;
   for(k in S.inputs){var n=parseFloat(String(S.inputs[k]).replace(',','.'));if(!isNaN(n)){sc[k]=n;any=true;}}
   if(!any){toast('Saisis au moins un score');return;}
+  if(S.editing){                      // correction d'une manche existante
+    var rd=m.rounds.filter(function(x){return x.id===S.editing;})[0];
+    if(rd){ rd.scores=sc; rd.date=S.date||rd.date; }
+    S.editing=null;
+    persist();S.inputs={};S.date=today();S.tab='hist';S.histMode='grid';
+    hit(PENTA[4],{dur:.18,vol:.26,fm:.5,fmRatio:3.01,cut:6000,rev:.3});
+    toast('Manche corrigée ✓');window.scrollTo(0,0);render();return;
+  }
   m.rounds.unshift({id:uid(),date:S.date||today(),scores:sc});
   persist();S.inputs={};S.date=today();S.tab='rank';hit(PENTA[4],{dur:.18,vol:.26,fm:.5,fmRatio:3.01,cut:6000,rev:.3});hit(PENTA[6],{delay:.07,dur:.32,vol:.22,fm:.6,fmRatio:3.01,cut:7000,rev:.35});toast('Manche enregistrée ✓');window.scrollTo(0,0);render();
 }
@@ -787,7 +813,7 @@ function histGrid(m){
   var maxPts=Math.max.apply(null,order.map(function(p){return Math.abs(p.points)||0;}))||1;
   // en-têtes : M1, M2… + total
   var head='<tr><th class="stick">Joueur / équipe</th>'+
-    rounds.map(function(rd,i){return '<th title="'+fr(rd.date)+'">M'+(i+1)+'</th>';}).join('')+
+    rounds.map(function(rd,i){return '<th title="'+fr(rd.date)+' — toucher pour corriger" style="cursor:pointer" onclick="editRound(\''+rd.id+'\')">M'+(i+1)+'<br><span style="font-size:8.5px;opacity:.6">✏️</span></th>';}).join('')+
     '<th class="tot">Total</th></tr>';
   var body=order.map(function(p,pi){
     var cells=rounds.map(function(rd){
@@ -834,43 +860,111 @@ function tabHist(m){
     var cf=S.confirm===r.id;
     return '<div class="hist"><div class="top"><span class="dt">'+fr(r.date)+'</span><span style="display:flex;gap:8px;align-items:center">'+
       (wn?'<span class="w">👑 '+esc(wn)+'</span>':'')+
-      '<button class="icobtn" style="font-size:16px;padding:2px 6px" onclick="S.confirm=\''+r.id+'\';render()">🗑</button></span></div>'+
+      '<button class="icobtn" style="font-size:15px;padding:2px 6px" title="Corriger" aria-label="Corriger cette manche" onclick="editRound(\''+r.id+'\')">✏️</button>'+
+      '<button class="icobtn" style="font-size:16px;padding:2px 6px" title="Supprimer" aria-label="Supprimer cette manche" onclick="S.confirm=\''+r.id+'\';render()">🗑</button></span></div>'+
       '<div class="sc">'+sc+'</div>'+
       (cf?'<div style="margin-top:9px;background:var(--ro-l);padding:10px;border-radius:10px"><p style="margin:0 0 8px;font-size:12.5px;color:#9f1239;font-weight:600">Supprimer cette manche ?</p><div class="row" style="gap:8px"><button class="sm r" style="flex:1" onclick="delRound(\''+r.id+'\')">Supprimer</button><button class="sm" style="flex:1" onclick="S.confirm=null;render()">Annuler</button></div></div>':'')+
       '</div>';
   }).join('');
 }
-function delRound(id){var m=cur();m.rounds=m.rounds.filter(function(r){return r.id!==id;});S.confirm=null;persist();toast('Manche supprimée');render();}
-function tabSet(m){
-  var scored=function(id){return m.rounds.some(function(r){return r.scores[id]!==undefined;});};
-  var notIn=D.lib.filter(function(p){return !m.players.some(function(x){return x.id===p.id;});});
-  var h='<div class="card"><h2>Nom de la partie</h2><div class="row"><input id="rn" value="'+esc(m.name)+'"><button class="sm g" onclick="renameMatch()">OK</button></div></div>';
-  h+='<div class="card"><h2>Joueurs de la partie</h2>';
-  m.players.forEach(function(p){
-    h+='<div class="row" style="background:#fafaf9;border-radius:10px;padding:8px 10px;margin-bottom:6px"><span style="flex:1;font-weight:600">'+esc(p.name)+'</span>'+
-      (scored(p.id)?'<span class="mini">a joué</span>':'<button class="sm r" onclick="dropPlayer(\''+p.id+'\')">Retirer</button>')+'</div>';
+/* Corriger une manche : on recharge ses scores dans la saisie et on remplace.
+   Se tromper en saisissant est LE geste le plus fréquent d'un compteur de points. */
+function editRound(id){
+  var m=cur(); if(!m) return;
+  var rd=m.rounds.filter(function(x){return x.id===id;})[0];
+  if(!rd) return;
+  S.editing=id; S.inputs={}; S.date=rd.date;
+  m.players.forEach(function(p){ var v=rd.scores[p.id]; if(v!==undefined) S.inputs[p.id]=String(v); });
+  S.tab='play'; S.confirm=null; window.scrollTo(0,0); render();
+  toast('Corrige les scores puis valide');
+}
+function cancelEdit(){ S.editing=null; S.inputs={}; S.date=today(); render(); }
+/* Corbeille d'annulation : toute suppression peut être défaite pendant 15 s. */
+var UNDO=null, UNDO_T=null;
+function offerUndo(label,restore){
+  UNDO={label:label,restore:restore};
+  if(UNDO_T) clearTimeout(UNDO_T);
+  var bar=document.getElementById('undobar');
+  if(bar) bar.remove();
+  bar=document.createElement('div'); bar.id='undobar';
+  bar.style.cssText='position:fixed;left:12px;right:12px;bottom:88px;z-index:70;background:#1c1917;color:#fff;'+
+    'border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(0,0,0,.3);'+
+    'font-size:13.5px;animation:updin .25s ease both';
+  bar.innerHTML='<span style="flex:1">'+esc(label)+'</span>'+
+    '<button onclick="doUndo()" style="background:#fbbf24;color:#1c1917;border:0;border-radius:9px;padding:7px 13px;font-weight:800;font-family:inherit;font-size:13px;cursor:pointer">Annuler</button>';
+  document.body.appendChild(bar);
+  UNDO_T=setTimeout(function(){ var b=document.getElementById('undobar'); if(b)b.remove(); UNDO=null; },15000);
+}
+function doUndo(){
+  if(!UNDO) return;
+  try{ UNDO.restore(); }catch(e){}
+  UNDO=null; var b=document.getElementById('undobar'); if(b)b.remove();
+  if(UNDO_T) clearTimeout(UNDO_T);
+  persist(); render(); toast('Restauré ✓');
+}
+function delRound(id){
+  var m0=cur(); var idx=m0.rounds.findIndex(function(x){return x.id===id;});
+  if(idx<0) return;
+  var backup=JSON.parse(JSON.stringify(m0.rounds[idx])); var mid=m0.id;
+  m0.rounds.splice(idx,1); S.confirm=null; persist(); render();
+  offerUndo('Manche supprimée', function(){
+    var mm=D.matches.filter(function(x){return x.id===mid;})[0];
+    if(mm) mm.rounds.splice(Math.min(idx,mm.rounds.length),0,backup);
   });
-  if(notIn.length) h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">'+notIn.map(function(p){
-    return '<button class="chip" onclick="addPlayer(\''+p.id+'\')">+ '+esc(p.name)+'</button>';}).join('')+'</div>';
-  h+='<div class="row" style="margin-top:8px"><input id="np" placeholder="Nouveau joueur"><button class="sm g" onclick="addNew()">Ajouter</button></div>'+
-     '<p class="mini" style="margin-top:8px">Un joueur ayant déjà des scores ne peut pas être retiré : l\'historique reste intact.</p></div>';
-  h+='<div class="card"><h2>Règle</h2><div class="row">'+
-     '<button class="chip'+(m.winRule==='high'?' on':'')+'" style="flex:1;text-align:center" onclick="setRule(\'high\')">Le plus de points</button>'+
-     '<button class="chip'+(m.winRule==='low'?' on':'')+'" style="flex:1;text-align:center" onclick="setRule(\'low\')">Le moins de points</button></div></div>';
+}
+/* Écran Réglages d'une partie : renommer, gérer les joueurs, clore, supprimer. */
+function tabSet(m){
+  var h='<div class="card"><h2>Nom de la partie</h2>'+
+    '<div class="row"><input id="rn" value="'+esc(m.name).replace(/"/g,'&quot;')+'" style="flex:1" aria-label="Nom de la partie">'+
+    '<button class="sm g" onclick="renameMatch()">Renommer</button></div></div>';
+
   h+='<div class="card"><h2>Joueurs de cette partie ('+m.players.length+')</h2>'+
-     '<p class="mini" style="margin-bottom:8px">'+m.players.map(function(p){return esc(p.name);}).join(' · ')+'</p>'+
+     '<div style="display:flex;flex-direction:column;gap:7px">'+
+     m.players.map(function(p){
+       var played=m.rounds.filter(function(r){return r.scores[p.id]!==undefined;}).length;
+       return '<div class="row" style="gap:8px;align-items:center">'+av(p.name,'sm')+
+         '<span style="flex:1;min-width:0"><b style="font-size:13.5px">'+esc(p.name)+'</b>'+
+         '<small style="display:block;font-size:11px;color:var(--mut)">'+pl(played,'manche')+' jouée'+(played>1?'s':'')+'</small></span>'+
+         (m.players.length>2 && m.status!=='done'
+           ? '<button class="sm r" aria-label="Retirer '+esc(p.name)+'" onclick="askDropPlayer(\''+p.id+'\')">Retirer</button>'
+           : '')+'</div>'+
+         (S.confirm==='dp'+p.id
+           ? '<div style="background:var(--ro-l);padding:10px;border-radius:10px"><p style="margin:0 0 8px;font-size:12.5px;color:#9f1239;font-weight:600">Retirer '+esc(p.name)+' de la partie ?</p>'+
+             '<p class="mini" style="margin:0 0 8px;color:#9f1239">'+(played?'Ses '+pl(played,'score')+' seront effacés de cette partie.':'Il n\'a encore aucun score.')+'</p>'+
+             '<div class="row" style="gap:8px"><button class="sm r" style="flex:1" onclick="dropPlayerFull(\''+p.id+'\')">Retirer</button>'+
+             '<button class="sm" style="flex:1" onclick="S.confirm=null;render()">Annuler</button></div></div>'
+           : '');
+     }).join('')+'</div>'+
      (m.status!=='done'
-       ? '<div class="row"><input id="addp" placeholder="Un invité arrive ? Son prénom…" style="flex:1">'+
+       ? '<div class="row" style="margin-top:10px"><input id="addp" placeholder="Un invité arrive ? Son prénom…" style="flex:1" aria-label="Ajouter un joueur">'+
          '<button class="sm g" onclick="addPlayerToMatch()">Ajouter</button></div>'+
          '<p class="mini" style="margin-top:6px">Il entre au classement dès sa première manche — les manches déjà jouées ne comptent pas contre lui.</p>'
        : '')+'</div>';
+
   h+='<div class="card"><h2>État</h2>'+(m.status==='done'?
      '<button class="sm g" onclick="setStatus(\'active\')">▶ Reprendre la partie</button>':
      '<button class="btn" style="background:linear-gradient(135deg,#d97706,#f59e0b)" onclick="finishMatch()">🏁 Terminer & couronner le champion</button>')+'</div>';
-  h+='<div class="card">'+(S.confirm==='delm'?
-     '<p style="font-size:14px;margin:0 0 8px">Supprimer définitivement cette partie et son historique ?</p><div class="row"><button class="btn red" onclick="delMatch()">Oui, supprimer</button><button class="btn grey" onclick="S.confirm=null;render()">Annuler</button></div></div>':
-     '<button class="sm r" onclick="S.confirm=\'delm\';render()">🗑 Supprimer la partie</button>')+'</div>';
+
+  h+='<div class="card"><h2>Zone sensible</h2>'+
+     '<p class="mini" style="margin-bottom:8px">Supprimer efface la partie et toutes ses manches. Tu auras 15 secondes pour annuler.</p>'+
+     '<button class="sm r" style="width:100%" onclick="askDelMatch(\''+m.id+'\')">🗑 Supprimer cette partie</button></div>';
   return h;
+}
+function askDropPlayer(id){ S.confirm='dp'+id; render(); }
+function dropPlayerFull(id){
+  var m=cur(); var idx=m.players.findIndex(function(p){return p.id===id;});
+  if(idx<0) return;
+  var backupP=JSON.parse(JSON.stringify(m.players[idx]));
+  var backupS=m.rounds.map(function(r){ return r.scores[id]; });
+  m.players.splice(idx,1);
+  m.rounds.forEach(function(r){ delete r.scores[id]; });
+  S.confirm=null; persist(); render();
+  var mid=m.id;
+  offerUndo(backupP.name+' retiré', function(){
+    var mm=D.matches.filter(function(x){return x.id===mid;})[0]; if(!mm) return;
+    mm.players.splice(Math.min(idx,mm.players.length),0,backupP);
+    mm.rounds.forEach(function(r,i){ if(backupS[i]!==undefined) r.scores[backupP.id]=backupS[i]; });
+  });
 }
 function renameMatch(){var m=cur(),v=document.getElementById('rn').value.trim();if(v)m.name=v;persist();toast('Nom mis à jour');render();}
 function dropPlayer(id){var m=cur();m.players=m.players.filter(function(p){return p.id!==id;});persist();render();}
@@ -908,7 +1002,15 @@ function finishMatch(){
   if(champ) speak(champ.name+' remporte '+m.name);
   render();
 }
-function delMatch(){D.matches=D.matches.filter(function(m){return m.id!==S.matchId;});S.confirm=null;var e=document.getElementById('dmsh');if(e)e.remove();persist();go('points');}
+function delMatch(){
+  var idx=D.matches.findIndex(function(m){return m.id===S.matchId;});
+  if(idx<0) return;
+  var backup=JSON.parse(JSON.stringify(D.matches[idx]));
+  D.matches.splice(idx,1); S.confirm=null;
+  var e=document.getElementById('dmsh'); if(e)e.remove();
+  persist(); go('points');
+  offerUndo('« '+backup.name+' » supprimée', function(){ D.matches.splice(Math.min(idx,D.matches.length),0,backup); });
+}
 
 /* ------------------------------ PARTAGE --------------------------- */
 function share(){
@@ -967,7 +1069,10 @@ function renderQuizz(hd,app,banner){
       '<div class="chips">'+AI_APPS.map(function(a){
         return '<button class="chip'+((D.aiApp||'claude')===a.id?' on':'')+'" onclick="setAiApp(\''+a.id+'\')">'+a.label+'</button>';
       }).join('')+'</div>'+
-      '<p class="mini" style="margin-top:8px">Il suffit qu\'il sache parler à voix haute. Le texte est le même pour tous.</p></div>';
+      '<p class="mini" style="margin-top:8px">Il suffit qu\'il sache parler à voix haute. Le texte est le même pour tous.</p>'+
+      '<div style="margin-top:10px;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:10px 12px">'+
+        '<p class="mini" style="margin:0;color:#92400e"><b>À savoir avant de lancer :</b> il te faut l\'app (ou le site) de cet assistant, et un compte chez lui. '+
+        'Les versions gratuites suffisent pour jouer. En Jeux ne te fait rien payer et n\'envoie rien : le texte part dans <b>ton</b> assistant, avec <b>ton</b> compte.</p></div></div>';
 
     // ─── 5. GÉNÉRATION : récapitulatif de ce qui va partir, puis le bouton ───
     var st=MICRO_STYLES.filter(function(s){return s.id===(D.microStyle||'classique');})[0];
@@ -981,7 +1086,7 @@ function renderQuizz(hd,app,banner){
         '<li>✓ <b>Style</b> : '+esc(st?st.label:'Classique')+(D.microCustom&&D.microCustom.trim()?' + « '+esc(D.microCustom.trim())+' »':'')+'</li>'+
         (D.journal.length?'<li>✓ <b>'+Math.min(D.journal.length,120)+' questions à éviter</b> (anti-répétition)</li>':'<li style="opacity:.6">○ Journal vide — aucune question à éviter pour l\'instant</li>')+
       '</ul>'+
-      '<button class="btn" style="font-size:17px" onclick="briefGo()">🚀 Générer et lancer la partie</button>'+
+      '<button class="btn" style="font-size:17px" onclick="briefGo()" aria-label="Générer le texte de lancement et ouvrir l assistant">🚀 Générer et lancer la partie</button>'+
       '<div class="steps" style="margin-top:12px">'+
         '<div class="stp1"><span class="n">›</span><span>Le texte est <b>copié</b> et ton assistant <b>s\'ouvre</b>.</span></div>'+
         '<div class="stp1"><span class="n">›</span><span><b>Colle</b> (appui long → Coller) puis envoie.</span></div>'+
@@ -1005,7 +1110,7 @@ function renderQuizz(hd,app,banner){
     if(!D.journal.length) h+='<p class="mini" style="text-align:center;padding:12px 0">Journal vide.</p>';
     else{
       h+='<ul class="lst" style="max-height:340px;overflow-y:auto">'+D.journal.map(function(e){
-        return '<li><span style="font-size:10px;color:#a8a29e;flex-shrink:0">'+fr(e.date).slice(0,5)+'</span><span style="flex:1">'+esc(e.text)+'</span>'+
+        return '<li><span style="font-size:10px;color:#78716c;flex-shrink:0">'+fr(e.date).slice(0,5)+'</span><span style="flex:1">'+esc(e.text)+'</span>'+
         '<button class="icobtn" style="font-size:14px;padding:0 4px" onclick="delJ(\''+e.id+'\')">🗑</button></li>';}).join('')+'</ul>'+
         '<button class="sm" style="width:100%;margin-top:10px" onclick="copyJournal()">Copier tout le journal</button>';
     }
@@ -1280,7 +1385,7 @@ function renderSave(hd,app,banner){
      '<div class="row">'+
      '<button class="chip'+(D.voice?' on':'')+'" style="flex:1;text-align:center" onclick="setVoice(true)">🔊 Annonce vocale</button>'+
      '<button class="chip'+(!D.voice?' on':'')+'" style="flex:1;text-align:center" onclick="setVoice(false)">🔇 Silencieux</button></div>'+
-     '<label class="lb" style="margin-top:12px">Effets sonores <span style="font-weight:400;color:#a8a29e">(buzzer, fanfares, tirage, éliminations)</span></label>'+
+     '<label class="lb" style="margin-top:12px">Effets sonores <span style="font-weight:400;color:#78716c">(buzzer, fanfares, tirage, éliminations)</span></label>'+
      '<div class="row">'+
      '<button class="chip'+(D.fx!==0?' on':'')+'" style="flex:1;text-align:center" onclick="D.fx=1;persist();buzzTest();render()">🎉 Activés</button>'+
      '<button class="chip'+(D.fx===0?' on':'')+'" style="flex:1;text-align:center" onclick="D.fx=0;persist();render()">🔕 Coupés</button></div>'+
@@ -1294,7 +1399,7 @@ function renderSave(hd,app,banner){
      (nb>=3 && (!D.lastBackup || (Date.now()-new Date(D.lastBackup).getTime())>1000*60*60*24*30)
        ? '<div class="warn" style="background:#fffbeb;border-color:#fde68a;color:#92400e;margin-bottom:10px"><b>💾 Pense à sauvegarder</b> — '+pl(nb,'partie')+' en mémoire'+(lastB?' · dernière sauvegarde le '+lastB:' · jamais sauvegardé')+'.</div>'
        : (lastB?'<p class="mini" style="margin-bottom:8px;color:#059669">✓ Dernière sauvegarde le '+lastB+'</p>':''))+
-     '<button class="btn dark" style="margin-bottom:8px" onclick="backupFile()">💾 Télécharger le fichier de sauvegarde</button>'+
+     '<button class="btn dark" style="margin-bottom:8px" onclick="backupFile()" aria-label="Télécharger la sauvegarde">💾 Télécharger le fichier de sauvegarde</button>'+
      '<label class="sm" for="rstf" style="display:block;width:100%;text-align:center;margin-bottom:12px;cursor:pointer;position:relative;overflow:hidden">📂 Restaurer depuis un fichier'+
        '<input id="rstf" type="file" accept="application/json,.json" onchange="restoreFile(this)" '+
          'style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:0"></label>'+
@@ -1304,7 +1409,7 @@ function renderSave(hd,app,banner){
      '<label class="lb" style="margin-top:16px">Restaurer</label>'+
      '<textarea id="imp" rows="3" placeholder="Colle ici une sauvegarde"></textarea>'+
      '<button class="sm" style="width:100%;margin-top:8px" onclick="restore()">Restaurer (remplace tout)</button></div>';
-  h+='<p class="mini" style="text-align:center;margin-top:4px;color:#a8a29e">En Jeux — version '+APP_VERSION+'</p>';
+  h+='<p class="mini" style="text-align:center;margin-top:4px;color:#78716c">En Jeux — version '+APP_VERSION+'</p>';
   app.innerHTML=h;
 }
 /* ---- ONBOARDING : bienvenue en 30 secondes ---- */
@@ -1354,7 +1459,7 @@ function openBuzzer(){
   el.innerHTML='<div class="in" onclick="event.stopPropagation()" style="text-align:center"><div class="grab"></div>'+
     '<h2 style="margin:2px 0 2px">🔴 Le Buzzer</h2>'+
     '<p class="mini" style="margin:0 0 14px">Pose le téléphone au centre — premier à taper a la main !</p>'+
-    '<button onclick="buzz(this)" style="width:min(76vw,340px);height:min(76vw,340px);border-radius:50%;border:0;cursor:pointer;margin:6px auto 6px;display:block;transition:transform .12s;'+
+    '<button onclick="buzz(this)" aria-label="Buzzer" style="width:min(76vw,340px);height:min(76vw,340px);border-radius:50%;border:0;cursor:pointer;margin:6px auto 6px;display:block;transition:transform .12s;'+
       'background:radial-gradient(circle at 35% 30%,#f87171,#dc2626 55%,#991b1b);box-shadow:0 14px 30px rgba(220,38,38,.45), inset 0 -8px 18px rgba(0,0,0,.28);'+
       'color:#fff;font-size:44px;font-weight:800;font-family:inherit;letter-spacing:.04em">BUZZ</button>'+
     '<p class="mini" style="margin:10px 0 6px">Choisis ton buzz — touche pour l\'entendre :</p>'+
@@ -1877,6 +1982,7 @@ function chSettings(){
 }
 function renderChrono(hd,app,nav,banner){
   chSettings();
+  if(!CH) chRestore();   // un duel interrompu est retrouvé intact
   hd.innerHTML=back()+'<h1>⏱️ Tic-Tac<span class="sub">Duel de temps</span></h1><span style="width:38px"></span>';
   if(CH){ nav.innerHTML=''; app.innerHTML = banner + chGame(); return; }
   /* Un seul palmarès dans l'app : le Mur des champions.
@@ -1885,16 +1991,22 @@ function renderChrono(hd,app,nav,banner){
   nav.innerHTML='';
 }
 /* ---- Historique optionnel des duels Tic-Tac ---- */
+function chAbandon(){
+  if(!confirmish('Abandonner ce duel ? Les temps et les points en cours seront perdus.')) return;
+  chStopTick(); CH=null; D.live=null; persist(); render();
+}
+function confirmish(msg){ try{ return window.confirm(msg); }catch(e){ return true; } }
 function chFinishNow(){
   if(!CH||CH.winner!==null) return;
   chStopTick(); CH.running=false;
   var alive=chAlive();
   var best=alive.slice().sort(function(a,b){ return b.good-a.good || b.left-a.left; })[0];
   CH.winner = best ? best.name : ((CH.players[0]&&CH.players[0].name)||null);
+  D.live=null; persist();
   if(CH.winner){ fanfare(); speak(CH.winner+' remporte la manche'); }
   render();
 }
-function chSaveDuel(){ reviewMoment();
+function chSaveDuel(){ reviewMoment(); D.live=null;
   if(!CH||CH.saved) return;
   var w = CH.winner!==null ? CH.winner : (chAlive()[0]&&chAlive()[0].name);
   D.tictac.unshift({ id:uid(), date:today(),
@@ -1980,11 +2092,22 @@ function chDelP(i){ var s=chSettings(); if(s.players.length>2){ s.players.splice
 function chSound(b){ chSettings().sound=b; persist(); render(); }
 
 /* ---- Démarrage d'une manche ---- */
+/* Le duel vit dans D : un appel entrant, un verrouillage d'écran ou un
+   rechargement ne doit JAMAIS effacer une partie en cours. */
+function chPersist(){ try{ D.live=CH?JSON.parse(JSON.stringify(CH)):null; persist(); }catch(e){} }
+function chRestore(){
+  try{
+    if(D.live && D.live.players && D.live.players.length && D.live.winner===null){
+      CH=D.live; CH.running=false; return true;
+    }
+  }catch(e){}
+  return false;
+}
 function chStart(){
   var s=chSettings();
   CH={ players:s.players.map(function(n,i){var t=(s.custom&&s.custom[i])?s.custom[i]:s.secs; return {name:n, left:t, out:false, good:0, start:t};}),
        active:0, running:false, sound:s.sound, total:s.secs, winner:null };
-  chStopTick();
+  chStopTick(); chPersist();
   render();
 }
 function chStopTick(){ if(chTick){clearInterval(chTick); chTick=null;} }
@@ -2021,8 +2144,10 @@ function chRunNow(){
   if(CH.running) return;
   CH.running=true; chStopTick();
   var last=Date.now();
+  var __psave=0;
   chTick=setInterval(function(){
     var now=Date.now(), dt=(now-last)/1000; last=now;
+    if(now-__psave>2000){ __psave=now; chPersist(); }
     var p=CH.players[CH.active];
     var beforeSec=Math.ceil(p.left);
     p.left-=dt;
@@ -2040,7 +2165,7 @@ function chRunNow(){
   },100);
   render();
 }
-function chPause(){ CH.running=false; chStopTick(); render(); }
+function chPause(){ CH.running=false; chStopTick(); chPersist(); render(); }
 function chAlive(){ return CH.players.filter(function(p){return !p.out;}); }
 function chNextIdx(from){
   var n=CH.players.length;
@@ -2058,7 +2183,7 @@ function chAdvance(auto){
 /* Boutons animateur */
 function chGood(){
   if(CH.winner) return;
-  CH.players[CH.active].good++;
+  CH.players[CH.active].good++; chPersist();
   hit(PENTA[3],{dur:.16,vol:.34,fm:.5,fmRatio:3.01,cut:6000,rev:.28});
   hit(PENTA[5],{delay:.075,dur:.3,vol:.3,fm:.6,fmRatio:3.01,cut:7000,rev:.35});
   perc({dur:.06,f1:3000,vol:.12,rev:.2});
@@ -2067,7 +2192,7 @@ function chGood(){
 /* Mode « la bonne réponse passe la main » : le succès fait tourner */
 function chPassGood(){
   if(CH.winner) return;
-  CH.players[CH.active].good++;
+  CH.players[CH.active].good++; chPersist();
   hit(PENTA[3],{dur:.16,vol:.34,fm:.5,fmRatio:3.01,cut:6000,rev:.28});
   hit(PENTA[5],{delay:.075,dur:.3,vol:.3,fm:.6,fmRatio:3.01,cut:7000,rev:.35});
   chStopTick(); CH.running=false;
@@ -2131,6 +2256,7 @@ function chGame(){
   }
 
   var alive=chAlive().length;
+  var resumed = !CH.running && CH.players.some(function(p){return p.good>0 || p.left<(p.start||CH.total);});
   var nCol = CH.players.length<=4 ? 'n'+CH.players.length : 'nx';
   var maxGood = Math.max.apply(null, CH.players.map(function(x){return x.good;}));
 
@@ -2162,7 +2288,7 @@ function chGame(){
        (lead?'<span class="crown">\uD83D\uDC51</span>':'')+
        ring+
        '<div class="who">'+esc(pl.name)+'</div>'+
-       '<div class="tt" style="color:'+(pl.out?'#a8a29e':cc)+'">'+(pl.out?'0:00':fmtT(pl.left))+'</div>'+
+       '<div class="tt" style="color:'+(pl.out?'#78716c':cc)+'">'+(pl.out?'0:00':fmtT(pl.left))+'</div>'+
        '<div class="gd">\u2713 '+pl.good+'</div>'+
        '</div>';
   });
@@ -2184,8 +2310,8 @@ function chGame(){
        '<button class="btn red" style="margin-top:8px" onclick="chKeepWrong()">✗ Raté — il continue</button>'+
        '';
   } else if(pass==='both'){
-    h+='<button class="btn" style="margin-top:10px" onclick="chGood()">✓ Bon — il garde la main</button>'+
-       '<button class="btn red" style="margin-top:8px" onclick="chWrong()">⏭ Passer au suivant</button>'+
+    h+='<button class="btn" style="margin-top:10px" onclick="chGood()" aria-label="Bonne réponse">✓ Bon — il garde la main</button>'+
+       '<button class="btn red" style="margin-top:8px" onclick="chWrong()" aria-label="Passer au joueur suivant">⏭ Passer au suivant</button>'+
        '';
   } else {
     h+='<button class="btn" style="margin-top:10px" onclick="chGood()">✓ Bonne réponse — garde la main</button>'+
@@ -2194,6 +2320,7 @@ function chGame(){
   }
   h+=''+
      '<button class="sm" style="width:100%;margin-top:8px" onclick="chFinishNow()">🏁 Terminer la manche maintenant</button>'+
+     '<button class="sm" style="width:100%;margin-top:6px;color:#9f1239" onclick="chAbandon()">✕ Abandonner ce duel</button>'+
      '<p class="mini" style="text-align:center;margin-top:6px">Bonne réponse : '+esc(p.name)+' continue et son ✓ grimpe. Sinon : la main passe, son chrono se fige.</p>';
 
   // barre de comparaison des bonnes réponses
