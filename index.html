@@ -112,6 +112,8 @@
   .whowheel{font-size:56px;text-align:center;padding:8px 0}
   .whoname{font-size:30px;font-weight:800;text-align:center;letter-spacing:-.02em}
   .steps{display:flex;flex-direction:column;gap:9px;margin-top:10px}
+  .stepn{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;
+    background:var(--gr);color:#fff;font-size:11px;font-weight:800;margin-right:7px;vertical-align:1px}
   .stp1{display:flex;gap:9px;align-items:flex-start;font-size:13.5px;color:#065f46;line-height:1.45}
   .stp1 .n{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:#059669;color:#fff;
     display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;margin-top:1px}
@@ -563,7 +565,15 @@ function askDelMatch(id){
   var m=D.matches.filter(function(x){return x.id===id;})[0]; if(!m) return;
   S.confirm='delmatch:'+id; S.matchId=id; render();
 }
-function openMatch(id){S.matchId=id;S.view='match';S.tab='rank';S.inputs={};S.date=today();window.scrollTo(0,0);render();}
+function openMatch(id){
+  S.matchId=id; S.view='match'; S.inputs={}; S.date=today();
+  /* Vue par défaut : le TABLEAU de toutes les manches (vision d'ensemble).
+     Le classement joueur par joueur reste à un doigt, dans l'onglet 🏅. */
+  var m=D.matches.filter(function(x){return x.id===id;})[0];
+  S.tab=(m && m.rounds && m.rounds.length>=1) ? 'hist' : 'play';
+  S.histMode='grid';
+  window.scrollTo(0,0); render();
+}
 function openSheet(){S.sheet=true;render();}
 function closeSheet(){S.sheet=false;removeSheet();render();}
 function removeSheet(){var e;while((e=document.getElementById('sh')))e.remove();}
@@ -798,7 +808,8 @@ function histGrid(m){
     '<h2 style="padding:0 14px">▦ Le tableau de la partie</h2>'+
     '<div class="gridwrap"><table class="gtab"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>'+
     '<p class="mini" style="text-align:center;margin:10px 14px 0">Fais glisser vers la gauche pour voir toutes les manches · '+
-    '<b style="color:#059669">vert 👑</b> = manche gagnée · la barre montre l\'écart de cumul.</p></div>';
+    '<b style="color:#059669">vert 👑</b> = manche gagnée · la barre montre l\'écart de cumul.</p>'+
+    '<div style="padding:0 14px"><button class="sm" style="width:100%;margin-top:10px;background:#fff" onclick="S.tab=\'rank\';window.scrollTo(0,0);render()">🏅 Voir le détail joueur par joueur</button></div></div>';
 }
 function tabHist(m){
   if(!m.rounds.length) return '<div class="empty"><div class="e">📋</div><h3>Aucune manche</h3><p>Rien d\'enregistré pour l\'instant.</p></div>';
@@ -927,48 +938,64 @@ function renderQuizz(hd,app,banner){
   hd.innerHTML=back()+'<h1>🎙️ Le Micro<span class="sub">Quiz animé à la voix</span></h1><span style="width:38px"></span>';
   var h=banner;
   if(S.qtab==='play'){
-    h+='<div class="card" style="background:var(--gr-l);border-color:var(--gr-b);text-align:center">'+
-      '<div class="l" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#047857">Le principe</div>'+
-      '<p style="margin:6px 0 12px;font-size:13.5px;color:#065f46;line-height:1.55">L\'app <b>écrit pour vous un texte de lancement</b> : toutes les règles du jeu télé, les mécaniques, le barème, vos prénoms et les questions déjà posées. '+
-      'Vous le <b>collez dans une IA</b> (celle que vous utilisez déjà, avec ou sans abonnement) : elle devient alors <b>l\'animateur</b> et mène la partie à la voix.</p>'+
-      '<div class="l" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#047857">Les 3 étapes</div>'+
-      '<div class="steps">'+
-        '<div class="stp1"><span class="n">1</span><span><b>Choisis qui joue</b> et ton assistant IA (ci-dessous).</span></div>'+
-        '<div class="stp1"><span class="n">2</span><span><b>Touche « Lancer la partie »</b> : le texte est copié, l\'assistant s\'ouvre.</span></div>'+
-        '<div class="stp1"><span class="n">3</span><span><b>Colle</b> (appui long → Coller), envoie, puis passe en <b>mode voix</b> 🎙️ — et jouez !</span></div>'+
-      '</div>'+
-      '<button class="btn" style="margin-top:12px;font-size:17px" onclick="briefGo()">🚀 Lancer la partie</button>'+
-      '<p class="mini" style="text-align:center;margin:8px 0 0;color:#065f46">Ton animateur connaît déjà vos prénoms et toutes les règles'+(D.journal.length?', et évitera '+Math.min(D.journal.length,120)+' questions déjà posées':'')+'.</p>'+
-      '<div class="row" style="margin-top:10px;gap:8px">'+
-        '<button class="sm" style="flex:1;background:#fff" onclick="briefCopy()">📋 Copier seulement</button>'+
-        '<button class="sm" style="flex:1;background:#fff" onclick="briefShare()">📤 Envoyer</button>'+
-      '</div>'+
-      '</div>';
-    // Assistant IA au choix — l'app ne dépend d'aucune marque en particulier
-    h+='<div class="card"><h2>Ton assistant IA</h2>'+
-      '<div class="chips">'+AI_APPS.map(function(a){
-        return '<button class="chip'+((D.aiApp||'claude')===a.id?' on':'')+'" onclick="setAiApp(\''+a.id+'\')">'+a.label+'</button>';
-      }).join('')+'</div>'+
-      '<p class="mini" style="margin-top:8px">Le Micro fonctionne avec l\'assistant que tu préfères — il suffit qu\'il sache parler à voix haute. Le texte du lancement est le même pour tous.</p></div>';
-    // Équipe qui joue (embarquée dans le lancement)
+    // ─── 1. Le principe (court) ───
+    h+='<div class="card" style="background:var(--gr-l);border-color:var(--gr-b)">'+
+      '<div class="l" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#047857;text-align:center">Le principe</div>'+
+      '<p style="margin:6px 0 0;font-size:13.5px;color:#065f46;line-height:1.55;text-align:center">Tu prépares la partie ici. L\'app <b>assemble alors ton texte de lancement</b> : les règles du jeu, vos prénoms, le style choisi et les questions déjà posées. '+
+      'Tu le colles dans l\'IA de ton choix : elle devient <b>l\'animateur</b> et mène la partie à la voix.</p></div>';
+
+    // ─── 2. QUI JOUE ───
     var sel=D.microTeam||D.lib.map(function(p){return p.id;});
-    h+='<div class="card"><h2>Qui joue ? ('+microTeam().length+')</h2>'+
+    h+='<div class="card"><h2><span class="stepn">1</span>Qui joue ? ('+microTeam().length+')</h2>'+
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'+
       D.lib.map(function(p){ var on=sel.indexOf(p.id)>=0;
         return '<button onclick="microToggleP(\''+p.id+'\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;border:2px solid '+(on?'var(--gr)':'var(--line)')+';background:'+(on?'var(--gr-l)':'#fff')+';border-radius:14px;padding:8px 4px;cursor:pointer;opacity:'+(on?'1':'.5')+';min-width:0">'+
           av(p.name,'sm')+'<span style="font-size:11px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name)+'</span></button>';
       }).join('')+'</div>'+
-      '<p class="mini" style="margin-top:8px">Ces participants partent avec le lancement : l\'animateur démarre directement, sans demander qui joue.</p></div>';
-    h+='<p class="mini" style="text-align:center;margin:4px 2px 0;line-height:1.6">Envie de garder une trace ? Le <b>classement</b> se note dans l\'onglet <b>🏆 Palmarès</b>, les <b>questions</b> dans le <b>📖 Journal</b> — quand tu veux, jamais obligatoire.</p>';
-    h+='<div class="card"><h2>Le style de ton animateur</h2>'+
+      '<p class="mini" style="margin-top:8px">Leurs prénoms partent dans le lancement : l\'animateur démarre directement, sans demander qui joue.</p></div>';
+
+    // ─── 3. STYLE ───
+    h+='<div class="card"><h2><span class="stepn">2</span>Le style de ton animateur</h2>'+
       '<div class="chips" style="margin-bottom:8px">'+MICRO_STYLES.map(function(s){
         return '<button class="chip'+((D.microStyle||'classique')===s.id?' on':'')+'" onclick="setMicroStyle(\''+s.id+'\')">'+s.label+'</button>';
       }).join('')+'</div>'+
-      '<input placeholder="Ta touche perso (ex. « thème années 90 », « spécial ados »…)" value="'+(D.microCustom||'').replace(/"/g,'&quot;')+'" onchange="D.microCustom=this.value;persist();toast(\'Consigne enregistrée ✓\')">'+
-      '<p class="mini" style="margin-top:6px">Le style s\'ajoute au lancement — les règles du jeu, elles, ne bougent jamais.</p></div>';
+      '<input placeholder="Ta touche perso (ex. « thème années 90 », « spécial ados »…)" value="'+(D.microCustom||'').replace(/"/g,'&quot;')+'" onchange="D.microCustom=this.value;persist();render()">'+
+      '<p class="mini" style="margin-top:6px">Le style et ta consigne <b>s\'ajoutent</b> au lancement — les règles du jeu, elles, ne bougent jamais.</p></div>';
+
+    // ─── 4. ASSISTANT ───
+    h+='<div class="card"><h2><span class="stepn">3</span>Ton assistant IA</h2>'+
+      '<div class="chips">'+AI_APPS.map(function(a){
+        return '<button class="chip'+((D.aiApp||'claude')===a.id?' on':'')+'" onclick="setAiApp(\''+a.id+'\')">'+a.label+'</button>';
+      }).join('')+'</div>'+
+      '<p class="mini" style="margin-top:8px">Il suffit qu\'il sache parler à voix haute. Le texte est le même pour tous.</p></div>';
+
+    // ─── 5. GÉNÉRATION : récapitulatif de ce qui va partir, puis le bouton ───
+    var st=MICRO_STYLES.filter(function(s){return s.id===(D.microStyle||'classique');})[0];
+    var team=microTeam();
+    h+='<div class="card" style="border-color:var(--gr-b);background:linear-gradient(135deg,#ecfdf5,#f0fdf4)">'+
+      '<h2 style="color:#065f46">🚀 Prêt à lancer</h2>'+
+      '<p class="mini" style="margin:0 0 10px;color:#047857">Voici ce que l\'app va assembler pour toi :</p>'+
+      '<ul class="lst" style="margin-bottom:10px">'+
+        '<li>✓ <b>Les règles complètes</b> du jeu (21 sections, inchangées)</li>'+
+        '<li>✓ <b>'+pl(team.length,'joueur')+'</b> : '+esc(team.slice(0,6).join(', '))+(team.length>6?'…':'')+'</li>'+
+        '<li>✓ <b>Style</b> : '+esc(st?st.label:'Classique')+(D.microCustom&&D.microCustom.trim()?' + « '+esc(D.microCustom.trim())+' »':'')+'</li>'+
+        (D.journal.length?'<li>✓ <b>'+Math.min(D.journal.length,120)+' questions à éviter</b> (anti-répétition)</li>':'<li style="opacity:.6">○ Journal vide — aucune question à éviter pour l\'instant</li>')+
+      '</ul>'+
+      '<button class="btn" style="font-size:17px" onclick="briefGo()">🚀 Générer et lancer la partie</button>'+
+      '<div class="steps" style="margin-top:12px">'+
+        '<div class="stp1"><span class="n">›</span><span>Le texte est <b>copié</b> et ton assistant <b>s\'ouvre</b>.</span></div>'+
+        '<div class="stp1"><span class="n">›</span><span><b>Colle</b> (appui long → Coller) puis envoie.</span></div>'+
+        '<div class="stp1"><span class="n">›</span><span>Passe en <b>mode voix</b> 🎙️ — et jouez !</span></div>'+
+      '</div>'+
+      '<div class="row" style="margin-top:10px;gap:8px">'+
+        '<button class="sm" style="flex:1;background:#fff" onclick="briefCopy()">📋 Copier seulement</button>'+
+        '<button class="sm" style="flex:1;background:#fff" onclick="briefShare()">📤 Envoyer</button>'+
+      '</div></div>';
+
     h+='<div class="card"><h2>Ce que l\'animateur gère pour vous</h2><ul class="lst">'+
       ['Les questions : variées façon Trivial, jamais deux fois la même','La difficulté : adaptée à chaque joueur, domaine par domaine','Le score : 2 pts en direct, 1 pt avec propositions, objectif 15','Les mécaniques : Cash, Vol, Tour Défi, Duel, Quitte ou double','L\'arbitrage : rotation stricte, réponses officielles, zéro triche']
       .map(function(t){return '<li>✓ '+t+'</li>';}).join('')+'</ul></div>';
+    h+='<p class="mini" style="text-align:center;margin:4px 2px 0;line-height:1.6">Envie de garder une trace ? Le <b>classement</b> se note dans l\'onglet <b>🏆 Palmarès</b>, les <b>questions</b> dans le <b>📖 Journal</b> — quand tu veux, jamais obligatoire.</p>';
   }else if(S.qtab==='j'){
     h+='<div class="card"><h2>Ajouter les questions d\'une partie</h2>'+
       '<p class="mini" style="margin-bottom:8px">Colle la liste donnée en fin de partie (une par ligne). Les doublons sont détectés automatiquement.</p>'+
@@ -1924,11 +1951,23 @@ function chConfig(){
      '<button class="chip'+(s.sound?' on':'')+'" style="flex:1;text-align:center" onclick="chSound(true)">🔔 Bip activé</button>'+
      '<button class="chip'+(!s.sound?' on':'')+'" style="flex:1;text-align:center" onclick="chSound(false)">🔕 Silencieux</button></div></div>';
   h+='<button class="btn" onclick="chStart()">Démarrer la manche</button>'+
-     '<p class="mini" style="text-align:center;margin-top:8px">Chaque joueur défend son temps. Bon → il garde la main. Faux → au suivant.</p>';
+     '<p class="mini" style="text-align:center;margin-top:8px">Chaque joueur défend son temps : quand il a la main, son chrono tourne.</p>';
+  // Règle de passation : elle change selon les jeux
+  var pr=s.pass||'wrong';
+  h+='<div class="card"><h2>Quand passe-t-on la main ?</h2>'+
+    '<div style="display:flex;flex-direction:column;gap:8px">'+
+    [['wrong','❌ Après une erreur','Il garde la main tant qu\'il répond juste (quiz, culture générale)'],
+     ['good','✅ Après une bonne réponse','Chacun son tour dès qu\'il a réussi (énumération, mots à trouver)'],
+     ['both','🔀 Au choix pendant le jeu','Les deux boutons restent disponibles, tu décides sur le moment']]
+    .map(function(o){
+      return '<button class="chip'+(pr===o[0]?' on':'')+'" style="text-align:left;padding:10px 12px;white-space:normal" onclick="chSetPass(\''+o[0]+'\')">'+
+        '<b>'+o[1]+'</b><br><span style="font-weight:400;font-size:11.5px;opacity:.85">'+o[2]+'</span></button>';
+    }).join('')+'</div></div>';
   return h;
 }
 function chAv(i){ var s=chSettings(); if(!s.players[i]||!s.players[i].trim()){ s.players[i]='Joueur '+(i+1); } openAv(libIdForName(s.players[i])); }
 function chSetSecs(v){ chSettings().secs=Math.max(5,v||60); persist(); render(); }
+function chSetPass(v){ chSettings().pass=v; persist(); render(); }
 function chSetPlayerSecs(i,v){
   var s=chSettings(); if(!s.custom) s.custom={};
   var n=parseInt(v);
@@ -2025,6 +2064,23 @@ function chGood(){
   perc({dur:.06,f1:3000,vol:.12,rev:.2});
   chRun();
 }
+/* Mode « la bonne réponse passe la main » : le succès fait tourner */
+function chPassGood(){
+  if(CH.winner) return;
+  CH.players[CH.active].good++;
+  hit(PENTA[3],{dur:.16,vol:.34,fm:.5,fmRatio:3.01,cut:6000,rev:.28});
+  hit(PENTA[5],{delay:.075,dur:.3,vol:.3,fm:.6,fmRatio:3.01,cut:7000,rev:.35});
+  chStopTick(); CH.running=false;
+  chAdvance(false);
+  if(!CH.winner){ setTimeout(function(){ swoosh(); },120); chRun(); } else render();
+}
+/* …et l'échec le laisse en difficulté sur son propre temps */
+function chKeepWrong(){
+  if(CH.winner) return;
+  sub(140,.2,.45);
+  hit(196,{dur:.26,vol:.3,bend:.62,wave:'triangle',cut:1200,rev:.25});
+  chRun();
+}
 function chWrong(){
   chStopTick(); CH.running=false;
   sub(140,.2,.45);
@@ -2111,7 +2167,9 @@ function chGame(){
        '</div>';
   });
   h+='</div>';
-  h+='<p class="mini" style="text-align:center;margin:-4px 0 10px">La colonne se vide en direct \u00B7 touche une colonne pour donner la main.</p>';
+  var passLbl=(chSettings().pass||'wrong')==='good'?'la main passe apr\u00E8s une bonne r\u00E9ponse'
+             :((chSettings().pass||'wrong')==='both'?'tu d\u00E9cides quand la main passe':'il garde la main tant qu\'il r\u00E9pond juste');
+  h+='<p class="mini" style="text-align:center;margin:-4px 0 10px">L\'anneau se vide en direct \u00B7 '+passLbl+' \u00B7 touche un joueur pour lui donner la main.</p>';
 
   // contrôle principal : Démarrer / Pause
   h+= CH.running
@@ -2119,8 +2177,22 @@ function chGame(){
     : '<button class="btn" onclick="chRun()">▶︎ Lancer le temps de '+esc(p.name)+'</button>';
 
   // boutons animateur : 2 actions seulement (benchmark pendule d'échecs / party games)
-  h+='<button class="btn" style="margin-top:10px" onclick="chGood()">✓ Bonne réponse — garde la main</button>'+
-     '<button class="btn red" style="margin-top:8px" onclick="chWrong()">⏭ Au suivant</button>'+
+  var pass=(chSettings().pass||'wrong');
+  if(pass==='good'){
+    // la bonne réponse fait tourner : c'est elle qui passe la main
+    h+='<button class="btn" style="margin-top:10px" onclick="chPassGood()">✓ Réussi — au suivant</button>'+
+       '<button class="btn red" style="margin-top:8px" onclick="chKeepWrong()">✗ Raté — il continue</button>'+
+       '';
+  } else if(pass==='both'){
+    h+='<button class="btn" style="margin-top:10px" onclick="chGood()">✓ Bon — il garde la main</button>'+
+       '<button class="btn red" style="margin-top:8px" onclick="chWrong()">⏭ Passer au suivant</button>'+
+       '';
+  } else {
+    h+='<button class="btn" style="margin-top:10px" onclick="chGood()">✓ Bonne réponse — garde la main</button>'+
+       '<button class="btn red" style="margin-top:8px" onclick="chWrong()">⏭ Au suivant</button>'+
+       '';
+  }
+  h+=''+
      '<button class="sm" style="width:100%;margin-top:8px" onclick="chFinishNow()">🏁 Terminer la manche maintenant</button>'+
      '<p class="mini" style="text-align:center;margin-top:6px">Bonne réponse : '+esc(p.name)+' continue et son ✓ grimpe. Sinon : la main passe, son chrono se fige.</p>';
 
