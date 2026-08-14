@@ -17,6 +17,10 @@ En famille ou entre amis, il anime, il compte, il arbitre — et retient qui gag
 ## Installation (iPhone)
 Safari → ouvrir le lien → Partager → **Sur l'écran d'accueil**.
 
+## Gouvernance
+- **`AUDIT.md`** : référentiel d'audit — 11 angles × rôles × instruments. **À ouvrir avant tout audit.**
+- **`PROMPT-MICRO.md`** : le prompt sanctuarisé de l'animateur.
+
 ## Qualité
 `tests/` : 404 assertions jsdom + audit clic exhaustif (0 échec, 0 bouton mort). Voir `tests/README.md`.
 
