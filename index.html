@@ -245,7 +245,7 @@
   .secwrap{position:relative;display:block}
   .secwrap input{width:100%;text-align:center;padding-right:15px}
   .secwrap i{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-style:normal;font-size:11px;color:#a8a29e;pointer-events:none}
-  .dieface{display:inline-flex;align-items:center;justify-content:center;background:#fff;border:2px solid #e7e5e4;border-radius:14px;
+  .dieface{display:inline-flex;align-items:center;justify-content:center;background:var(--card);border:2px solid var(--line);border-radius:14px;
     width:64px;height:64px;font-size:26px;font-weight:800;color:#0f766e;box-shadow:0 4px 12px rgba(0,0,0,.08)}
   .dieface.roll{animation:dieShake .32s ease infinite}
   @keyframes dieShake{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-7px) rotate(5deg)}}
@@ -372,7 +372,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='44';
+var APP_VERSION='45';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -493,7 +493,7 @@ function render_(){
   var standalone = (window.navigator.standalone===true) || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
   var banner = !canSave ? '<div class="warn"><b>Sauvegarde impossible ici.</b> Ce navigateur ne garde pas la mémoire. Ouvre le lien dans <b>Safari</b>, puis Partager → Sur l\'écran d\'accueil, et lance l\'app depuis l\'icône.</div>' : '';
   var tip = (canSave && !standalone && S.view==='home' && !S.tipOff)
-    ? '<div class="warn" style="background:var(--am-l);border-color:var(--am);color:#92400e;display:flex;gap:10px;align-items:center"><span style="flex:1"><b>📌 Pour garder l\'historique :</b> ouvre-moi dans <b>Safari</b> → Partager → <b>Sur l\'écran d\'accueil</b>, et lance-moi depuis l\'icône 🏆.</span><button class="sm" onclick="S.tipOff=1;render()">OK</button></div>' : '';
+    ? '<div class="warn" style="background:var(--am-l);border-color:var(--am);color:#92400e;display:flex;gap:10px;align-items:center"><span style="flex:1"><b>📌 Pour garder l\'historique :</b> ouvre-moi dans <b>Safari</b> → Partager → <b>Sur l\'écran d\'accueil</b>, et lance-moi depuis l\'icône 🏆.</span><button class="sm" onclick="S.tipOff=1;render()" aria-label="Masquer ce conseil">OK</button></div>' : '';
 
   if(S.view==='home'){
     if(!D.onboarded) setTimeout(obDraw,50);
@@ -521,13 +521,13 @@ function render_(){
           '<small>'+pl(live.rounds.length,'manche')+' · la partie continue</small></span>'+
           '<span style="color:#d6d3d1">›</span></button>' : '';
       })()+
-      tool('points','🏆','La Coupe','<b>Il compte les points.</b> Le carnet de scores de vos jeux : belote, tarot, Uno, molkky, jeux de société… Vous jouez, l\'app tient les comptes — sur une soirée ou toute une saison.','t-coupe',
+      tool('points','🏆','La Coupe','<b>Il compte les points.</b> Belote, tarot, Uno, molkky… vous jouez, l\'app tient les comptes.','t-coupe',
         D.matches.length?pl(D.matches.length,'partie')+' en mémoire':'','Scores & palmarès')+
-      tool('chrono','⏱️','Tic-Tac','<b>Il chronomètre chacun.</b> Un compte à rebours par joueur, pour tout jeu où il faut répondre vite : vos propres questions, les cartes d\'un jeu, des défis. Vous fournissez le jeu, l\'app gère le temps.','t-tictac',
+      tool('chrono','⏱️','Tic-Tac','<b>Il chronomètre chacun.</b> Un compte à rebours par joueur, dès qu\'il faut répondre vite.','t-tictac',
         D.tictac.length?pl(D.tictac.length,'duel')+' au palmarès':'','Chrono & duel')+
-      tool('quizz','🎙️','Le Micro','<b>Il transforme une IA en animateur.</b> L\'app prépare le texte de lancement complet ; vous le collez dans votre assistant IA, qui anime alors un vrai jeu télé à la voix.','t-micro',
+      tool('quizz','🎙️','Le Micro','<b>Il transforme une IA en animateur.</b> Collez le texte préparé dans votre assistant : il anime un jeu télé à la voix.','t-micro',
         D.journal.length?pl(D.journal.length,'question')+' au journal':'','Quiz vocal · IA')+
-      tool('outils','🎲','Les Outils','<b>Il complète la boîte.</b> Le dé qu\'on a perdu, le buzzer qui manque, le tirage au sort qui évite les disputes — tout ce qu\'un jeu réclame et qu\'on n\'a jamais sous la main.','t-outils','','Dé · Buzzer · Sort')+
+      tool('outils','🎲','Les Outils','<b>Il complète la boîte.</b> Le dé perdu, le buzzer qui manque, le tirage au sort qui évite les disputes.','t-outils','','Dé · Buzzer · Sort')+
 
       '<div style="margin-top:14px;display:flex;flex-direction:column;gap:9px">'+
         '<button class="miniact" style="width:100%" onclick="go(\'champions\')"><span class="e">🏅</span><span><b>Mur des champions</b><small>Les couronnes de tous les jeux, réunies</small></span><span style="margin-left:auto;color:#d6d3d1">›</span></button>'+
@@ -1142,7 +1142,7 @@ function renderQuizz(hd,app,banner){
     h+='<div class="card"><h2><span class="stepn">1</span>Qui joue ? ('+team.length+')</h2>'+
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'+
       D.lib.map(function(p){ var on=sel.indexOf(p.id)>=0;
-        return '<button onclick="microToggleP(\''+p.id+'\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;border:2px solid '+(on?'var(--gr)':'var(--line)')+';background:'+(on?'var(--gr-l)':'#fff')+';border-radius:14px;padding:8px 4px;cursor:pointer;opacity:'+(on?'1':'.5')+';min-width:0">'+
+        return '<button onclick="microToggleP(\''+p.id+'\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;border:2px solid '+(on?'var(--gr)':'var(--line)')+';background:'+(on?'var(--gr-l)':'var(--card)')+';border-radius:14px;padding:8px 4px;cursor:pointer;opacity:'+(on?'1':'.5')+';min-width:0">'+
           av(p.name,'sm')+'<span style="font-size:11px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name)+'</span></button>';
       }).join('')+'</div>'+
       '<div class="row" style="gap:8px;margin-top:10px">'+
@@ -1154,7 +1154,7 @@ function renderQuizz(hd,app,banner){
         microTeam().map(function(n){
           var inA=(D.microTeams.a||[]).indexOf(n)>=0;
           return '<button onclick="microSwapTeam(\''+n.replace(/'/g,"\\'")+'\')" style="display:flex;align-items:center;gap:8px;width:100%;margin-bottom:6px;border:2px solid '+(inA?'var(--gr)':'#7c3aed')+';background:'+(inA?'var(--gr-l)':'#ede9fe')+';border-radius:12px;padding:7px 10px;cursor:pointer;font-family:inherit">'+
-            '<span style="font-size:11px;font-weight:800;color:'+(inA?'#047857':'#6d28d9')+';background:#fff;border-radius:99px;padding:2px 8px">'+(inA?'ÉQUIPE 1':'ÉQUIPE 2')+'</span>'+
+            '<span style="font-size:11px;font-weight:800;color:'+(inA?'#047857':'#6d28d9')+';background:var(--card);border-radius:99px;padding:2px 8px">'+(inA?'ÉQUIPE 1':'ÉQUIPE 2')+'</span>'+
             '<b style="font-size:13.5px;flex:1;text-align:left">'+esc(n)+'</b>'+
             '<span style="font-size:15px;opacity:.5">⇄</span></button>';
         }).join('')+
@@ -1351,10 +1351,6 @@ function microSwapTeam(name){
   if(i>=0){ a.splice(i,1); b.push(name); }
   else { var j=b.indexOf(name); if(j>=0) b.splice(j,1); a.push(name); }
   D.microTeams={a:a,b:b}; persist(); render();
-}
-function microTeamsView(){
-  if(!D.microTeams) return [];
-  return [D.microTeams.a||[], D.microTeams.b||[]];
 }
 function microTeam(){
   if(!D.microTeam) return D.lib.map(function(p){return p.name;});
@@ -1764,7 +1760,7 @@ function drawWhoSheet(){
     : '<div class="whowheel">🎯</div><p class="mini" style="text-align:center">Choisis les joueurs, puis lance le tirage.</p>';
   var grid=D.lib.map(function(p){
     var on=WHO.roster[p.id];
-    return '<button onclick="event.stopPropagation();whoToggle(\''+p.id+'\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;border:2px solid '+(on?'var(--gr)':'var(--line)')+';background:'+(on?'var(--gr-l)':'#fff')+';border-radius:14px;padding:8px 4px;cursor:pointer;opacity:'+(on?'1':'.5')+'">'+
+    return '<button onclick="event.stopPropagation();whoToggle(\''+p.id+'\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;border:2px solid '+(on?'var(--gr)':'var(--line)')+';background:'+(on?'var(--gr-l)':'var(--card)')+';border-radius:14px;padding:8px 4px;cursor:pointer;opacity:'+(on?'1':'.5')+'">'+
       av(p.name,'sm')+'<span style="font-size:11px;font-weight:600;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name)+'</span></button>';
   }).join('');
   el.innerHTML='<div class="in" onclick="event.stopPropagation()"><div class="grab"></div>'+
@@ -2245,21 +2241,6 @@ function chToCoupeGo(id){
   S.matchId=m.id; S.tab='rank'; S.histMode='grid'; go('match');
 }
 function chDelDuel(id){ D.tictac=D.tictac.filter(function(d){return d.id!==id;}); persist(); render(); }
-function chAggChrono(){
-  var agg={};
-  D.tictac.forEach(function(d){
-    d.players.forEach(function(p){
-      var k=fp(p.name); if(!k) return;
-      if(!agg[k]) agg[k]={name:p.name, duels:0, wins:0, good:0, best:0};
-      agg[k].duels++; agg[k].good+=(p.good||0);
-      if(p.good>agg[k].best) agg[k].best=p.good;
-      if(d.winner && fp(d.winner)===k) agg[k].wins++;
-    });
-  });
-  var list=[]; for(var k in agg) list.push(agg[k]);
-  list.sort(function(a,b){return b.wins-a.wins||b.good-a.good||b.duels-a.duels;});
-  return list;
-}
 function chConfig(){
   var s=chSettings();
   var presets=[30,45,60,90,120];
@@ -2298,6 +2279,20 @@ function chConfig(){
      '<button class="chip'+(s.sound?' on':'')+'" style="flex:1;text-align:center" onclick="chSound(true)">🔔 Son</button>'+
      '<button class="chip'+(!s.sound?' on':'')+'" style="flex:1;text-align:center" onclick="chSound(false)">🔕 Silencieux</button></div>';
   h+='<button class="btn tictac" onclick="chStart()">⏱️ Démarrer la manche</button>';
+  /* Historique : rendu supprimable (chDelDuel existait mais n'était branché nulle part,
+     alors que les manches de La Coupe, elles, ont toujours eu leur corbeille). */
+  if(D.tictac.length){
+    h+='<button class="sm" style="width:100%;margin-top:10px;background:var(--card)" onclick="S.chHist=!S.chHist;render()">'+
+       (S.chHist?'▾':'›')+' Derniers duels ('+D.tictac.length+')</button>';
+    if(S.chHist){
+      h+='<div class="card" style="margin-top:8px">'+D.tictac.slice(0,8).map(function(d){
+        return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)">'+
+          '<span class="mini" style="width:64px;flex-shrink:0">'+fr(d.date)+'</span>'+
+          '<b style="flex:1;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(d.winner?'👑 '+esc(d.winner):'—')+'</b>'+
+          '<button class="icobtn" style="font-size:15px;padding:2px 6px" aria-label="Supprimer ce duel" onclick="chDelDuel(\''+d.id+'\')">🗑</button></div>';
+      }).join('')+'</div>';
+    }
+  }
   return h;
 }
 function chAv(i){ var s=chSettings(); if(!s.players[i]||!s.players[i].trim()){ s.players[i]='Joueur '+(i+1); } openAv(libIdForName(s.players[i])); }
