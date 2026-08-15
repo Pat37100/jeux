@@ -23,9 +23,9 @@ ok('« Tous sujets » = aucune surcouche thème', !w.briefText().includes('THÈM
 
 L('[3] Objectif en points');
 w.setMicroGoal(15);
-ok('15 pts = pas de surcharge (déjà le défaut du prompt)', !w.briefText().includes('OBJECTIF DE LA PARTIE'));
+ok('15 pts = pas de surcharge (déjà le défaut du prompt)', !w.briefText().includes('OBJECTIF (prioritaire'));
 w.setMicroGoal(8);
-ok('8 pts injecté et prioritaire', w.briefText().includes('OBJECTIF DE LA PARTIE') && w.briefText().includes('8 points'));
+ok('8 pts injecté et prioritaire', w.briefText().includes('OBJECTIF (prioritaire') && w.briefText().includes('8 points'));
 w.setMicroGoal(30);
 ok('30 pts injecté', w.briefText().includes('30 points'));
 
@@ -46,15 +46,15 @@ ok('retour chacun pour soi', !w.D.microTeams && !w.briefText().includes('MODE É
 
 L('[5] Le prompt initial reste INTACT (sanctuarisé)');
 const full=w.briefText();
-ok('prompt de base inchangé et intégralement présent', full.startsWith(BASE));
-for(const s of ['ANTI-DOUBLON ABSOLU','TOURS DÉFI','QUITTE OU DOUBLE','PRINCIPE DIRECTEUR','BARÈME CLASSIQUE'])
+ok('moteur complet présent après la config (couche 1 en tête, v51)', full.includes(BASE) && full.startsWith('<CONFIG_APP>'));
+for(const s of ['ANTI-DOUBLON','TOUR DÉFI','QUITTE OU DOUBLE','PRINCIPE DIRECTEUR','BARÈME'])
   ok('section « '+s+' » préservée', full.includes(s));
 
 L('[6] Les 3 axes se cumulent sans se contredire');
 w.setMicroStyle('famille'); w.setMicroTheme('ados'); w.setMicroGoal(8); w.setMicroTeams(true); w.D.microCustom='spécial vacances';
 const all=w.briefText();
-ok('style + thème + objectif + équipes + perso', ["STYLE D'ANIMATION","THÈME DOMINANT","OBJECTIF DE LA PARTIE","MODE ÉQUIPES","CONSIGNE PERSONNELLE"].every(k=>all.includes(k)));
-ok('objectif placé après le style (il tranche)', all.indexOf('OBJECTIF DE LA PARTIE')>all.indexOf("STYLE D'ANIMATION"));
+ok('style + thème + objectif + équipes + perso', ["AMBIANCE SÉLECTIONNÉE","THÈME DOMINANT","OBJECTIF (prioritaire","MODE ÉQUIPES","CONSIGNE PERSONNELLE"].every(k=>all.includes(k)));
+ok('objectif placé après le style (il tranche)', all.indexOf('OBJECTIF (prioritaire')>all.indexOf("AMBIANCE SÉLECTIONNÉE"));
 ok('la consigne joueurs reste en dernier', all.indexOf('CONSIGNE PERSONNELLE')>all.indexOf('MODE ÉQUIPES'));
 ok('la liste des joueurs clôt le texte', all.trim().endsWith('.') && all.includes('Les joueurs sont'));
 L(F? '\n*** '+F+' ECHEC(S) ***' : '\nTOUT PASSE ('+F+' échec)');
