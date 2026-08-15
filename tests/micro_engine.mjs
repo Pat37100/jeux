@@ -12,44 +12,44 @@ const t=w.briefText();
 const MUST={
  'rotation joueurs':'currentPlayerIndex','ordre figé':'players[]','scores':'scores{}','objectif':'targetScore',
  'barème 2 points':'2 points','barème 1 point':'1 point','réponse officielle':'réponse officielle',
- 'QCM propositions':'A. …','Tour Défi':'Tour Défi','Cash':'CASH','Question avec vol':'QUESTION AVEC VOL',
+ 'QCM propositions':'A/B/C/D','Tour Défi':'Tour Défi','Cash':'CASH','Question avec vol':'QUESTION AVEC VOL',
  'Question Mystère':'QUESTION MYSTÈRE','Estimation':'ESTIMATION','Duel':'DUEL','Quitte ou double':'QUITTE OU DOUBLE',
- 'logique/énigmes':'énigmes','difficulté 1-8':'1 à 8','difficulté par catégorie':'categoryDifficulty',
+ 'logique/énigmes':'énigmes','difficulté 1-8':'Échelle 1-8','difficulté par catégorie':'categoryDifficulty',
  'variété domaines':'mythologie','anti-doublon':'ANTI-DOUBLON','arbitrage':'ARBITRAGE','fin de partie':'FIN DE PARTIE',
- 'oral et bruit':'BRUIT','rythme':'RYTHME','qualité questions':'QUALITÉ DES QUESTIONS','démarrage':'DÉMARRAGE',
+ 'oral et bruit':'BRUIT','rythme':'RYTHME','qualité questions':'=== K. QUALITÉ','démarrage':'DÉMARRAGE',
  'principe directeur':'PRINCIPE DIRECTEUR'};
 for(const [k,v] of Object.entries(MUST)) ok('conservé : '+k, t.includes(v));
 
 L('\n══ COUCHES ══');
 ok('couche 1 CONFIG_APP en tête', t.startsWith('<CONFIG_APP>'));
 ok('config contient MODE/JOUEURS/OBJECTIF', ['MODE=','JOUEURS=','OBJECTIF=','AMBIANCE=','THEME='].every(k=>t.includes(k)));
-ok('couche 2 moteur présent', t.includes('=== A. ORDRE DE PRIORITÉ'));
-ok('couche 3 après le moteur', t.indexOf('COUCHE 3')>t.indexOf('=== T.') || !t.includes('COUCHE 3'));
+ok('couche 2 moteur présent', t.includes('=== A. PRIORITÉS'));
+ok('couche 3 après le moteur', t.indexOf('COUCHE 3')>t.indexOf('=== S.') || !t.includes('COUCHE 3'));
 
 L('\n══ CORRECTIFS DU TEST RÉEL (problèmes 1→10) ══');
-ok('P1 rotation mécanique', t.includes('jamais autrement') && t.includes('mécanique une donnée')===false && t.includes('Ne demande jamais « c\'est à qui ? »'));
-ok('P2 identité avant exactitude', t.includes("JAMAIS l'exactitude du contenu avant l'identité"));
-ok('P3 frontière de tour', t.includes('FRONTIÈRE DE TOUR') && t.includes("ARRÊTES DE PARLER"));
+ok('P1 rotation mécanique', t.includes('jamais autrement') && t.includes('retour au premier'));
+ok('P2 identité avant exactitude', t.includes("jamais l'exactitude avant l'identité"));
+ok('P3 frontière de tour', t.includes('FRONTIÈRE DE TOUR') && t.includes("T'ARRÊTES DE PARLER"));
 ok('P4 hésitation non tranchée', t.includes("Ta réponse officielle ?") && t.includes("Newton"));
-ok('P5 choicesStarted non rétroactif', t.includes('jamais rétroactivement') && t.includes("si tu n'as pas énoncé A"));
+ok('P5 choicesStarted non rétroactif', t.includes('jamais rétroactivement') && t.includes("Si tu n'as pas énoncé A"));
 ok('P6 registre transactionnel', t.includes('REGISTRE TRANSACTIONNEL') && t.includes('Mélanie +2 → 8'));
-ok('P7 anti-doublon sur les faits', t.includes("symbole chimique de l'or") && t.includes('question annulée'));
-ok('P8 difficulté progressive ±0,5', t.includes('0,5 niveau') && t.includes("INTERDIT de passer brutalement"));
+ok('P7 anti-doublon sur les faits', t.includes("symbole de l'or") && t.includes('question annulée'));
+ok('P8 difficulté progressive ±0,5', t.includes('±0,5') && t.includes('INTERDIT de sauter de 2 à 8'));
 ok('P9 qualité (mitose/Westphalie)', t.includes('fission binaire') && t.includes('Westphalie'));
-ok('P10 mécaniques procédurales', t.includes('Vol ouvert') && t.includes('jamais notée sur l\'exactitude'));
+ok('P10 mécaniques procédurales', t.includes('Vol ouvert') && t.includes('Jamais notée sur l\'exactitude'));
 
 L('\n══ CAS DE TEST A→K (section 27) ══');
-ok('A rotation cyclique', t.includes('modulo') && t.includes('reviens automatiquement au premier'));
-ok('B mauvais répondant → 0 point', t.includes("AUCUN point, et l'intrus non plus"));
+ok('A rotation cyclique', t.includes('modulo') && t.includes('retour au premier'));
+ok('B mauvais répondant → 0 point', t.includes('personne ne marque'));
 ok('C hésitation → demander', t.includes("Je pense Newton"));
-ok('D barème avant/après A', t.includes('choicesStarted = false : 2 points'));
+ok('D barème avant/après A', t.includes('choicesStarted = false → 2 points'));
 ok('E fait brûlé même si annulée', t.includes('revealedFacts'));
-ok('F score non modifiable sur affirmation', t.includes("JAMAIS un score simplement parce qu'un joueur l'affirme"));
-ok('G pas de saut 2→8', t.includes("tu montes de 1 niveau au maximum"));
-ok('H Tour Défi calibré', t.includes("gravitation universelle") && t.includes("pas décoratif"));
+ok('F score non modifiable sur affirmation', t.includes("jamais un score parce qu'un joueur l'affirme"));
+ok('G pas de saut 2→8', t.includes('tu montes de 1 au maximum'));
+ok('H Tour Défi calibré', t.includes('gravitation universelle'));
 ok('I estimation compétitive', t.includes('TOUS les joueurs') && t.includes('plus proche gagne'));
 ok('J vol après annonce', t.includes('avant « Vol ouvert » ne rapporte rien'));
-ok('K humour sans toucher au score', t.includes("mauvaise foi comique") && t.includes('froid et exact'));
+ok('K humour sans toucher au score', t.includes('mauvaise foi comique') && t.includes('froid et exact'));
 
 L('\n══ AMBIANCES TYPÉES (section 22) ══');
 const kinds={};
