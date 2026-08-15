@@ -15,11 +15,13 @@ w.go('home'); w.S.explain=true; w.render();
 ok('ne dit plus « n\'est pas un jeu »', !app().includes("n'est pas un jeu"));
 ok('formulation d\'accompagnement', app().includes('accompagne vos jeux'));
 
-L('[2] Section « outils de table » sur l\'accueil');
-w.S.explain=false; w.render();
-ok('section outils présente', app().includes('Les outils de table'));
-for(const t of ['Les Dés','Le Buzzer','Qui commence ?']) ok('outil « '+t+' » listé', app().includes(t));
-ok('Qui commence n\'est plus en double', (app().match(/Qui commence \?/g)||[]).length===1);
+L('[2] Les outils sont regroupés dans leur rubrique (v44)');
+w.go('home'); w.render();
+ok('carte « Les Outils » sur l\'accueil', app().includes('Les Outils'));
+w.go('outils'); w.render();
+for(const t of ['Les Dés','Le Buzzer','Qui commence ?']) ok('outil « '+t+' » accessible', app().includes(t));
+ok('pas de doublon Qui commence', (app().match(/Qui commence \?/g)||[]).length===1);
+w.go('home'); w.render();
 
 L('[3] Les Dés : fonctionnement réel');
 ok('openDice exposé', typeof w.openDice==='function');
