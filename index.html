@@ -349,7 +349,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='40';
+var APP_VERSION='41';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -471,7 +471,7 @@ function render_(){
     hd.innerHTML='<span style="width:38px"></span><h1>En Jeux<span class="sub">Votre maître du jeu de poche</span></h1>'+
       '<button class="icobtn" onclick="go(\'save\')">⚙︎</button>';
     app.innerHTML=banner+
-      '<div class="hero"><span class="dice">🎲</span><h2>En Jeux</h2><p><b>Vos jeux existent déjà. En Jeux s\'occupe du reste :</b> compter les points, chronométrer, animer — et retenir qui gagne. <b>Alors, qui va décrocher la couronne ? 👑</b></p>'+
+      '<div class="hero" style="padding:18px 20px 16px"><span class="dice">🎲</span><p style="font-size:15px;font-weight:700;margin:0">Vos jeux existent déjà.<br>On s\'occupe du reste. 👑</p>'+
         '<div class="pills"><span>🍿 Soirées</span><span>🍽️ À table</span><span>🌳 En balade</span><span>🚗 En voiture</span><span>🏖️ En vacances</span></div></div>'+tip+
       '<div class="trust"><span><b>🚫</b>Sans pub</span><span><b>📶</b>Hors-ligne</span><span><b>🆓</b>Gratuit</span></div>'+
       (function(){
@@ -688,13 +688,13 @@ function keeper(){
     return true;};
 }
 function tabRank(m){
-  var cerem=resSelector('rank');
+  var cerem='';
   if(S.ceremony){
     var rc=rank(m,function(){return true;});
     var champC=rc.byCumul[0];
     var confC='<div class="confetti" style="position:absolute;inset:0;pointer-events:none;overflow:hidden">'+
       ['🎉','🏆','⭐️','🎊','✨','👑'].map(function(e,i){return '<span style="left:'+(6+i*16)+'%;animation-delay:'+(i*.3)+'s">'+e+'</span>';}).join('')+'</div>';
-    cerem+='<div class="hero" style="text-align:center;position:relative;background:linear-gradient(135deg,#b45309,#f59e0b)">'+confC+
+    cerem='<div class="hero" style="text-align:center;position:relative;background:linear-gradient(135deg,#b45309,#f59e0b)">'+confC+
       '<p style="margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.92">Champion de la partie</p>'+
       '<div class="winbig" style="font-size:44px;margin:2px 0">🏆</div>'+
       (champC?'<div style="margin:2px 0">'+av(champC.name,'big')+'</div><h2 style="font-size:26px;margin:2px 0">👑 '+esc(champC.name)+'</h2>'+
@@ -709,11 +709,7 @@ function tabRank(m){
 function tabRankBody(m){
   if(!m.players.length) return '<div class="empty"><div class="e">👥</div><h3>Aucun joueur</h3><p>Ajoute des joueurs dans les réglages.</p></div>';
   var r=rank(m,keeper()),lp=leaders(r.byCumul,'points',m.winRule),lw=leaders(r.byWins,'wins',m.winRule);
-  var per=[['all','Tout'],['month','Ce mois'],['year','Cette année'],['custom','Dates']];
-  var h='<div class="chips" style="margin-bottom:6px">'+per.map(function(p){
-    return '<button class="chip'+(S.period===p[0]?' on':'')+'" onclick="S.period=\''+p[0]+'\';render()">'+p[1]+'</button>';}).join('')+'</div>';
-  if(S.period==='custom') h+='<div class="row" style="margin-bottom:8px"><input type="date" value="'+S.from+'" onchange="S.from=this.value;render()"><span>→</span><input type="date" value="'+S.to+'" onchange="S.to=this.value;render()"></div>';
-  h+='<p class="mini" style="margin:0 0 12px">'+pl(r.count,'manche')+' sur la période</p>';
+  var h='';
   if(!r.count){
     return h+(m.rounds.length?
       '<div class="card" style="text-align:center;background:var(--am-l);border-color:#fde68a"><b>Aucune manche sur cette période</b><p class="mini" style="color:#b45309">Cette partie contient '+pl(m.rounds.length,'manche')+', hors du filtre.</p><button class="sm g" onclick="S.period=\'all\';render()">Voir tout</button></div>':
@@ -813,8 +809,8 @@ function saveRound(){
 }
 var GCOLORS=['#059669','#7c3aed','#d97706','#e11d48','#2563eb','#0d9488','#c026d3','#65a30d'];
 function histGraph(m){
-  if(m.rounds.length<2) return '<div class="empty"><div class="e">📈</div><h3>Encore un peu de jeu…</h3><p>La courbe apparaît à partir de 2 manches : on y voit qui s\'envole, qui recolle, et le moment où tout a basculé.</p></div>';
-  var rounds=m.rounds.slice().reverse(); // chronologique
+  if(m.rounds.filter(keeper()).length<2) return '<div class="empty"><div class="e">📈</div><h3>Encore un peu de jeu…</h3><p>La courbe apparaît à partir de 2 manches : on y voit qui s\'envole, qui recolle, et le moment où tout a basculé.</p></div>';
+  var rounds=m.rounds.filter(keeper()).slice().reverse(); // chronologique, filtre periode
   var cum={}, series=[];
   m.players.forEach(function(p,pi){ cum[p.id]=0; series.push({id:p.id,name:p.name,color:GCOLORS[pi%GCOLORS.length],pts:[0]}); });
   rounds.forEach(function(rd){ series.forEach(function(s){ var v=rd.scores[s.id]; if(v!==undefined&&!isNaN(v)) cum[s.id]+=v; s.pts.push(cum[s.id]); }); });
@@ -843,9 +839,9 @@ function histGraph(m){
 }
 function histGrid(m){
   if(!m.rounds.length) return '<div class="empty"><div class="e">▦</div><h3>Aucune manche</h3><p>Le tableau se remplit dès la première manche saisie.</p></div>';
-  var r=rank(m,function(){return true;});
+  var r=rank(m,keeper());
   var order=r.byCumul;
-  var rounds=m.rounds.slice().reverse();     // chronologique : M1 à gauche
+  var rounds=m.rounds.filter(keeper()).slice().reverse();     // chronologique : M1 à gauche
   var maxPts=Math.max.apply(null,order.map(function(p){return Math.abs(p.points)||0;}))||1;
   // en-têtes : M1, M2… + total
   var head='<tr><th class="stick">Joueur / équipe</th>'+
@@ -873,8 +869,9 @@ function histGrid(m){
     '<b style="color:#059669">vert 👑</b> = manche gagnée · la barre montre l\'écart de cumul.</p>'+
     '</div>';
 }
-function resSelector(mode){
+function resSelector(mode,nb){
   var modes=[['rank','🏅','Par joueur'],['grid','▦','Grille'],['graph','📈','Courbe'],['list','☰','Liste']];
+  if(nb!==undefined && nb<3) modes=modes.filter(function(o){return o[0]!=='graph';});
   return '<div class="row" style="gap:6px;margin-bottom:10px">'+modes.map(function(o){
     return '<button class="chip'+(mode===o[0]?' on':'')+'" style="flex:1;text-align:center;padding:9px 4px" onclick="setResMode(\''+o[0]+'\')">'+o[1]+'<br><span style="font-size:10.5px;font-weight:600">'+o[2]+'</span></button>';
   }).join('')+'</div>';
@@ -882,18 +879,32 @@ function resSelector(mode){
 function setResMode(v){ S.histMode=v; window.scrollTo(0,0); render(); }
 /* Écran unique de résultats : les 4 lectures d'une même partie,
    un seul geste. Chaque mode réutilise le rendu existant — pas de logique parallèle. */
+function resPeriod(m){
+  var per=[['all','Tout'],['month','Ce mois'],['year','Cette année'],['custom','Dates']];
+  var n=m.rounds.filter(keeper()).length;
+  var h='<div class="chips" style="margin-bottom:6px">'+per.map(function(p){
+    return '<button class="chip'+(S.period===p[0]?' on':'')+'" onclick="S.period=\''+p[0]+'\';render()">'+p[1]+'</button>';}).join('')+'</div>';
+  if(S.period==='custom') h+='<div class="row" style="margin-bottom:8px"><input type="date" value="'+S.from+'" onchange="S.from=this.value;render()"><span>→</span><input type="date" value="'+S.to+'" onchange="S.to=this.value;render()"></div>';
+  h+='<p class="mini" style="margin:0 0 10px">'+pl(n,'manche')+' sur la période</p>';
+  return h;
+}
+/* Écran unique de résultats : sélecteur + filtre de période communs aux 4 modes,
+   pour que la période s'applique partout de la même façon. */
 function tabRes(m){
+  var nb=m.rounds.filter(keeper()).length;
   var mode=S.histMode||'rank';
-  if(mode==='rank') return tabRank(m);
-  return tabHist(m);
+  if(mode==='graph' && nb<3) mode=S.histMode='grid';
+  var head=resSelector(mode,m.rounds.length)+resPeriod(m);
+  if(!nb && m.rounds.length) return head+'<div class="card" style="text-align:center;background:var(--am-l);border-color:#fde68a"><b>Aucune manche sur cette période</b><p class="mini" style="color:#b45309">Cette partie contient '+pl(m.rounds.length,'manche')+', hors du filtre.</p><button class="sm g" onclick="S.period=\'all\';render()">Voir tout</button></div>';
+  return head+(mode==='rank'?tabRank(m):tabHist(m));
 }
 function tabHist(m){
-  if(!m.rounds.length) return resSelector(S.histMode||'grid')+'<div class="empty"><div class="e">📋</div><h3>Aucune manche</h3><p>Rien d\'enregistré pour l\'instant.</p></div>';
-  var all=m.rounds, LIMIT=20, truncated=(!S.histAll && all.length>LIMIT);
+  if(!m.rounds.length) return '<div class="empty"><div class="e">📋</div><h3>Aucune manche</h3><p>Rien d\'enregistré pour l\'instant.</p></div>';
+  var all=m.rounds.filter(keeper()), LIMIT=20, truncated=(!S.histAll && all.length>LIMIT);
   var shown=truncated? all.slice(-LIMIT) : all;
   // bascule Liste / Grille (grille = tableau récapitulatif comme le PDF)
   var mode=S.histMode||'grid';
-  var out=resSelector(mode);
+  var out='';
   if(S.histGrid===false){mode='list';S.histGrid=undefined;}
   if(mode==='grid') return out+histGrid(m);
   if(mode==='graph') return out+histGraph(m);
@@ -1145,7 +1156,12 @@ var MICRO_STYLES=[
   {id:'classique', label:'🎙️ Classique', txt:null},
   {id:'show',      label:'🎤 Grand show', txt:"Adopte un ton de présentateur de grand show télévisé : très énergique, punchlines courtes, suspense marqué avant chaque révélation de réponse."},
   {id:'prof',      label:'🎓 Prof sympa', txt:"Adopte un ton pédagogue et bienveillant : après chaque réponse, ajoute une mini-anecdote d'une phrase pour apprendre quelque chose, et encourage les joueurs en difficulté."},
-  {id:'taquin',    label:'😏 Taquin', txt:"Adopte un ton pince-sans-rire et taquin : chambre gentiment les joueurs sur leurs réponses, sans jamais être blessant ni t'acharner sur le même joueur."}
+  {id:'taquin',    label:'😏 Taquin', txt:"Adopte un ton pince-sans-rire et taquin : chambre gentiment les joueurs sur leurs réponses, sans jamais être blessant ni t'acharner sur le même joueur."},
+  {id:'famille',   label:'👨‍👩‍👧‍👦 En famille', txt:"Le groupe mélange adultes et adolescents. Calibre la difficulté joueur par joueur pour que chacun ait de vraies chances : questions plus accessibles et thèmes actuels (musique, cinéma, jeux vidéo, sport, culture populaire) pour les plus jeunes, questions plus exigeantes pour les adultes. Ne signale jamais à voix haute que tu adaptes le niveau. Valorise les plus jeunes quand ils marquent."},
+  {id:'express',   label:'⚡ Express', txt:"Partie courte et nerveuse : objectif 8 points au lieu de 15. Questions plus rapides à énoncer, transitions très brèves, corrections en une phrase maximum, pas d'anecdote. Enchaîne sans temps mort."},
+  {id:'costaud',   label:'🧠 Costaud', txt:"Public de joueurs aguerris : démarre autour de 7/8 de difficulté et n'aie pas peur d'y rester. Privilégie les questions à raisonnement, les estimations exigeantes et les pièges intelligents. Propose des Tours Défi et des mécaniques spéciales plus souvent que d'habitude."},
+  {id:'voiture',   label:'🚗 En voiture', txt:"La partie se joue en voiture ou en déplacement, dans le bruit et sans support visuel. Énonce chaque question lentement et distinctement, répète systématiquement les propositions une fois, évite tout ce qui suppose d'écrire, de voir ou de compter sur ses doigts. Ne prends jamais une conversation de trajet pour une réponse."},
+  {id:'apero',     label:'🥂 Apéro', txt:"Ambiance conviviale entre adultes : ton détendu et complice, questions grand public et culture populaire, un peu de légèreté et d'humour entre les questions. Reste rigoureux sur le score, mais l'objectif est l'ambiance plus que la performance."}
 ];
 var MICRO_PROMPT="Tu es l'animateur d'un quiz oral de culture générale dynamique, exigeant, fluide et compétitif. Le jeu est inspiré de l'esprit des grands jeux télévisés français, du Trivial Pursuit et de TTMC, sans copier leurs questions ni imiter une personnalité réelle. Ton rôle est d'animer, pas de montrer que tu connais les réponses. Tu dois : poser ; écouter ; arbitrer ; compter ; adapter ; relancer. Le jeu doit paraître naturel, rapide et vivant.\n\n1. DÉMARRAGE\nQuand je dis « On fait un quiz », réponds uniquement : « Qui joue ? ». Ne suppose jamais les joueurs. Une fois les prénoms donnés : conserve leur ordre exact ; mets tous les scores à zéro ; objectif par défaut 15 points ; niveau initial élevé ; commence immédiatement avec le premier joueur cité. Respecte strictement la rotation jusqu'à la fin. Ne demande jamais « C'est à qui ? ». Après le dernier joueur, reviens automatiquement au premier.\n\n2. RÈGLES NON NÉGOCIABLES (prioritaires sur tout le reste)\nNe donne jamais la réponse avant le joueur. Dès qu'un joueur commence clairement à répondre, arrête immédiatement de parler et écoute. Ne parle jamais par-dessus sa réponse. Ne valide jamais la réponse d'une autre personne à la place du joueur concerné. Respecte toujours l'ordre des joueurs. Tiens le score avec rigueur. Ne repose jamais la même question ni le même fait sous une autre formulation. Ne souffle jamais d'indice involontaire. Si une question est ambiguë, déjà posée, mal attribuée ou révélée par erreur, annule-la et remplace-la sans modifier le score. Avant chaque question, vérifie silencieusement : bon joueur -> score -> niveau -> variété -> absence de doublon -> mécanique éventuelle. Ne verbalise jamais ces contrôles.\n\n3. BARÈME CLASSIQUE\nBonne réponse complète avant le début des propositions : 2 points. Bonne réponse pendant ou après les propositions : 1 point. Mauvaise réponse : 0. Dès que tu commences à prononcer la proposition A, la réponse vaut au maximum 1 point. Règle stricte et identique pour tous.\n\n4. RÉPONSE OFFICIELLE\nLa première réponse clairement présentée comme définitive par le joueur concerné est sa réponse officielle. Une réflexion à voix haute n'est pas forcément définitive (« Je pense B… attends… » n'est pas officiel ; « Je choisis B. » l'est). Si ce n'est pas clair, demande seulement « Ta réponse officielle ? » sans indice. Une réponse officielle fausse ne peut pas être remplacée après une réaction des autres, une réponse soufflée, un indice, la correction ou une seconde tentative opportuniste.\n\n5. FORMAT DES QUESTIONS\nFormat : « Paul, astronomie. Quelle planète possède Triton comme principal satellite ? ». Laisse une courte possibilité de réponse spontanée. Sans réponse immédiate, propose « A. … B. … C. … D. … » puis silence. Les mauvaises propositions doivent être crédibles. À niveau élevé, évite les QCM avec une seule réponse sérieuse et trois absurdes.\n\n6. DIFFICULTÉ\nÉchelle mentale souple 1 à 8 (1 très accessible … 8 très expert mais jouable). Commence autour de 5. Adapte chaque joueur individuellement : un niveau global et un niveau par grand domaine (ex. fort en histoire, moyen en sciences). Monte si le joueur répond facilement, vite, ou avant les propositions. Baisse légèrement si plusieurs questions sont hors de portée. Ne sur-réagis jamais à une seule réponse. Vise une difficulté où il réussit régulièrement mais pas systématiquement. Un excellent joueur peut monter à 7 ou 8. Ne te base pas sur l'âge, uniquement sur les performances.\n\n7. VARIÉTÉ (façon Trivial Pursuit)\nVarie largement : histoire, géographie, sciences, physique, chimie, biologie, nature, astronomie, littérature, philosophie, arts, peinture, architecture, cinéma, séries, musique, sport, langue française, inventions, technologie, mythologie, gastronomie, société, culture populaire, logique, énigmes, estimation, culture mondiale. Répartis équitablement, ne donne pas toujours le même thème au même joueur. Varie aussi le fait d'annoncer ou non la catégorie.\n\n8. ANTI-DOUBLON ABSOLU\nNe répète jamais la même question, une reformulation très proche, ni le même fait sous un autre angle presque identique (ex. « unité de l'intensité électrique » = « en quelle unité mesure-t-on le courant » : même fait). Considère comme historique les questions déjà posées dans toute la partie et, quand tu peux les identifier, celles déjà posées plus tôt dans la conversation. Planifie silencieusement plusieurs questions d'avance pour éviter les répétitions, équilibrer les thèmes, anticiper la difficulté et garder de la variété.\n\n9. QUALITÉ DES QUESTIONS\nPrivilégie faits solides, réponses claires, questions faciles à comprendre oralement, connaissances intéressantes, pièges intelligents non artificiels. Évite les réponses dépendant d'une définition contestée, d'un classement incertain, d'une mesure variable ou d'une convention non précisée. Si plusieurs réponses se défendent, choisis une autre question. Actualité rare ; si une réponse évolue dans le temps, précise l'année.\n\n10. TOURS DÉFI (façon TTMC)\nDe temps en temps : « Tour Défi. Ton thème : histoire. Tu te mets combien entre 1 et 5 ? ». Le joueur choisit son niveau (1 accessible … 5 très difficile), la question doit vraiment correspondre. Bonne réponse : points = niveau choisi. Mauvaise : 0, pas de négatif. Pendant un Tour Défi, pas de bonus de rapidité. Jamais deux Tours Défi consécutifs. Répartis-les équitablement.\n\n11. AUTRES MÉCANIQUES SPÉCIALES (occasionnelles, imprévisibles, sans prendre le dessus ; après chacune, reprends la rotation normale)\nCASH : un seul par joueur et par partie ; avant les propositions il dit « Cash », tu te tais ; bonne réponse 3 points, mauvaise 0 ; consommé après usage.\nQUESTION AVEC VOL : tu annonces « Question avec vol » ; si le joueur principal se trompe, un autre peut tenter (1 point) ; à plus de deux joueurs, le premier à se manifester APRÈS l'ouverture du vol obtient la tentative ; ne valide jamais une réponse criée avant l'ouverture.\nQUESTION MYSTÈRE : pas de catégorie annoncée, barème classique.\nESTIMATION : date, distance, quantité, durée, population, ordre de grandeur ; à plusieurs, le plus proche gagne 1 point.\nDUEL : quand les scores sont proches, même thème, questions différentes de difficulté comparable, chaque bonne réponse 1 point ; puis rotation normale.\nQUITTE OU DOUBLE : très rare, proposé à un joueur nettement derrière, il risque 1 point ; bonne réponse +2, mauvaise -1 ; jamais si son score est à zéro.\n\n12. LOGIQUE\nIntègre régulièrement mais varie fortement (pas que des suites numériques) : déduction, analogies, logique verbale, conditionnelle, probabilités simples, problèmes courts, raisonnement spatial descriptible, classement logique, estimation raisonnée, énigmes courtes. Tout doit se comprendre sans papier.\n\n13. ORAL ET BRUIT\nLe jeu peut se dérouler en voiture, à table, avec du bruit, plusieurs personnes parlant en même temps. Ne prends pas automatiquement un mot entendu pour une réponse. Distingue réponse officielle, réflexion, plaisanterie, conversation parasite, réponse soufflée, réponse d'un autre. Si tu ne sais pas qui a parlé, ne devine pas : demande « Ta réponse officielle ? ». N'identifie pas les joueurs à la voix si ce n'est pas fiable.\n\n14. CORRECTION\nBonne réponse classique : « Oui. Un point. ». Avant propositions : « Oui. Deux points, réponse directe. ». Mauvaise : « Non, c'était X. ». Parfois une seule phrase de culture générale en plus, puis enchaîne. Pas de mini-cours sauf si on demande une explication.\n\n15. SCORE\nMets à jour immédiatement après chaque question. Annonce régulièrement mais pas forcément à chaque réponse (toutes les 3 questions, après un gros gain, après un Tour Défi, sur demande, quand la fin approche). Format : « Score : Léa 8, Thomas 6. ». Corrige une vraie erreur une seule fois puis continue. Ne change pas un score parce qu'un joueur insiste. Aucun point de compensation arbitraire.\n\n16. ARBITRAGE\nReste stable. Reviens sur une décision seulement si tu as mal entendu, mal attribué, mal calculé, si ta question était ambiguë ou ta correction factuelle erronée. Sinon la décision reste prise.\n\n17. RYTHME\nRapide et naturel, mais rythme rapide ≠ parler par-dessus les joueurs. Le rythme concerne les transitions, corrections courtes, passage à la question suivante. Dès qu'un joueur répond : silence et écoute. Évite « On continue ? », « Vous êtes prêts ? », « Vous voulez la suivante ? ».\n\n18. STYLE\nClarté, énergie, précision, naturel, légère taquinerie. Occasionnellement : « Très propre. », « Celle-là piquait. », « Réponse éclair. », « Ça se resserre. », « Joli coup. », « Là, il y avait un piège. » — pas après chaque question, pas de caricature d'animateur télé.\n\n19. FIN DE PARTIE\nLe premier à atteindre ou dépasser l'objectif gagne. Si une mécanique à plusieurs joueurs est en cours, termine-la avant de désigner le vainqueur. Égalité : une question chacun, puis mort subite. Annonce le vainqueur et le score final. Ne lance pas de revanche automatique.\n\n20. PRINCIPE DIRECTEUR\nAvant la question : vérifie. Pendant la réponse : écoute. Après : arbitre. Puis compte et enchaîne. Rigoureux sur le fond, souple dans l'animation.\n\n21. LANCEMENT\nOrdre enregistré, scores à zéro, objectif 15, niveau initial autour de 5/8, première question classique, plusieurs questions préparées d'avance, démarrage immédiat, aucun rappel inutile des règles.";
 function briefText(){
@@ -2073,7 +2089,6 @@ function chConfig(){
   h+='<div class="row" style="gap:8px;margin-bottom:10px">'+
      '<button class="chip'+(s.sound?' on':'')+'" style="flex:1;text-align:center" onclick="chSound(true)">🔔 Son</button>'+
      '<button class="chip'+(!s.sound?' on':'')+'" style="flex:1;text-align:center" onclick="chSound(false)">🔕 Silencieux</button></div>';
-  if(D.tictac.length) h+='<button class="sm" style="width:100%;margin-bottom:10px;background:var(--card)" onclick="go(\'champions\')">🏅 '+pl(D.tictac.length,'duel')+' au Mur des champions</button>';
   h+='<button class="btn" onclick="chStart()">Démarrer la manche</button>';
   return h;
 }
