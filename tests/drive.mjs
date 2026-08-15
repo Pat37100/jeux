@@ -77,7 +77,7 @@ const d2=dom2.window.document;
 d2.getElementById('jp').value='astronomie — satellite de Neptune\n- Astronomie - Satellite de Neptune\nhistoire — traité de Versailles';
 w2.addJournal();
 check('dédoublonnage à l\'ajout (2 gardées sur 3)', w2.D.journal.length===2);
-check('brief de partie généré avec consigne anti-doublon', w2.briefText().includes('JOURNAL ANTI-DOUBLON') && w2.briefText().includes('On fait un quiz'));
+check('brief de partie généré avec consigne anti-doublon', w2.briefText().includes('FAITS DÉJÀ CONSOMMÉS') && w2.briefText().includes('On fait un quiz'));
 
 L('\n[9] Restauration de sauvegarde (mauvais texte puis bon)');
 w2.go('save');
