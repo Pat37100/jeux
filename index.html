@@ -374,7 +374,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='48';
+var APP_VERSION='49';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -494,8 +494,8 @@ function render_(){
   nav.innerHTML='';
   var standalone = (window.navigator.standalone===true) || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
   var banner = !canSave ? '<div class="warn"><b>Sauvegarde impossible ici.</b> Ce navigateur ne garde pas la mémoire. Ouvre le lien dans <b>Safari</b>, puis Partager → Sur l\'écran d\'accueil, et lance l\'app depuis l\'icône.</div>' : '';
-  var tip = (canSave && !standalone && S.view==='home' && !S.tipOff)
-    ? '<div class="warn" style="background:var(--am-l);border-color:var(--am);color:#92400e;display:flex;gap:10px;align-items:center"><span style="flex:1"><b>📌 Pour garder l\'historique :</b> ouvre-moi dans <b>Safari</b> → Partager → <b>Sur l\'écran d\'accueil</b>, et lance-moi depuis l\'icône 🏆.</span><button class="sm" onclick="S.tipOff=1;render()" aria-label="Masquer ce conseil">OK</button></div>' : '';
+  var tip = (canSave && !standalone && S.view==='home' && !S.tipOff && !D.tipOff)
+    ? '<div style="display:flex;gap:10px;align-items:center;background:var(--bg);border-radius:12px;padding:9px 12px;margin-top:12px"><span class="mini" style="flex:1;margin:0">📌 Ajoute En Jeux à ton écran d\'accueil (Partager → Sur l\'écran d\'accueil) pour le retrouver d\'un geste.</span><button class="sm" onclick="D.tipOff=1;persist();render()" aria-label="Masquer ce conseil">OK</button></div>' : '';
 
   if(S.view==='home'){
     if(!D.onboarded) setTimeout(obDraw,50);
@@ -503,7 +503,7 @@ function render_(){
       '<button class="icobtn" onclick="go(\'save\')">⚙︎</button>';
     app.innerHTML=banner+
       '<div class="hero" style="padding:18px 20px 16px"><span class="dice">🎲</span><p style="font-size:15px;font-weight:700;margin:0">Vos jeux existent déjà.<br>On s\'occupe du reste. 👑</p>'+
-        '<div class="pills"><span>🍿 Soirées</span><span>🍽️ À table</span><span>🌳 En balade</span><span>🚗 En voiture</span><span>🏖️ En vacances</span></div></div>'+tip+
+        '<div class="pills"><span>🍿 Soirées</span><span>🍽️ À table</span><span>🌳 En balade</span><span>🚗 En voiture</span><span>🏖️ En vacances</span></div></div>'+
       '<div class="trust"><span><b>🚫</b>Sans pub</span><span><b>📶</b>Hors-ligne</span><span><b>🆓</b>Gratuit</span></div>'+
       (function(){
         if(D.live && D.live.players && D.live.winner===null){
@@ -544,7 +544,7 @@ function render_(){
         })()+
 
       '</div>'+
-      (canSave?'<p class="mini" style="margin-top:12px;color:#059669">✓ Sauvegardé sur cet iPhone</p>':'');
+      tip+(canSave?'<p class="mini" style="margin-top:12px;color:#059669">✓ Sauvegardé sur cet iPhone</p>':'');
     return;
   }
   if(S.view==='outils'){
