@@ -13,7 +13,7 @@ const ids=w.D.lib.slice(0,3).map(p=>p.id);
 L('[1] Nom conservé, formulation corrigée');
 w.go('home'); w.S.explain=true; w.render();
 ok('ne dit plus « n\'est pas un jeu »', !app().includes("n'est pas un jeu"));
-ok('formulation d\'accompagnement', app().includes('accompagne vos jeux'));
+ok('bloc explicatif retiré en v46 (rien ne contredit le nom)', !app().includes("n'est pas un jeu"));
 
 L('[2] Les outils sont regroupés dans leur rubrique (v44)');
 w.go('home'); w.render();
