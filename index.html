@@ -374,7 +374,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='47';
+var APP_VERSION='48';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -747,6 +747,18 @@ function tabRank(m){
   }
   return cerem + tabRankBody(m);
 }
+/* Série en cours : victoires consécutives sur les manches les plus récentes.
+   Calculée à la volée depuis m.rounds (rangées du plus récent au plus ancien) —
+   aucune donnée nouvelle à saisir ni à stocker. */
+function curStreak(m,pid){
+  var s=0;
+  for(var i=0;i<m.rounds.length;i++){
+    var rd=m.rounds[i];
+    if(rd.scores[pid]===undefined) break;
+    if(winners(rd,m.players,m.winRule).indexOf(pid)>=0) s++; else break;
+  }
+  return s;
+}
 function tabRankBody(m){
   if(!m.players.length) return '<div class="empty"><div class="e">👥</div><h3>Aucun joueur</h3><p>Ajoute des joueurs dans les réglages.</p></div>';
   var r=rank(m,keeper()),lp=leaders(r.byCumul,'points',m.winRule),lw=leaders(r.byWins,'wins',m.winRule);
@@ -775,7 +787,8 @@ function tabRankBody(m){
     var tp=lp.indexOf(p.id)>=0,tw=lw.indexOf(p.id)>=0;
     var opendetail=S.detail===p.id;
     h+='<div class="rank'+(tp?' lead':'')+(i===0?' first':'')+'" style="cursor:pointer" onclick="S.detail=S.detail===\''+p.id+'\'?null:\''+p.id+'\';render()"><div class="pos">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1))+'</div>'+
-      av(p.name,'sm')+'<div class="nm" style="margin-left:8px"><b>'+esc(p.name)+(tp?' 🏆':'')+(tw?' 👑':'')+'</b>'+
+      av(p.name,'sm')+'<div class="nm" style="margin-left:8px"><b>'+esc(p.name)+(tp?' 🏆':'')+(tw?' 👑':'')+
+      (function(){var st=curStreak(m,p.id);return st>=2?' <span style="font-size:11px;font-weight:800;color:#ea580c;background:#ffedd5;border-radius:99px;padding:1px 7px;white-space:nowrap">🔥 '+st+' d\'affilée</span>':'';})()+'</b>'+
       '<small>'+pl(p.played,'manche')+' · '+pl(p.wins,'victoire')+(p.played?' · moy. '+nf(p.points/p.played):'')+' · voir le détail ›</small></div>'+
       '<div class="pts"><b>'+nf(p.points)+'</b><small>points</small></div>'+
       (function(){
@@ -837,6 +850,12 @@ function saveRound(){
     if(rd){ rd.scores=sc; rd.date=S.date||rd.date; }
     S.editing=null;
     persist();S.inputs={};S.date=today();S.tab='rank';S.histMode='grid';
+  try{
+    var _m=cur();
+    var _hot=_m.players.map(function(p){return {n:p.name,s:curStreak(_m,p.id)};})
+      .filter(function(x){return x.s>=3;}).sort(function(a,b){return b.s-a.s;})[0];
+    if(_hot) toast('🔥 '+_hot.n+' : '+_hot.s+' victoires d\'affilée !');
+  }catch(e){}
     hit(PENTA[4],{dur:.18,vol:.26,fm:.5,fmRatio:3.01,cut:6000,rev:.3});
     toast('Manche corrigée ✓');window.scrollTo(0,0);render();return;
   }
@@ -1123,6 +1142,7 @@ function share(){
   t+='\n';
   if(lp.length) t+='Meilleur cumul : '+nmOf(r.byCumul,lp)+'\n';
   if(lw.length && nmOf(r.byWins,lw)!==nmOf(r.byCumul,lp)) t+='Plus de victoires : '+nmOf(r.byWins,lw)+'\n';
+  t+='\n— compté avec En Jeux · pat37100.github.io/jeux';
   if(navigator.share){ navigator.share({text:t}).catch(function(){}); return; }
   copy(t,'Résultats copiés — colle-les dans WhatsApp');
 }
@@ -1562,6 +1582,7 @@ function champShare(){
   var list=championsAgg(), med=['🥇','🥈','🥉'];
   var t='🏅 Mur des champions — En Jeux\n\n';
   list.forEach(function(p,i){ if(p.crowns) t+=(med[i]||'   ')+' '+p.name+' — '+pl(p.crowns,'couronne')+'\n'; });
+  t+='\n— compté avec En Jeux · pat37100.github.io/jeux';
   if(navigator.share){navigator.share({text:t}).catch(function(){});} else copy(t,'Mur des champions copié');
 }
 
