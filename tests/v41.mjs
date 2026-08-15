@@ -53,7 +53,7 @@ w.go('chrono'); w.render();
 ok('plus de « duel au Mur des champions » sur la config', !app().includes('au Mur des champions'));
 
 L('[7] Micro : styles enrichis ET injectés dans le prompt');
-ok('9 styles disponibles', w.MICRO_STYLES.length===9);
+ok('les 9 ambiances d\'origine sont conservées', ['classique','show','prof','taquin','famille','express','costaud','voiture','apero'].every(id=>w.MICRO_STYLES.some(s=>s.id===id)) && w.MICRO_STYLES.length>=9);
 for(const s of ['famille','express','costaud','voiture','apero']) ok('style « '+s+' » présent', w.MICRO_STYLES.some(x=>x.id===s));
 w.setMicroStyle('voiture');
 const t=w.briefText();
