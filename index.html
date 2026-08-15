@@ -159,6 +159,8 @@
   .sc-tictac .chip.on{background:#fffbeb;border-color:#d97706;color:#b45309}
   .sc-micro  .chip.on{background:#ede9fe;border-color:#7c3aed;color:#6d28d9}
   .sc-outils .chip.on{background:#ccfbf1;border-color:#0d9488;color:#0f766e}
+  .tool.t-champ{border-color:#fcd34d;background:linear-gradient(135deg,#fffbeb,#fef3c7)}
+  .tool.t-champ .em{background:linear-gradient(135deg,#b45309,#f59e0b)}
   .tool.t-outils{border-color:#99f6e4;background:linear-gradient(135deg,#f0fdfa,#ccfbf1)}
   .tool.t-outils .em{background:linear-gradient(135deg,#0f766e,#2dd4bf)}
   .tool.t-outils .tag{background:#ccfbf1;color:#0f766e}
@@ -372,7 +374,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='45';
+var APP_VERSION='46';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -530,16 +532,17 @@ function render_(){
       tool('outils','🎲','Les Outils','<b>Il complète la boîte.</b> Le dé perdu, le buzzer qui manque, le tirage au sort qui évite les disputes.','t-outils','','Dé · Buzzer · Sort')+
 
       '<div style="margin-top:14px;display:flex;flex-direction:column;gap:9px">'+
-        '<button class="miniact" style="width:100%" onclick="go(\'champions\')"><span class="e">🏅</span><span><b>Mur des champions</b><small>Les couronnes de tous les jeux, réunies</small></span><span style="margin-left:auto;color:#d6d3d1">›</span></button>'+
-        '<button class="miniact" style="width:100%" onclick="S.explain=!S.explain;render()"><span class="e">💡</span><span><b>C\'est quoi En Jeux ?</b><small>Comprendre en 20 secondes</small></span><span style="margin-left:auto;color:#d6d3d1">'+(S.explain?'▾':'›')+'</span></button>'+
-        (S.explain?'<div class="card" style="margin:0;background:var(--bg)"><p style="margin:0 0 10px;font-size:13.5px;line-height:1.55">'+
-          '<b>En Jeux accompagne vos jeux.</b> C\'est la boîte à outils de tous ceux que vous avez déjà — cartes, société, questions inventées, défis du quotidien.</p>'+
-          '<div class="steps">'+
-            '<div class="stp1"><span class="n" style="background:#059669">🏆</span><span><b>La Coupe</b> — vous jouez à la belote, au tarot, au Uno ? Elle note les points de chaque manche et désigne le champion.</span></div>'+
-            '<div class="stp1"><span class="n" style="background:#d97706">⏱️</span><span><b>Tic-Tac</b> — chacun a son chrono. Utile dès qu\'il faut répondre vite : vos questions, un jeu de cartes, des défis. <i>Le jeu vient de vous, le temps vient de l\'app.</i></span></div>'+
-            '<div class="stp1"><span class="n" style="background:#7c3aed">🎙️</span><span><b>Le Micro</b> — l\'app écrit un texte de lancement (règles, joueurs, mécaniques). Vous le collez dans une IA : elle devient l\'animateur d\'un jeu télé, à la voix.</span></div>'+
-          '</div>'+
-          '<p class="mini" style="margin:10px 0 0">Et tout ce que vous gagnez s\'accumule au 🏅 Mur des champions, tous jeux confondus.</p></div>':'')+
+        (function(){
+          var ch=(typeof championsAgg==='function')?championsAgg():[];
+          var top=ch[0];
+          return '<button class="tool t-champ" style="width:100%;padding:14px 16px" onclick="go(\'champions\')">'+
+            '<span class="em" style="width:44px;height:44px;font-size:22px">🏅</span>'+
+            '<span style="flex:1;min-width:0"><b>Mur des champions</b>'+
+            (top&&top.crowns? '<small>'+esc(top.name)+' mène avec '+pl(top.crowns,'couronne')+'</small>'
+                            : '<small>Les couronnes de tous les jeux, réunies</small>')+'</span>'+
+            '<span style="color:#d6d3d1">›</span></button>';
+        })()+
+
       '</div>'+
       (canSave?'<p class="mini" style="margin-top:12px;color:#059669">✓ Sauvegardé sur cet iPhone</p>':'');
     return;
@@ -549,8 +552,8 @@ function render_(){
     app.innerHTML=banner+
       '<button class="tool t-outils" style="padding:14px 16px" onclick="openDice()"><span class="em" style="width:44px;height:44px;font-size:22px">🎲</span><span style="flex:1;min-width:0"><b>Les Dés</b><small>d4 à d20, jusqu\'à 6 dés — avec le total</small></span><span style="color:#d6d3d1">›</span></button>'+
       '<button class="tool t-outils" style="padding:14px 16px;margin-top:9px" onclick="openBuzzer()"><span class="em" style="width:44px;height:44px;font-size:22px">🔴</span><span style="flex:1;min-width:0"><b>Le Buzzer</b><small>Premier à taper — 8 sons au choix</small></span><span style="color:#d6d3d1">›</span></button>'+
-      '<button class="tool t-outils" style="padding:14px 16px;margin-top:9px" onclick="whoStart()"><span class="em" style="width:44px;height:44px;font-size:22px">🎯</span><span style="flex:1;min-width:0"><b>Qui commence ?</b><small>Tirage au sort animé, fin des disputes</small></span><span style="color:#d6d3d1">›</span></button>'+
-      '<p class="mini" style="text-align:center;margin-top:14px">Rien n\'est enregistré ici : ce sont des accessoires, pas des parties.</p>';
+      '<button class="tool t-outils" style="padding:14px 16px;margin-top:9px" onclick="whoStart()"><span class="em" style="width:44px;height:44px;font-size:22px">🎯</span><span style="flex:1;min-width:0"><b>Qui commence ?</b><small>Tirage au sort animé, fin des disputes</small></span><span style="color:#d6d3d1">›</span></button>'
+      ;
     nav.innerHTML='';
     return;
   }
@@ -1185,11 +1188,20 @@ function renderQuizz(hd,app,banner){
     var thm=MICRO_THEMES.filter(function(x){return x.id===(D.microTheme||'libre');})[0];
     h+='<p class="mini" style="text-align:center;margin:2px 2px 8px">'+pl(team.length,'joueur')+(D.microTeams?' en équipes':'')+' · '+esc(stl?stl.label:'Classique')+' · '+esc(thm?thm.label:'')+' · '+(D.microGoal||15)+' pts'+(D.journal.length?' · anti-répétition ✓':'')+'</p>';
     h+='<button class="btn micro" style="font-size:17px" onclick="briefGo()" aria-label="Générer le texte de lancement et ouvrir l assistant">🚀 Générer et lancer</button>'+
-      '<p class="mini" style="text-align:center;margin:8px 2px 0">Le texte est copié et ton assistant s\'ouvre — colle-le, puis passe en mode voix 🎙️.</p>'+
+      
       '<div class="row" style="margin-top:10px;gap:8px">'+
         '<button class="sm" style="flex:1;background:var(--card)" onclick="briefCopy()">📋 Copier</button>'+
         '<button class="sm" style="flex:1;background:var(--card)" onclick="briefShare()">📤 Envoyer</button>'+
       '</div>';
+    h+='<button class="sm" style="width:100%;margin-top:12px;background:var(--card)" onclick="S.qafter=!S.qafter;render()">'+(S.qafter?'▾':'›')+' Après la partie</button>';
+    if(S.qafter){
+      h+='<div class="card" style="margin-top:8px">'+
+        '<button class="sm g" style="width:100%;margin-bottom:8px" onclick="S.microSheet=true;render()">🏆 Enregistrer le classement final</button>'+
+        '<textarea id="jp" rows="3" placeholder="Colle ici les questions posées (une par ligne)"></textarea>'+
+        '<button class="sm" style="width:100%;margin-top:6px;background:var(--card)" onclick="addJournal()">Mémoriser pour ne pas les reposer</button>'+
+        (D.journal.length?'<p class="mini" style="margin:8px 0 0;text-align:center">'+pl(D.journal.length,'question')+' en mémoire</p>':'')+
+      '</div>';
+    }
   }else if(S.qtab==='j'){
     h+='<div class="card"><h2>Ajouter les questions d\'une partie</h2>'+
       '<p class="mini" style="margin-bottom:8px">Colle la liste donnée en fin de partie (une par ligne). Les doublons sont détectés automatiquement.</p>'+
@@ -1208,11 +1220,7 @@ function renderQuizz(hd,app,banner){
     h+=microPalmares();
   }
   app.innerHTML=h;
-  document.getElementById('nav').innerHTML='<nav><div class="in">'+
-    '<button class="'+(S.qtab==='play'?'on':'')+'" onclick="S.qtab=\'play\';window.scrollTo(0,0);render()"><span class="i">🎙️</span>Jouer</button>'+
-    '<button class="'+(S.qtab==='pal'?'on':'')+'" onclick="S.qtab=\'pal\';window.scrollTo(0,0);render()"><span class="i">🏆</span>Palmarès</button>'+
-    '<button class="'+(S.qtab==='j'?'on':'')+'" onclick="S.qtab=\'j\';window.scrollTo(0,0);render()"><span class="i">📖</span>Journal ('+D.journal.length+')</button>'+
-    '</div></nav>';
+  document.getElementById('nav').innerHTML='';
   if(S.microSheet) microDrawSheet();
 }
 var AI_APPS=[
@@ -1277,8 +1285,8 @@ function diceFaces(vals,rolling){
 function diceBody(){
   var c=diceCfg();
   var vals=(DICE_LAST&&DICE_LAST.type===c.type&&DICE_LAST.vals.length===c.n)?DICE_LAST.vals:[];
-  var h='<h2 style="margin:2px 0 2px">🎲 Les Dés</h2>'+
-    '<p class="mini" style="margin:0 0 10px">Le dé qui manque toujours dans la boîte.</p>';
+  var h='<h2 style="margin:2px 0 2px">🎲 Les Dés</h2>'
+    ;
   h+= vals.length? diceFaces(vals,false) : '<div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:14px 0 6px">'+
       Array.apply(null,Array(c.n)).map(function(){return '<span class="dieface" style="color:#d6d3d1">?</span>';}).join('')+'</div>';
   h+= (vals.length&&c.n>1)? '<p style="margin:2px 0 0;font-size:15px;font-weight:800;color:#0f766e">Total : '+vals.reduce(function(a,b){return a+b;},0)+'</p>' : '';
@@ -1298,7 +1306,9 @@ function openDice(){
   document.body.appendChild(el);
 }
 function openDiceRefresh(){ var b=document.getElementById('dicebody'); if(b) b.innerHTML=diceBody(); }
+function vibe(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms||18); }catch(e){} }
 function rollDice(){
+  vibe(24);
   var c=diceCfg(), b=document.getElementById('dicebody'); if(!b) return;
   function draw(){ var out=[]; for(var i=0;i<c.n;i++) out.push(1+Math.floor(Math.random()*c.type)); return out; }
   var ticks=0;
@@ -1654,7 +1664,7 @@ function openBuzzer(){
     '<div class="chips" style="justify-content:center">'+BUZZ_KITS.map(function(k){
       return '<button class="chip'+((D.buzzKit||'drop')===k.id?' on':'')+'" onclick="setBuzzKit(\''+k.id+'\');openBuzzerRefresh()">'+k.label+'</button>';
     }).join('')+'</div>'+
-    '<p class="mini" style="margin-top:8px">Rien n\'est enregistré : juste le réflexe (et le fou rire).</p>'+
+    
     '<button class="btn grey" style="margin-top:12px" onclick="document.getElementById(\'bzsh\').remove()">Fermer</button></div>';
   document.body.appendChild(el);
 }
@@ -2213,8 +2223,9 @@ function chToCoupe(){
   var el=document.createElement('div'); el.className='sheet'; el.id='tcsh';
   el.onclick=function(){ try{el.remove();}catch(e){} };
   el.innerHTML='<div class="in" onclick="event.stopPropagation()"><div class="grab"></div>'+
-    '<h2 style="margin:2px 0 4px">🏆 Compter dans La Coupe</h2>'+
-    '<p class="mini" style="margin:0 0 12px">Les bonnes réponses (✓) deviennent les points de la manche.</p>'+
+    '<h2 style="margin:2px 0 4px">🏆 Enregistrer la manche</h2>'+
+    '<button class="sm g" style="width:100%;margin-bottom:10px" onclick="chSaveOnly()">🏅 Au Mur des champions seulement</button>'+
+    '<label class="lb">Ou compter dans une partie de La Coupe</label>'+
     (live.length? live.map(function(m){
       return '<button class="sm" style="width:100%;margin-bottom:7px;background:var(--card);text-align:left" onclick="chToCoupeGo(\''+m.id+'\')">▶︎ '+esc(m.name)+' — '+pl(m.rounds.length,'manche')+'</button>';
     }).join('') : '<p class="mini" style="margin-bottom:10px">Aucune partie en cours.</p>')+
@@ -2222,9 +2233,14 @@ function chToCoupe(){
     '<button class="btn grey" style="margin-top:8px" onclick="document.getElementById(\'tcsh\').remove()">Annuler</button></div>';
   document.body.appendChild(el);
 }
+function chSaveOnly(){
+  var sh=document.getElementById('tcsh'); if(sh) sh.remove();
+  chSaveDuel();
+}
 function chToCoupeGo(id){
   var sh=document.getElementById('tcsh'); if(sh) sh.remove();
   if(!CH) return;
+  if(!CH.saved) chSaveDuel();
   var m=D.matches.filter(function(x){return x.id===id;})[0];
   if(!m){
     m={id:uid(),name:'Tic-Tac',date:today(),status:'live',winRule:'high',target:null,players:[],rounds:[]};
@@ -2467,9 +2483,8 @@ function chGame(){
         }).join('')+
       '</div></div>'+
       (CH.saved
-        ? '<p class="mini" style="text-align:center;color:#059669;margin-top:12px">✓ Manche enregistrée au palmarès</p>'
-        : '<button class="sm g" style="width:100%;margin-top:12px" onclick="chSaveDuel()">🏅 Ajouter cette victoire au Mur des champions</button>')+
-      '<button class="sm" style="width:100%;margin-top:7px;background:var(--gr-l);color:#047857" onclick="chToCoupe()">🏆 Compter cette manche dans La Coupe</button>'+
+        ? '<p class="mini" style="text-align:center;color:#059669;margin-top:12px">✓ Manche enregistrée</p>'
+        : '<button class="btn tictac" style="margin-top:12px" onclick="chToCoupe()">🏆 Enregistrer la manche</button>')+
       '<button class="btn" style="margin-top:8px" onclick="chStart()">Rejouer (mêmes réglages)</button>'+
       '<button class="btn grey" style="margin-top:8px" onclick="chReset()">Changer les réglages</button>';
   }
@@ -2556,9 +2571,8 @@ function chGame(){
   h+='<div class="card" style="margin-top:14px;background:var(--bg)">'+
      '<label class="lb">Arrêter cette manche</label>'+
      '<button class="sm g" style="width:100%;margin-bottom:7px" onclick="chFinishNow()">🏁 Terminer et désigner le vainqueur</button>'+
-     '<p class="mini" style="margin:0 0 10px">La manche est comptée : le vainqueur rejoint le palmarès.</p>'+
-     '<button class="sm" style="width:100%;color:#9f1239" onclick="chAbandon()">✕ Abandonner sans compter</button>'+
-     '<p class="mini" style="margin:6px 0 0">Les temps et les ✓ en cours sont perdus.</p></div>';
+     
+     '<button class="sm" style="width:100%;color:#9f1239" onclick="chAbandon()">✕ Abandonner sans compter</button></div>';
   return h;
 }
 
