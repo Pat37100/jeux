@@ -374,7 +374,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='49';
+var APP_VERSION='50';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -449,7 +449,7 @@ function leaders(sorted,key,rule){
 }
 
 /* ============================== ÉTAT UI =========================== */
-var S={view:'home',matchId:null,tab:'rank',qtab:'play',period:'all',from:'',to:'',inputs:{},date:today(),sheet:false,confirm:null,detail:null,avPick:null,tipOff:0,microSheet:false,chTab:'play',whoSheet:false};
+var S={dateOpen:false,view:'home',matchId:null,tab:'rank',qtab:'play',period:'all',from:'',to:'',inputs:{},date:today(),sheet:false,confirm:null,detail:null,avPick:null,tipOff:0,microSheet:false,chTab:'play',whoSheet:false};
 function go(v){S.view=v;S.tab='rank';S.qtab='play';S.histAll=false;S.ceremony=false;S.histMode=Object.prototype.hasOwnProperty.call(S,'histGrid')?(S.histGrid===false?'list':'grid'):(S.histMode||'rank');window.scrollTo(0,0);render();}
 function cur(){return D.matches.filter(function(m){return m.id===S.matchId;})[0];}
 function setVoice(b){
@@ -822,10 +822,14 @@ function tabPlay(m){
   var cumOf={}; rAll.byCumul.forEach(function(p){cumOf[p.id]=p;});
   var step=S.step||1;
   var h=(editing?'<div class="card" style="background:var(--am-l);border-color:var(--am)"><b style="color:#92400e">✏️ Correction d\'une manche</b><p class="mini" style="color:#b45309;margin:4px 0 8px">Modifie les scores puis valide — la manche sera remplacée, pas ajoutée.</p><button class="sm" style="width:100%" onclick="cancelEdit()">Annuler la correction</button></div>':'')+
-    '<div class="card row" style="justify-content:space-between"><span style="font-size:14px;color:var(--mut)">Date de la manche</span>'+
-    '<input type="date" style="width:auto" value="'+S.date+'" onchange="S.date=this.value"></div>';
-  h+='<div class="row" style="margin-bottom:10px;gap:6px"><span class="mini" style="flex:1">Pas des boutons − / +</span>'+
-    [1,5,10].map(function(v){return '<button class="chip'+(step===v?' on':'')+'" onclick="S.step='+v+';render()">±'+v+'</button>';}).join('')+'</div>';
+    /* Barre unique : la date (repliée, on la change rarement) + le pas des boutons.
+       Avant : une carte entière pour la date + une ligne pour le pas, avant le 1er joueur. */
+    '<div class="row" style="margin-bottom:10px;gap:6px;align-items:center">'+
+      (S.dateOpen
+        ? '<input type="date" style="flex:1" value="'+S.date+'" onchange="S.date=this.value;S.dateOpen=false;render()">'
+        : '<button class="chip" style="flex:1;text-align:left" onclick="S.dateOpen=true;render()">📅 '+(S.date===today()?'Aujourd\'hui':fr(S.date))+'</button>')+
+      [1,5,10].map(function(v){return '<button class="chip'+(step===v?' on':'')+'" aria-label="Pas de '+v+' point'+(v>1?'s':'')+'" onclick="S.step='+v+';render()">±'+v+'</button>';}).join('')+
+    '</div>';
   m.players.forEach(function(p){
     var on=w.indexOf(p.id)>=0;
     var c=cumOf[p.id]||{points:0,played:0};
