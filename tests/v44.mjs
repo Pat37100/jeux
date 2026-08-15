@@ -29,7 +29,7 @@ L('[3] Passerelle Tic-Tac → La Coupe');
 ok('chToCoupe exposé', typeof w.chToCoupe==='function');
 w.CH.players.forEach((p,i)=>{p.good=3+i;});
 w.chFinishNow(); w.render();
-ok('bouton proposé en fin de manche', app().includes('Compter cette manche dans La Coupe'));
+ok('bouton unique proposé en fin de manche (v46)', app().includes('Enregistrer la manche'));
 w.chToCoupe();
 ok('feuille de choix ouverte', !!w.document.getElementById('tcsh'));
 ok('option nouvelle partie', body().includes('Nouvelle partie'));
