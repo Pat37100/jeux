@@ -362,7 +362,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='42';
+var APP_VERSION='43';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -1123,19 +1123,38 @@ function renderQuizz(hd,app,banner){
       D.lib.map(function(p){ var on=sel.indexOf(p.id)>=0;
         return '<button onclick="microToggleP(\''+p.id+'\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;border:2px solid '+(on?'var(--gr)':'var(--line)')+';background:'+(on?'var(--gr-l)':'#fff')+';border-radius:14px;padding:8px 4px;cursor:pointer;opacity:'+(on?'1':'.5')+';min-width:0">'+
           av(p.name,'sm')+'<span style="font-size:11px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name)+'</span></button>';
-      }).join('')+'</div></div>';
-    h+='<div class="card"><h2><span class="stepn">2</span>Style de l\'animateur</h2>'+
+      }).join('')+'</div>'+
+      '<div class="row" style="gap:8px;margin-top:10px">'+
+        '<button class="chip'+(!D.microTeams?' on':'')+'" style="flex:1;text-align:center" onclick="setMicroTeams(false)">👤 Chacun pour soi</button>'+
+        '<button class="chip'+(D.microTeams?' on':'')+'" style="flex:1;text-align:center" onclick="setMicroTeams(true)">👥 En équipes</button>'+
+      '</div>'+
+      (D.microTeams?'<div style="margin-top:10px;background:var(--bg);border-radius:12px;padding:10px 12px">'+
+        microTeamsView().map(function(t,i){
+          return '<div style="font-size:13px;padding:2px 0"><b style="color:'+(i?'#7c3aed':'#059669')+'">Équipe '+(i+1)+'</b> — '+esc(t.join(', ')||'—')+'</div>';
+        }).join('')+
+        '<button class="sm" style="width:100%;margin-top:8px;background:var(--card)" onclick="shuffleMicroTeams()">🔀 Refaire les équipes</button></div>':'')+
+      '</div>';
+    h+='<div class="card"><h2><span class="stepn">2</span>Ambiance de l\'animateur</h2>'+
       '<div class="chips" style="margin-bottom:8px">'+MICRO_STYLES.map(function(sx){
         return '<button class="chip'+((D.microStyle||'classique')===sx.id?' on':'')+'" onclick="setMicroStyle(\''+sx.id+'\')">'+sx.label+'</button>';
       }).join('')+'</div>'+
       '<input placeholder="Ta touche perso (ex. « années 90 », « spécial ados »…)" value="'+(D.microCustom||'').replace(/"/g,'&quot;')+'" onchange="D.microCustom=this.value;persist();render()"></div>';
-    h+='<div class="card"><h2><span class="stepn">3</span>Ton assistant IA</h2>'+
+    h+='<div class="card"><h2><span class="stepn">3</span>Thème & objectif</h2>'+
+      '<div class="chips" style="margin-bottom:10px">'+MICRO_THEMES.map(function(th){
+        return '<button class="chip'+((D.microTheme||'libre')===th.id?' on':'')+'" onclick="setMicroTheme(\''+th.id+'\')">'+th.label+'</button>';
+      }).join('')+'</div>'+
+      '<p class="mini" style="margin:0 0 6px">Objectif de la partie</p>'+
+      '<div class="chips">'+[8,15,20,30].map(function(o){
+        return '<button class="chip'+((D.microGoal||15)===o?' on':'')+'" onclick="setMicroGoal('+o+')">'+o+' pts</button>';
+      }).join('')+'</div></div>';
+    h+='<div class="card"><h2><span class="stepn">4</span>Ton assistant IA</h2>'+
       '<div class="chips">'+AI_APPS.map(function(a){
         return '<button class="chip'+((D.aiApp||'claude')===a.id?' on':'')+'" onclick="setAiApp(\''+a.id+'\')">'+a.label+'</button>';
       }).join('')+'</div>'+
       '<p class="mini" style="margin-top:8px">Il te faut son app et un compte — les versions gratuites suffisent. Rien n\'est payant ni envoyé par En Jeux.</p></div>';
     var stl=MICRO_STYLES.filter(function(x){return x.id===(D.microStyle||'classique');})[0];
-    h+='<p class="mini" style="text-align:center;margin:2px 2px 8px">'+pl(team.length,'joueur')+' · '+esc(stl?stl.label:'Classique')+(D.journal.length?' · anti-répétition ✓':'')+'</p>';
+    var thm=MICRO_THEMES.filter(function(x){return x.id===(D.microTheme||'libre');})[0];
+    h+='<p class="mini" style="text-align:center;margin:2px 2px 8px">'+pl(team.length,'joueur')+(D.microTeams?' en équipes':'')+' · '+esc(stl?stl.label:'Classique')+' · '+esc(thm?thm.label:'')+' · '+(D.microGoal||15)+' pts'+(D.journal.length?' · anti-répétition ✓':'')+'</p>';
     h+='<button class="btn micro" style="font-size:17px" onclick="briefGo()" aria-label="Générer le texte de lancement et ouvrir l assistant">🚀 Générer et lancer</button>'+
       '<p class="mini" style="text-align:center;margin:8px 2px 0">Le texte est copié et ton assistant s\'ouvre — colle-le, puis passe en mode voix 🎙️.</p>'+
       '<div class="row" style="margin-top:10px;gap:8px">'+
@@ -1196,6 +1215,16 @@ function briefText(){
   }
   var st=MICRO_STYLES.filter(function(s){return s.id===(D.microStyle||'classique');})[0];
   if(st && st.txt) t+='\n\nSTYLE D\'ANIMATION SOUHAITÉ (ne change aucune règle ci-dessus) : '+st.txt;
+  var th=MICRO_THEMES.filter(function(x){return x.id===(D.microTheme||'libre');})[0];
+  if(th && th.txt) t+='\n\nTHÈME DOMINANT DE LA PARTIE (remplace la consigne de variété de la section 7, toutes les autres règles restent valables) : '+th.txt;
+  var goal=D.microGoal||15;
+  if(goal!==15) t+='\n\nOBJECTIF DE LA PARTIE (prioritaire sur tout autre objectif indiqué plus haut) : '+goal+' points. Le premier à atteindre ou dépasser '+goal+' points gagne.';
+  if(D.microTeams && (D.microTeams.a||[]).length && (D.microTeams.b||[]).length){
+    t+='\n\nMODE ÉQUIPES (remplace la logique de score individuel) : deux équipes s\'affrontent.'+
+       '\nÉquipe 1 : '+D.microTeams.a.join(', ')+'.'+
+       '\nÉquipe 2 : '+D.microTeams.b.join(', ')+'.'+
+       '\nInterroge un joueur précis à chaque question, en alternant systématiquement entre les deux équipes et en tournant à l\'intérieur de chaque équipe. Les points vont à l\'équipe du joueur interrogé, pas au joueur. Annonce le score par équipe. Les coéquipiers n\'ont pas le droit de souffler : si quelqu\'un d\'autre répond à la place du joueur interrogé, la question est perdue pour son équipe. Pour une « question avec vol », seule l\'équipe adverse peut tenter.';
+  }
   if(D.microCustom && D.microCustom.trim()) t+='\n\nCONSIGNE PERSONNELLE DES JOUEURS (ne change aucune règle ci-dessus) : '+D.microCustom.trim();
   var team=microTeam();
   if(team.length){
@@ -1262,6 +1291,34 @@ function rollDice(){
 function openBuzzerRefresh(){ var e=document.getElementById('bzsh'); if(e){ e.remove(); openBuzzer(); } }
 function buzzTest(){ hit(PENTA[2],{dur:.18,vol:.3,fm:.5,fmRatio:3.01,cut:6000,rev:.3}); hit(PENTA[4],{delay:.08,dur:.34,vol:.26,fm:.6,fmRatio:3.01,cut:7000,rev:.35}); }
 function setMicroStyle(id){ D.microStyle=id; persist(); render(); }
+var MICRO_THEMES=[
+  {id:'libre',   label:'🌍 Tous sujets', txt:null},
+  {id:'8090',    label:'📼 Années 80-90', txt:"Concentre la partie sur les années 1980 et 1990 : musique, cinéma, séries, publicités, jeux, objets, événements et personnalités de ces deux décennies. Garde un peu de variété de domaines à l'intérieur de ce thème."},
+  {id:'ecran',   label:'🎬 Cinéma & séries', txt:"Concentre la partie sur le cinéma, les séries, l'animation et leurs coulisses : films, réalisateurs, acteurs, répliques, bandes originales, récompenses, sagas. Varie les époques et les genres."},
+  {id:'musique', label:'🎵 Musique', txt:"Concentre la partie sur la musique : artistes, groupes, albums, paroles, instruments, genres, festivals, chanson française et internationale. Comme le jeu est purement oral, ne demande jamais d'identifier un extrait sonore : formule des questions de connaissance."},
+  {id:'sport',   label:'⚽ Sport', txt:"Concentre la partie sur le sport : disciplines, règles, compétitions, records, athlètes, Jeux olympiques, Coupes du monde, histoire du sport. Varie les disciplines au-delà du football."},
+  {id:'nature',  label:'🔬 Sciences & nature', txt:"Concentre la partie sur les sciences et la nature : physique, chimie, biologie, corps humain, astronomie, animaux, plantes, climat, inventions et découvertes."},
+  {id:'histoire',label:'🏛️ Histoire & géo', txt:"Concentre la partie sur l'histoire et la géographie : époques, personnages, dates marquantes, pays, capitales, fleuves, drapeaux, frontières, patrimoine."},
+  {id:'ados',    label:'🎮 Spécial ados', txt:"Concentre la partie sur la culture des adolescents d'aujourd'hui : jeux vidéo, musique actuelle, séries et films récents, réseaux sociaux, sport, sciences accessibles, culture internet. Reste factuel et évite tout ce qui daterait de plus de vingt ans."},
+  {id:'fete',    label:'🎄 Spécial fêtes', txt:"Concentre la partie sur les fêtes et traditions : Noël, Nouvel An, Pâques, Halloween, anniversaires, coutumes françaises et du monde, gastronomie de fête, films et musiques associés."}
+];
+function setMicroTheme(id){ D.microTheme=id; persist(); render(); }
+function setMicroGoal(n){ D.microGoal=n; persist(); render(); }
+function setMicroTeams(on){
+  if(!on){ D.microTeams=null; persist(); render(); return; }
+  shuffleMicroTeams();
+}
+function shuffleMicroTeams(){
+  var names=microTeam().slice();
+  for(var i=names.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=names[i]; names[i]=names[j]; names[j]=t; }
+  var half=Math.ceil(names.length/2);
+  D.microTeams={a:names.slice(0,half), b:names.slice(half)};
+  persist(); render();
+}
+function microTeamsView(){
+  if(!D.microTeams) return [];
+  return [D.microTeams.a||[], D.microTeams.b||[]];
+}
 function microTeam(){
   if(!D.microTeam) return D.lib.map(function(p){return p.name;});
   var names=D.lib.filter(function(p){return D.microTeam.indexOf(p.id)>=0;}).map(function(p){return p.name;});
