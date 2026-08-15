@@ -39,7 +39,7 @@ const t=w.briefText();
 ok('règles équipes injectées', t.includes('MODE ÉQUIPES') && t.includes('Équipe 1') && t.includes('Équipe 2'));
 ok('points attribués à l\'équipe', t.includes("points vont à l'équipe"));
 ok('anti-souffleur prévu', t.includes('souffler'));
-w.render(); ok('équipes affichées à l\'écran', app().includes('Équipe 1'));
+w.render(); ok('équipes affichées à l\'écran', app().includes('ÉQUIPE 1'));
 w.shuffleMicroTeams(); ok('re-tirage possible', w.D.microTeams.a.length>0);
 w.setMicroTeams(false);
 ok('retour chacun pour soi', !w.D.microTeams && !w.briefText().includes('MODE ÉQUIPES'));
