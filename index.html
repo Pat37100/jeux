@@ -61,7 +61,7 @@
   body{margin:0;background:var(--bg);color:var(--ink);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     padding-bottom:env(safe-area-inset-bottom)}
-  .wrap{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+  .wrap{max-width:520px;margin:0 auto;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
   header{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);
     border-bottom:1px solid var(--line);padding:10px 8px;display:flex;align-items:center;gap:6px;
     padding-top:calc(10px + env(safe-area-inset-top))}
@@ -183,10 +183,10 @@
   .gtab tr.lead .stick{background:linear-gradient(90deg,#fffbeb,#fff)}
   .gtab td.none{color:#d6d3d1}
   .gtab .win{background:#ecfdf5;color:#047857;font-weight:800;border-radius:6px}
-  .gtab .tot small{display:block;font-size:9.5px;font-weight:700;color:#78716c;text-transform:uppercase;letter-spacing:.04em}
+  .gtab .tot small{display:block;font-size:10px;font-weight:700;color:#78716c;text-transform:uppercase;letter-spacing:.04em}
   .gtab thead .stick{background:var(--bg)}
   .gtab .nmcell{font-size:13px}
-  .gtab .win::after{content:" 👑";font-size:9px;vertical-align:top}
+  .gtab .win::after{content:" 👑";font-size:10px;vertical-align:top}
   .gtab .tot{background:#f0fdf4;font-weight:800;color:#065f46;position:sticky;right:0;box-shadow:-1px 0 0 #e7e5e4}
   .gtab tbody tr:first-child .stick{color:#b45309}
   /* Glisser vers la gauche pour supprimer (geste iOS) */
@@ -286,7 +286,7 @@
   .rank .nm small{color:var(--soft);font-size:11px}
   .rank .pts{text-align:right;font-variant-numeric:tabular-nums}
   .rank .pts b{font-size:19px;display:block}
-  .rank .pts small{font-size:9px;text-transform:uppercase;color:var(--soft);letter-spacing:.03em}
+  .rank .pts small{font-size:10px;text-transform:uppercase;color:var(--soft);letter-spacing:.03em}
   .champ{border-radius:16px;padding:12px;border:1px solid}
   .champ.g{background:var(--gr-l);border-color:var(--gr-b)}
   .champ.a{background:var(--am-l);border-color:#fde68a}
@@ -374,7 +374,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='46';
+var APP_VERSION='47';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -457,7 +457,7 @@ function setVoice(b){
   if(b){ try{ if(window.speechSynthesis && window.SpeechSynthesisUtterance){ var u=new SpeechSynthesisUtterance('Annonce activée'); u.lang='fr-FR'; window.speechSynthesis.speak(u);} }catch(e){} }
   render();
 }
-function speak(txt){
+function speak(txt){ if(!sndOn()) return;
   try{
     if(!D.voice) return;
     if(typeof window==='undefined' || !window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
@@ -881,7 +881,7 @@ function histGrid(m){
   var maxPts=Math.max.apply(null,order.map(function(p){return Math.abs(p.points)||0;}))||1;
   // en-têtes : M1, M2… + total
   var head='<tr><th class="stick">Joueur / équipe</th>'+
-    rounds.map(function(rd,i){return '<th title="'+fr(rd.date)+' — toucher pour corriger" style="cursor:pointer" onclick="editRound(\''+rd.id+'\')">M'+(i+1)+'<br><span style="font-size:8.5px;opacity:.6">✏️</span></th>';}).join('')+
+    rounds.map(function(rd,i){return '<th title="'+fr(rd.date)+' — toucher pour corriger" style="cursor:pointer" onclick="editRound(\''+rd.id+'\')">M'+(i+1)+'<br><span style="font-size:10px;opacity:.6">✏️</span></th>';}).join('')+
     '<th class="tot">Total</th></tr>';
   var body=order.map(function(p,pi){
     var cells=rounds.map(function(rd){
@@ -1568,6 +1568,12 @@ function champShare(){
 function renderSave(hd,app,banner){
   hd.innerHTML=back()+'<h1>Joueurs & équipes<span class="sub">Avatars, options, sauvegarde</span></h1><span style="width:38px"></span>';
   var h=banner+(canSave?'<div class="ok">✓ L\'historique est enregistré sur cet iPhone. Il sera là au prochain lancement.</div>':'');
+  h+='<div class="card"><h2>🔊 Sons</h2>'+
+    '<div class="row" style="gap:8px">'+
+      '<button class="chip'+(D.sound!==false?' on':'')+'" style="flex:1;text-align:center" onclick="D.sound=true;persist();render()">🔊 Activés</button>'+
+      '<button class="chip'+(D.sound===false?' on':'')+'" style="flex:1;text-align:center" onclick="D.sound=false;persist();render()">🔇 Tout couper</button>'+
+    '</div>'+
+    '<p class="mini" style="margin:8px 0 0">Coupe d\'un geste tous les jeux et outils — pratique tard le soir.</p></div>';
   h+='<div class="card"><h2>Joueurs & équipes</h2>';
   D.lib.forEach(function(p){
     h+='<div class="row" style="background:var(--bg);border-radius:10px;padding:8px 10px;margin-bottom:6px">'+
@@ -2048,7 +2054,8 @@ function revNode(a){
 }
 /* Voix percussive moderne : attaque immédiate, extinction rapide, filtrée, réverbérée.
    C'est la signature sonore des apps actuelles (pop, blip, marimba). */
-function hit(freq,opts){
+function sndOn(){ return D.sound!==false; }
+function hit(freq,opts){ if(!sndOn()) return;
   if(D.fx===0) return;
   opts=opts||{};
   try{
@@ -2076,7 +2083,7 @@ function hit(freq,opts){
   }catch(e){}
 }
 /* Percussion à base de bruit : clap, snap, whoosh — indispensable au son moderne */
-function perc(opts){
+function perc(opts){ if(!sndOn()) return;
   if(D.fx===0) return;
   opts=opts||{};
   try{
@@ -2096,7 +2103,7 @@ function perc(opts){
   }catch(e){}
 }
 /* Sub-bass : le "boum" qu'on sent plus qu'on entend — signature des sons modernes */
-function sub(freq,dur,vol){
+function sub(freq,dur,vol){ if(!sndOn()) return;
   if(D.fx===0) return;
   try{
     var a=audioCtx(); if(!a) return; var t=a.currentTime;
@@ -2164,7 +2171,7 @@ function chBeep(){
   hit(146,{delay:.14,dur:.7,vol:.26,bend:.55,wave:'triangle',cut:1100,rev:.45});
   if(navigator.vibrate) navigator.vibrate(300);
 }
-function fanfare(){
+function fanfare(){ if(!sndOn()) return;
   /* Victoire moderne : montée pentatonique en marimba (FM), sub-bass à l'impact,
      clap réverbéré et éclat cristallin. Rien de tenu, tout percussif. */
   try{
