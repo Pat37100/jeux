@@ -13,11 +13,11 @@ function boot(opts){
 
 L('[1] Bannière écran d\'accueil (détection Safari vs icône)');
 let w=boot({standalone:false}).window;
-ok('hors icône : astuce 📌 visible sur l\'accueil', w.document.body.textContent.includes('Pour garder l\'historique'));
+ok('hors icône : astuce 📌 visible sur l\'accueil', w.document.getElementById('app').innerHTML.includes('Ajoute En Jeux à ton écran'));
 w.go('points');
-ok('astuce absente hors accueil (pas envahissante)', !w.document.body.textContent.includes('Pour garder l\'historique'));
+ok('astuce absente hors accueil (pas envahissante)', !w.document.getElementById('app').innerHTML.includes('Ajoute En Jeux à ton écran'));
 let w2=boot({standalone:true}).window;
-ok('lancé depuis l\'icône : pas d\'astuce', !w2.document.body.textContent.includes('Pour garder l\'historique'));
+ok('lancé depuis l\'icône : pas d\'astuce', !w2.document.getElementById('app').innerHTML.includes('Ajoute En Jeux à ton écran'));
 
 L('[2] Avatars automatiques');
 ok('avatar stable par nom (2 rendus identiques)', w.avFor('Patrick')===w2.avFor('Patrick'));
