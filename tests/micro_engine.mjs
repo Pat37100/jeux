@@ -54,7 +54,7 @@ ok('K humour sans toucher au score', t.includes('mauvaise foi comique') && t.inc
 L('\n══ AMBIANCES TYPÉES (section 22) ══');
 const kinds={};
 w.MICRO_STYLES.forEach(s=>{kinds[s.kind]=(kinds[s.kind]||0)+1;});
-ok('9 ambiances conservées', w.MICRO_STYLES.length===9);
+ok('les 9 ambiances d\'origine sont conservées', ['classique','show','prof','taquin','famille','express','costaud','voiture','apero'].every(id=>w.MICRO_STYLES.some(s=>s.id===id)) && w.MICRO_STYLES.length>=9);
 ok('4 familles typées', Object.keys(kinds).length===4);
 L('        '+JSON.stringify(kinds));
 w.setMicroStyle('costaud'); ok('Costaud → NIVEAU_INITIAL=7', w.briefText().includes('NIVEAU_INITIAL=7'));
