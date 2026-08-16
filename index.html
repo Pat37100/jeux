@@ -377,7 +377,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='59';
+var APP_VERSION='60';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -706,7 +706,7 @@ function createMatch(){
     var p=D.lib.filter(function(x){return x.id===b.getAttribute('data-id');})[0];
     if(p) roster.push({id:p.id,name:p.name});});
   document.getElementById('mx').value.split(',').forEach(function(s){s=s.trim();if(s)roster.push({id:uid(),name:s});});
-  if(!roster.length){toast('Choisis au moins un joueur');return;}
+  if(roster.length<2){toast(roster.length?'Il faut au moins 2 joueurs pour un classement':'Choisis au moins un joueur');return;}
   var tEl=document.getElementById('mt'); var tgt=tEl?parseInt(tEl.value):NaN;
   var m={id:uid(),name:name,winRule:NEWRULE,status:'active',created:today(),players:roster,rounds:[],target:(!isNaN(tgt)&&tgt>0)?tgt:null};
   D.matches.unshift(m);persist();S.sheet=false;removeSheet();openMatch(m.id);
@@ -732,6 +732,21 @@ function keeper(){
     if(S.period==='year')return r.date.slice(0,4)===today().slice(0,4);
     if(S.period==='custom')return (!S.from||r.date>=S.from)&&(!S.to||r.date<=S.to);
     return true;};
+}
+function goalBanner(m){
+  if(!(m.target && m.status!=='done' && m.rounds.length)) return '';
+  if(m.winRule==='low') return '';
+  var rAll2=rank(m,function(){return true;});
+  var reach=rAll2.byCumul.filter(function(p){return p.points>=m.target;});
+  if(reach.length){
+    return '<div class="card" style="background:var(--am-l);border-color:var(--am)">'+
+      '<b style="color:#92400e">🎯 Objectif '+nf(m.target)+' atteint !</b>'+
+      '<p class="mini" style="color:#b45309;margin:4px 0 10px">'+esc(reach.map(function(p){return p.name;}).join(' & '))+' y est. La partie peut se jouer là — ou continuer, c\'est vous qui voyez.</p>'+
+      '<button class="btn" style="background:linear-gradient(135deg,#d97706,#f59e0b)" onclick="finishMatch()">🏁 Terminer la partie</button></div>';
+  }
+  var lead2=rAll2.byCumul[0];
+  if(lead2&&lead2.points>0) return '<p class="mini" style="text-align:center;margin:0 0 10px">🎯 Objectif : <b>'+nf(m.target)+' points</b> — '+esc(lead2.name)+' en est à '+nf(lead2.points)+'.</p>';
+  return '';
 }
 function tabRank(m){
   var cerem='';
@@ -774,19 +789,6 @@ function tabRankBody(m){
       '<div class="empty"><div class="e">🏆</div><h3>Pas encore de manche</h3><p>Enregistre une première manche.</p><button class="sm g" onclick="S.tab=\'play\';render()">Saisir une manche</button></div>');
   }
 
-  if(m.target && m.status!=='done'){
-    var rAll2=rank(m,function(){return true;});
-    var reach=rAll2.byCumul.filter(function(p){return p.points>=m.target;});
-    if(m.winRule!=='low' && reach.length){
-      h+='<div class="card" style="background:var(--am-l);border-color:var(--am)">'+
-        '<b style="color:#92400e">🎯 Objectif '+nf(m.target)+' atteint !</b>'+
-        '<p class="mini" style="color:#b45309;margin:4px 0 10px">'+esc(reach.map(function(p){return p.name;}).join(' & '))+' y est. La partie peut se jouer là — ou continuer, c\'est vous qui voyez.</p>'+
-        '<button class="btn" style="background:linear-gradient(135deg,#d97706,#f59e0b)" onclick="finishMatch()">🏁 Terminer la partie</button></div>';
-    } else if(m.winRule!=='low'){
-      var lead2=rAll2.byCumul[0];
-      if(lead2&&lead2.points>0) h+='<p class="mini" style="text-align:center;margin:0 0 10px">🎯 Objectif : <b>'+nf(m.target)+' points</b> — '+esc(lead2.name)+' en est à '+nf(lead2.points)+'.</p>';
-    }
-  }
   h+='<div class="card"><h2>🏅 Classement'+(m.winRule==='low'?' (le moins de points gagne)':'')+'</h2>';
   r.byCumul.forEach(function(p,i){
     var tp=lp.indexOf(p.id)>=0,tw=lw.indexOf(p.id)>=0;
@@ -826,7 +828,7 @@ function tabPlay(m){
   var rAll=rank(m,function(){return true;});
   var cumOf={}; rAll.byCumul.forEach(function(p){cumOf[p.id]=p;});
   var step=S.step||1;
-  var h=(editing?'<div class="card" style="background:var(--am-l);border-color:var(--am)"><b style="color:#92400e">✏️ Correction d\'une manche</b><p class="mini" style="color:#b45309;margin:4px 0 8px">Modifie les scores puis valide — la manche sera remplacée, pas ajoutée.</p><button class="sm" style="width:100%" onclick="cancelEdit()">Annuler la correction</button></div>':'')+
+  var h=goalBanner(m)+(editing?'<div class="card" style="background:var(--am-l);border-color:var(--am)"><b style="color:#92400e">✏️ Correction d\'une manche</b><p class="mini" style="color:#b45309;margin:4px 0 8px">Modifie les scores puis valide — la manche sera remplacée, pas ajoutée.</p><button class="sm" style="width:100%" onclick="cancelEdit()">Annuler la correction</button></div>':'')+
     /* Barre unique : la date (repliée, on la change rarement) + le pas des boutons.
        Avant : une carte entière pour la date + une ligne pour le pas, avant le 1er joueur. */
     '<div class="row" style="margin-bottom:10px;gap:6px;align-items:center">'+
@@ -945,10 +947,10 @@ function setResMode(v){ S.histMode=v; window.scrollTo(0,0); render(); }
    un seul geste. Chaque mode réutilise le rendu existant — pas de logique parallèle. */
 /* Bandeau champions : identique dans les 4 vues, la spécificité vient ensuite. */
 function resChamps(m){
-  var r=rank(m,keeper()); if(!r.count) return '';
+  var r=rank(m,keeper()); if(!r.count) return goalBanner(m);
   var lp=leaders(r.byCumul,'points',m.winRule), lw=leaders(r.byWins,'wins',m.winRule);
   function nmOf(list,ids){return list.filter(function(p){return ids.indexOf(p.id)>=0;}).map(function(p){return p.name;}).join(' & ');}
-  return '<div class="grid2">'+
+  return goalBanner(m)+'<div class="grid2">'+
     '<div class="champ g"><div class="l">🏆 Meilleur cumul</div><div class="v">'+esc(lp.length?nmOf(r.byCumul,lp):'—')+'</div>'+
       '<div class="s">'+(lp.length?nf(r.byCumul.filter(function(p){return lp.indexOf(p.id)>=0;})[0].points)+' pts':'—')+'</div></div>'+
     '<div class="champ a"><div class="l">👑 Plus de victoires</div><div class="v">'+esc(lw.length?nmOf(r.byWins,lw):'—')+'</div>'+
@@ -1224,17 +1226,22 @@ function renderQuizz(hd,app,banner){
       '<div class="chips">'+[8,15,20,30].map(function(o){
         return '<button class="chip'+((D.microGoal||15)===o?' on':'')+'" onclick="setMicroGoal('+o+')">'+o+' pts</button>';
       }).join('')+'</div></div>';
-    h+='<div class="card"><h2><span class="stepn">4</span>Contexte & rythme</h2>'+
+    var ctxSel=microCtxStyles().map(function(x){return x.label;}).join(' + ');
+    h+='<div class="card"><h2 style="cursor:pointer" onclick="S.qc4=!S.qc4;render()"><span class="stepn">4</span>Contexte & rythme'+
+      '<span style="float:right;font-weight:400;font-size:12px;color:#a8a29e">'+(ctxSel?esc(ctxSel):'Standard')+' '+(S.qc4?'▾':'▸')+'</span></h2>'+
+      (S.qc4?
       '<p class="mini" style="margin:0 0 8px">Cumulables, et compatibles avec toutes les ambiances.</p>'+
       '<div style="display:flex;flex-direction:column;gap:7px">'+
       MICRO_STYLES.filter(function(sx){return sx.kind!=='personnalite';}).map(function(sx){
         var on=microCtx().indexOf(sx.id)>=0;
         return '<button class="chip'+(on?' on':'')+'" style="text-align:left;padding:9px 12px;white-space:normal" onclick="toggleMicroCtx(\''+sx.id+'\')">'+
           '<b>'+(on?'✓ ':'')+sx.label+'</b>'+(sx.hint?'<br><span style="font-weight:400;font-size:11.5px;opacity:.85">'+esc(sx.hint)+'</span>':'')+'</button>';
-      }).join('')+'</div></div>';
+      }).join('')+'</div>':'')+'</div>';
     var mecs=microMecs();
-    h+='<div class="card"><h2><span class="stepn">5</span>Mécaniques du jeu</h2>'+
-      '<p class="mini" style="margin:0 0 8px">Ce que l\'animateur peut sortir en cours de partie ('+mecs.length+'/'+MICRO_MECS.length+').</p>'+
+    h+='<div class="card"><h2 style="cursor:pointer" onclick="S.qc5=!S.qc5;render()"><span class="stepn">5</span>Mécaniques du jeu'+
+      '<span style="float:right;font-weight:400;font-size:12px;color:#a8a29e">'+mecs.length+'/'+MICRO_MECS.length+' '+(S.qc5?'▾':'▸')+'</span></h2>'+
+      (S.qc5?
+      '<p class="mini" style="margin:0 0 8px">Ce que l\'animateur peut sortir en cours de partie.</p>'+
       '<div style="display:flex;flex-direction:column;gap:6px">'+
       MICRO_MECS.map(function(mc){
         var on=mecs.indexOf(mc.id)>=0;
@@ -1244,7 +1251,7 @@ function renderQuizz(hd,app,banner){
       '<div class="row" style="gap:8px;margin-top:9px">'+
         '<button class="sm" style="flex:1;background:var(--card)" onclick="setAllMecs(true)">Tout activer</button>'+
         '<button class="sm" style="flex:1;background:var(--card)" onclick="setAllMecs(false)">Aucune</button>'+
-      '</div></div>';
+      '</div>':'')+'</div>';
     h+='<div class="card"><h2><span class="stepn">6</span>Ton assistant IA</h2>'+
       '<div class="chips">'+AI_APPS.map(function(a){
         return '<button class="chip'+((D.aiApp||'claude')===a.id?' on':'')+'" onclick="setAiApp(\''+a.id+'\')">'+a.label+'</button>';
@@ -2484,7 +2491,7 @@ function chConfig(){
   return h;
 }
 function chAv(i){ var s=chSettings(); if(!s.players[i]||!s.players[i].trim()){ s.players[i]='Joueur '+(i+1); } openAv(libIdForName(s.players[i])); }
-function chSetSecs(v){ chSettings().secs=Math.max(5,v||60); persist(); render(); }
+function chSetSecs(v){ chSettings().secs=Math.min(1800,Math.max(5,v||60)); persist(); render(); }
 function chSetPass(v){ chSettings().pass=v; persist(); render(); }
 function chSetPlayerSecs(i,v){
   var s=chSettings(); if(!s.custom) s.custom={};
