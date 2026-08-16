@@ -53,7 +53,7 @@ L('        (mots accueil : '+words+')');
 ok('reste raisonnable (<225 mots, explication assumée)', words<225);
 
 L('[6] Micro : deux groupes distincts');
-w.go('quizz'); w.render();
+w.go('quizz'); w.S.qc4=true; w.S.qc5=true; w.render();
 ok('groupe « Contexte & rythme »', app().includes('Contexte &amp; rythme')||app().includes('Contexte & rythme'));
 const perso=w.MICRO_STYLES.filter(s=>s.kind==='personnalite').length;
 const autre=w.MICRO_STYLES.filter(s=>s.kind!=='personnalite').length;
