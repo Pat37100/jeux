@@ -377,7 +377,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='56';
+var APP_VERSION='57';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -686,8 +686,8 @@ function drawSheet(){
     '<h2 style="margin:0 0 12px;font-size:19px">Nouvelle partie</h2>'+
     '<label class="lb">Nom</label><input id="mn" value="Partie du '+fr(today())+'">'+
     '<label class="lb" style="margin-top:14px">Joueurs</label><div id="pk" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px">'+
-      D.lib.map(function(p){return '<button class="chip on" data-id="'+p.id+'" onclick="this.classList.toggle(\'on\')">'+esc(p.name)+'</button>';}).join('')+
-    '</div><input id="mx" placeholder="Autres joueurs (séparés par des virgules)">'+
+      D.lib.map(function(p){return '<button class="chip on" data-id="'+p.id+'" onclick="this.classList.toggle(\'on\')" style="display:inline-flex;align-items:center;gap:6px">'+av(p.name,'xs')+esc(p.name)+'</button>';}).join('')+
+    '</div><label class="lb" style="font-weight:400;color:#78716c">Ou ajoute des invités</label><input id="mx" placeholder="Prénoms séparés par des virgules">'+
     '<label class="lb" style="margin-top:14px">Règle</label><div class="row" style="margin-bottom:12px">'+
       '<button class="chip on" id="rh" style="flex:1;text-align:center" onclick="pickRule(1)">Le plus de points</button>'+
       '<button class="chip" id="rl" style="flex:1;text-align:center" onclick="pickRule(0)">Le moins de points</button></div>'+
@@ -1074,6 +1074,16 @@ function tabSet(m){
          '<p class="mini" style="margin-top:6px">Il entre au classement dès sa première manche — les manches déjà jouées ne comptent pas contre lui.</p>'
        : '')+'</div>';
 
+  h+='<div class="card"><h2>Règle & objectif</h2>'+
+     '<div class="row" style="gap:8px;margin-bottom:10px">'+
+       '<button class="chip'+(m.winRule!=='low'?' on':'')+'" style="flex:1;text-align:center" onclick="setMatchRule(\'high\')">Le plus de points</button>'+
+       '<button class="chip'+(m.winRule==='low'?' on':'')+'" style="flex:1;text-align:center" onclick="setMatchRule(\'low\')">Le moins de points</button>'+
+     '</div>'+
+     '<div class="row" style="gap:8px;align-items:center">'+
+       '<span class="mini" style="flex:1;margin:0">Objectif de points</span>'+
+       '<input type="number" inputmode="numeric" style="width:110px;text-align:center" placeholder="Aucun" value="'+(m.target||'')+'" onchange="setMatchTarget(this.value)">'+
+     '</div></div>';
+
   h+='<div class="card"><h2>État</h2>'+(m.status==='done'?
      '<button class="sm g" onclick="setStatus(\'active\')">▶ Reprendre la partie</button>':
      '<button class="btn" style="background:linear-gradient(135deg,#d97706,#f59e0b)" onclick="finishMatch()">🏁 Terminer la partie</button>')+'</div>';
@@ -1107,6 +1117,15 @@ function addPlayerToMatch(){
   if(!lib){ lib={id:uid(),name:name}; D.lib.push(lib); }
   m.players.push({id:lib.id,name:lib.name});
   persist(); toast(lib.name+' rejoint la partie 👋'); render();
+}
+function setMatchRule(r){
+  var m=cur(); if(!m) return;
+  m.winRule=(r==='low')?'low':'high'; persist(); toast(r==='low'?'Le moins de points gagne':'Le plus de points gagne'); render();
+}
+function setMatchTarget(v){
+  var m=cur(); if(!m) return;
+  var n=parseInt(v,10);
+  m.target=(isNaN(n)||n<=0)?null:n; persist(); render();
 }
 function setStatus(s){cur().status=s;persist();render();}
 /* Point d'ancrage App Store : aux moments de joie (couronnement, victoire),
@@ -2380,9 +2399,10 @@ function chConfig(){
       return '<button class="chip'+(pr===o[0]?' on':'')+'" style="text-align:left;padding:10px 12px;white-space:normal" onclick="chSetPass(\''+o[0]+'\')">'+
         '<b>'+o[1]+'</b><br><span style="font-weight:400;font-size:11.5px;opacity:.85">'+o[2]+'</span></button>';
     }).join('')+'</div></div>';
-  h+='<div class="row" style="gap:8px;margin-bottom:10px">'+
-     '<button class="chip'+(s.sound?' on':'')+'" style="flex:1;text-align:center" onclick="chSound(true)">🔔 Son</button>'+
-     '<button class="chip'+(!s.sound?' on':'')+'" style="flex:1;text-align:center" onclick="chSound(false)">🔕 Silencieux</button></div>';
+  h+='<div class="card"><h2><span class="stepn">4</span>Son du décompte</h2>'+
+     '<div class="row" style="gap:8px">'+
+     '<button class="chip'+(s.sound?' on':'')+'" style="flex:1;text-align:center" onclick="chSound(true)">🔔 Activé</button>'+
+     '<button class="chip'+(!s.sound?' on':'')+'" style="flex:1;text-align:center" onclick="chSound(false)">🔕 Silencieux</button></div></div>';
   h+='<button class="btn tictac" onclick="chStart()">⏱️ Démarrer la manche</button>';
   /* Historique : rendu supprimable (chDelDuel existait mais n'était branché nulle part,
      alors que les manches de La Coupe, elles, ont toujours eu leur corbeille). */
