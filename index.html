@@ -377,7 +377,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='57';
+var APP_VERSION='58';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -1212,15 +1212,10 @@ function renderQuizz(hd,app,banner){
       '<div class="chips" style="margin-bottom:8px">'+MICRO_STYLES.filter(function(sx){return sx.kind==='personnalite';}).map(function(sx){
         return '<button class="chip'+((D.microStyle||'classique')===sx.id?' on':'')+'" onclick="setMicroStyle(\''+sx.id+'\')">'+sx.label+'</button>';
       }).join('')+'</div>'+
-      '<p class="mini" style="margin:10px 0 6px">Contexte & rythme</p>'+
-      '<div class="chips" style="margin-bottom:8px">'+MICRO_STYLES.filter(function(sx){return sx.kind!=='personnalite';}).map(function(sx){
-        return '<button class="chip'+((D.microStyle||'classique')===sx.id?' on':'')+'" onclick="setMicroStyle(\''+sx.id+'\')">'+sx.label+'</button>';
-      }).join('')+'</div>'+
+
       (function(){ var sx=MICRO_STYLES.filter(function(x){return x.id===(D.microStyle||'classique');})[0];
-        return '<p class="mini" style="margin:0 0 10px;background:var(--bg);border-radius:10px;padding:8px 10px">'+
-          esc(sx&&sx.txt? sx.hint||sx.txt.split(':')[0] : 'Animation standard, telle que définie dans le jeu.')+'</p>'; })()+
-      '<p class="mini" style="margin:0 0 6px">Consigne libre — sur l\'animateur <b>ou</b> sur les questions</p>'+
-      '<input placeholder="ex. « parle avec emphase », « évite le sport », « des questions sur la Bretagne »" value="'+(D.microCustom||'').replace(/"/g,'&quot;')+'" onchange="D.microCustom=this.value;persist();render()"></div>';
+        return '<p class="mini" style="margin:0;background:var(--bg);border-radius:10px;padding:8px 10px">'+
+          esc(sx&&sx.txt? sx.hint||sx.txt.split(':')[0] : 'Animation standard, telle que définie dans le jeu.')+'</p>'; })()+'</div>';
     h+='<div class="card"><h2><span class="stepn">3</span>Thème & objectif</h2>'+
       '<div class="chips" style="margin-bottom:10px">'+MICRO_THEMES.map(function(th){
         return '<button class="chip'+((D.microTheme||'libre')===th.id?' on':'')+'" onclick="setMicroTheme(\''+th.id+'\')">'+th.label+'</button>';
@@ -1229,14 +1224,26 @@ function renderQuizz(hd,app,banner){
       '<div class="chips">'+[8,15,20,30].map(function(o){
         return '<button class="chip'+((D.microGoal||15)===o?' on':'')+'" onclick="setMicroGoal('+o+')">'+o+' pts</button>';
       }).join('')+'</div></div>';
-    h+='<div class="card"><h2><span class="stepn">4</span>Ton assistant IA</h2>'+
+    h+='<div class="card"><h2><span class="stepn">4</span>Contexte & rythme</h2>'+
+      '<p class="mini" style="margin:0 0 8px">Cumulables, et compatibles avec toutes les ambiances.</p>'+
+      '<div style="display:flex;flex-direction:column;gap:7px">'+
+      MICRO_STYLES.filter(function(sx){return sx.kind!=='personnalite';}).map(function(sx){
+        var on=microCtx().indexOf(sx.id)>=0;
+        return '<button class="chip'+(on?' on':'')+'" style="text-align:left;padding:9px 12px;white-space:normal" onclick="toggleMicroCtx(\''+sx.id+'\')">'+
+          '<b>'+(on?'✓ ':'')+sx.label+'</b>'+(sx.hint?'<br><span style="font-weight:400;font-size:11.5px;opacity:.85">'+esc(sx.hint)+'</span>':'')+'</button>';
+      }).join('')+'</div></div>';
+    h+='<div class="card"><h2><span class="stepn">5</span>Ton assistant IA</h2>'+
       '<div class="chips">'+AI_APPS.map(function(a){
         return '<button class="chip'+((D.aiApp||'claude')===a.id?' on':'')+'" onclick="setAiApp(\''+a.id+'\')">'+a.label+'</button>';
       }).join('')+'</div>'+
       '<p class="mini" style="margin-top:8px">Il te faut son app et un compte — les versions gratuites suffisent. Rien n\'est payant ni envoyé par En Jeux.</p></div>';
     var stl=MICRO_STYLES.filter(function(x){return x.id===(D.microStyle||'classique');})[0];
+    h+='<div class="card"><h2><span class="stepn">6</span>Consigne libre <span style="font-weight:400;font-size:12px;color:#a8a29e">(facultatif)</span></h2>'+
+      '<p class="mini" style="margin:0 0 8px">Sur l\'animateur, sur les questions, ou les deux.</p>'+
+      '<input placeholder="ex. « parle avec emphase », « évite le sport », « des questions sur la Bretagne »" value="'+(D.microCustom||'').replace(/"/g,'&quot;')+'" onchange="D.microCustom=this.value;persist();render()"></div>';
     var thm=MICRO_THEMES.filter(function(x){return x.id===(D.microTheme||'libre');})[0];
-    h+='<p class="mini" style="text-align:center;margin:2px 2px 8px">'+pl(team.length,'joueur')+(D.microTeams?' en équipes':'')+' · '+esc(stl?stl.label:'Classique')+' · '+esc(thm?thm.label:'')+' · '+(D.microGoal||15)+' pts'+(D.journal.length?' · anti-répétition ✓':'')+'</p>';
+    var ctxLbl=microCtxStyles().map(function(x){return x.label;}).join(' · ');
+    h+='<p class="mini" style="text-align:center;margin:2px 2px 8px">'+pl(team.length,'joueur')+(D.microTeams?' en équipes':'')+' · '+esc(stl?stl.label:'Classique')+' · '+esc(thm?thm.label:'')+' · '+(D.microGoal||15)+' pts'+(ctxLbl?' · '+esc(ctxLbl):'')+(D.journal.length?' · anti-répétition ✓':'')+'</p>';
     h+='<button class="btn micro" style="font-size:17px" onclick="briefGo()" aria-label="Générer le texte de lancement et ouvrir l assistant">🚀 Générer et lancer</button>'+
       '<p class="mini" style="text-align:center;margin:8px 2px 0">Colle le texte, puis active le <b>mode vocal 🎙️</b> de ton assistant.</p>'+
       
@@ -1309,7 +1316,9 @@ function briefText(){
   var th=MICRO_THEMES.filter(function(x){return x.id===(D.microTheme||'libre');})[0];
   var goal=D.microGoal||15;
   var teams=(D.microTeams && (D.microTeams.a||[]).length && (D.microTeams.b||[]).length)?D.microTeams:null;
-  if(st && st.id==='express' && goal===15) goal=8;
+  var ctxs=microCtxStyles();
+  var hasCtx=function(id){ return ctxs.some(function(x){return x.id===id;}); };
+  if(hasCtx('express') && goal===15) goal=8;
 
   /* Diversité réelle : l'app tire au sort une graine et un plan de domaines.
      Le modèle ne peut pas retomber sur ses réflexes habituels. */
@@ -1335,9 +1344,9 @@ function briefText(){
   cfg+='OBJECTIF='+goal+'\n';
   cfg+='AMBIANCE='+(st?st.label.replace(/[^A-Za-zÀ-ÿ ]/g,'').trim():'Classique')+'\n';
   cfg+='THEME='+(th?th.label.replace(/[^A-Za-zÀ-ÿ0-9\- ]/g,'').trim():'Tous sujets')+'\n';
-  cfg+='NIVEAU_INITIAL='+((st&&st.kind==='difficulte')?'7':'5')+'\n';
-  cfg+='CADENCE='+((st&&st.kind==='cadence')?'RAPIDE':'NORMALE')+'\n';
-  cfg+='CONTEXTE='+((st&&st.kind==='contexte')?'VOITURE_BRUIT':'STANDARD')+'\n';
+  cfg+='NIVEAU_INITIAL='+(hasCtx('costaud')?'7':'5')+'\n';
+  cfg+='CADENCE='+(hasCtx('express')?'RAPIDE':'NORMALE')+'\n';
+  cfg+='CONTEXTE='+(hasCtx('voiture')?'VOITURE_BRUIT':'STANDARD')+'\n';
   cfg+='TOUCHE_PERSONNELLE='+((D.microCustom||'').trim()||'(aucune)')+'\n';
   cfg+='FAITS_DEJA_POSES='+D.journal.length+'\n';
   cfg+='</CONFIG_APP>\n\n';
@@ -1349,6 +1358,8 @@ function briefText(){
   if(st && st.loud){
     t+='\n\nNIVEAU D\'INCARNATION : très élevé. Sois presque une caricature de présentateur : dramatise absurdement un petit enjeu, installe du suspense, fais semblant d\'être scandalisé par une réponse ratée, célèbre excessivement un beau coup, chambre gentiment, reprends un running gag né pendant la partie, commente une remontée ou une série catastrophique, sois faussement solennel. Invente ta propre personnalité : aucune imitation d\'un animateur réel, aucun tic verbal reconnaissable, aucune copie d\'émission existante. Rappel : cette exubérance ne touche jamais au score ni à la rotation (règles D, H et P).';
   }
+  if(ctxs.length) t+='\n\nCONTEXTE ET RYTHME (ces consignes s\'ajoutent à l\'ambiance sans la remplacer ; elles ne modifient aucune règle du moteur) :\n'+
+    ctxs.map(function(x){return '- '+x.txt;}).join('\n');
   if(th && th.txt) t+='\n\nTHÈME DOMINANT (remplace la consigne de variété de la section L ; toutes les autres règles restent valables) : '+th.txt;
   if(goal!==15) t+='\n\nOBJECTIF (prioritaire sur toute autre indication d\'objectif) : '+goal+' points.';
   if(teams){
@@ -1430,6 +1441,27 @@ function rollDice(){
 function openBuzzerRefresh(){ var e=document.getElementById('bzsh'); if(e){ e.remove(); openBuzzer(); } }
 function buzzTest(){ hit(PENTA[2],{dur:.18,vol:.3,fm:.5,fmRatio:3.01,cut:6000,rev:.3}); hit(PENTA[4],{delay:.08,dur:.34,vol:.26,fm:.6,fmRatio:3.01,cut:7000,rev:.35}); }
 function setMicroStyle(id){ D.microStyle=id; persist(); render(); }
+/* Deux axes distincts : la PERSONNALITÉ (un seul choix) et le CONTEXTE/RYTHME
+   (plusieurs choix cumulables). Avant, tout partageait microStyle : choisir
+   « En voiture » effaçait « Taquin ». */
+function microCtx(){
+  if(!D.microCtx){
+    D.microCtx=[];
+    var legacy=D.microStyle;
+    var isCtx=MICRO_STYLES.filter(function(s){return s.id===legacy && s.kind!=='personnalite';})[0];
+    if(isCtx){ D.microCtx=[legacy]; D.microStyle='classique'; persist(); }
+  }
+  return D.microCtx;
+}
+function toggleMicroCtx(id){
+  var c=microCtx(), i=c.indexOf(id);
+  if(i>=0) c.splice(i,1); else c.push(id);
+  D.microCtx=c; persist(); render();
+}
+function microCtxStyles(){
+  var c=microCtx();
+  return MICRO_STYLES.filter(function(s){return c.indexOf(s.id)>=0;});
+}
 var MICRO_THEMES=[
   {id:'libre',   label:'🌍 Tous sujets', txt:null},
   {id:'8090',    label:'📼 Années 80-90', txt:"Concentre la partie sur les années 1980 et 1990 : musique, cinéma, séries, publicités, jeux, objets, événements et personnalités de ces deux décennies. Garde un peu de variété de domaines à l'intérieur de ce thème."},
