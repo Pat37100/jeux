@@ -58,11 +58,11 @@ ok('groupe « Contexte & rythme »', app().includes('Contexte &amp; rythme')||ap
 const perso=w.MICRO_STYLES.filter(s=>s.kind==='personnalite').length;
 const autre=w.MICRO_STYLES.filter(s=>s.kind!=='personnalite').length;
 L('        personnalités : '+perso+' | contexte/rythme/difficulté : '+autre);
-ok('toutes les ambiances restent sélectionnables', w.MICRO_STYLES.every(s=>app().includes("setMicroStyle('"+s.id+"')")));
+ok('toutes les options restent sélectionnables', w.MICRO_STYLES.every(s=>app().includes("setMicroStyle('"+s.id+"')")||app().includes("toggleMicroCtx('"+s.id+"')")));
 ok('13 ambiances conservées', w.MICRO_STYLES.length===13);
 
 L('[7] Consigne libre clarifiée');
-ok('intitulé explicite', app().includes('sur l\'animateur') && app().includes('sur les questions'));
+ok('intitulé explicite', app().includes('Consigne libre') && app().includes('sur les questions'));
 ok('exemples des deux registres', app().includes('parle avec emphase') && app().includes('Bretagne'));
 w.D.microCustom='évite le sport';
 w.setMicroStyle('taquin');
@@ -73,8 +73,8 @@ L('[8] NON-RÉGRESSION du prompt');
 for(const k of ['PRIORITÉS',"T'ARRÊTES DE PARLER",'Mélanie +2 → 8','Vol ouvert','PERSONNE NE TROUVE',
                 'QUESTIONS INTERDITES','POINT DE CALIBRAGE','±0,5','A0. LECTURE DE CONFIG_APP','sections A à S'])
   ok('conservé : '+k, t.includes(k));
-w.setMicroStyle('voiture'); ok('En voiture toujours actif', w.briefText().includes('CONTEXTE=VOITURE_BRUIT'));
-w.setMicroStyle('costaud'); ok('Costaud toujours actif', w.briefText().includes('NIVEAU_INITIAL=7'));
+w.toggleMicroCtx('voiture'); ok('En voiture toujours actif', w.briefText().includes('CONTEXTE=VOITURE_BRUIT'));
+w.toggleMicroCtx('costaud'); ok('Costaud toujours actif', w.briefText().includes('NIVEAU_INITIAL=7'));
 w.setMicroStyle('sportif'); ok('Commentateur sportif incarné', w.briefText().includes("NIVEAU D'INCARNATION"));
 ok('9 thèmes', w.MICRO_THEMES.length===9);
 ok('diversité app', /GRAINE_DE_PARTIE=\d+/.test(w.briefText()));
