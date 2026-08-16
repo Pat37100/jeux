@@ -8,7 +8,7 @@ function boot(seed){const store=new Map();
     w.navigator.serviceWorker=undefined; w.scrollTo=()=>{};}});
   d.window.D.onboarded=1; return d.window;}
 const w=boot(); const app=()=>w.document.getElementById('app').innerHTML;
-w.go('quizz'); w.render();
+w.go('quizz'); w.S.qc4=true; w.S.qc5=true; w.render();
 
 L('[1] Les mécaniques deviennent choisissables');
 ok('carte « Mécaniques du jeu »', app().includes('Mécaniques du jeu'));
@@ -70,7 +70,7 @@ ok('mécaniques dans CONFIG_APP', t.indexOf('MECANIQUES=')<t.indexOf('</CONFIG_A
 
 L('[8] Migration : ancien utilisateur sans réglage de mécaniques');
 const w2=boot(JSON.stringify({onboarded:1, microStyle:'taquin'}));
-w2.go('quizz'); w2.render();
+w2.go('quizz'); w2.S.qc4=true; w2.S.qc5=true; w2.render();
 ok('toutes actives par défaut', w2.microMecs().length===8);
 ok('prompt complet', w2.briefText().includes('MECANIQUES=') && w2.briefText().includes('Tour Défi'));
 L(F? '\n*** '+F+' ECHEC(S) ***' : '\nTOUT PASSE ('+F+' échec)');
