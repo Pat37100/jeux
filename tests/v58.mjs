@@ -13,7 +13,7 @@ w.go('quizz'); w.render();
 L('[1] Structure : 6 étapes numérotées cohérentes');
 const steps=(app().match(/class="stepn"/g)||[]).length;
 L('        étapes : '+steps);
-ok('6 cartes numérotées', steps===6);
+ok('cartes numérotées homogènes (7 depuis la v59)', steps===7);
 for(const s of ['Qui joue','Ambiance de l','Thème','Contexte','assistant IA','Consigne libre'])
   ok('étape « '+s+' »', app().includes(s));
 ok('Consigne libre en dernier avant le bouton',
