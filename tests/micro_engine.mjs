@@ -72,7 +72,7 @@ w.setMicroTeams(true); const te=w.briefText();
 ok('mode équipes', te.includes('MODE=EQUIPES') && te.includes('EQUIPE_1='));
 ok('équipes : rotation préservée', te.includes('currentPlayerIndex reste mécanique'));
 w.setMicroTeams(false);
-w.D.microCustom='années 90'; ok('touche perso', w.briefText().includes('CONSIGNE PERSONNELLE'));
+w.D.microCustom='années 90'; ok('touche perso', w.briefText().includes('CONSIGNE LIBRE'));
 w.D.journal=[{text:'astronomie — Triton'}]; ok('journal chargé dans askedFacts', w.briefText().includes('askedFacts[] (section I)'));
 ok('liste des joueurs en fin', w.briefText().trim().endsWith('.'));
 L('\n        taille du prompt généré : '+Math.round(w.briefText().length/1000)+' k caractères');
