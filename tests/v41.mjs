@@ -55,11 +55,11 @@ ok('plus de « duel au Mur des champions » sur la config', !app().includes('au 
 L('[7] Micro : styles enrichis ET injectés dans le prompt');
 ok('les 9 ambiances d\'origine sont conservées', ['classique','show','prof','taquin','famille','express','costaud','voiture','apero'].every(id=>w.MICRO_STYLES.some(s=>s.id===id)) && w.MICRO_STYLES.length>=9);
 for(const s of ['famille','express','costaud','voiture','apero']) ok('style « '+s+' » présent', w.MICRO_STYLES.some(x=>x.id===s));
-w.setMicroStyle('voiture');
+w.toggleMicroCtx('voiture');
 const t=w.briefText();
-ok('le style choisi est bien injecté dans le prompt', t.includes('AMBIANCE SÉLECTIONNÉE') && t.includes('voiture ou en déplacement'));
+ok('le contexte choisi est bien injecté dans le prompt', t.includes('CONTEXTE ET RYTHME') && t.includes('voiture ou en déplacement'));
 ok('le prompt de base reste intact', t.includes('ANTI-DOUBLON') && t.includes('TOUR DÉFI'));
-w.D.microCustom='années 90'; ok('touche perso cumulable avec le style', w.briefText().includes('CONSIGNE LIBRE') && w.briefText().includes('AMBIANCE SÉLECTIONNÉE'));
+w.setMicroStyle('taquin'); w.D.microCustom='années 90'; ok('consigne libre cumulable avec ambiance ET contexte', ['CONSIGNE LIBRE','AMBIANCE SÉLECTIONNÉE','CONTEXTE ET RYTHME'].every(k=>w.briefText().includes(k)));
 w.setMicroStyle('classique');
 ok('style Classique = aucune surcouche', !w.briefText().includes('AMBIANCE SÉLECTIONNÉE'));
 L(F? '\n*** '+F+' ECHEC(S) ***' : '\nTOUT PASSE ('+F+' échec)');
