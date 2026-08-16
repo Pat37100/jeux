@@ -8,7 +8,7 @@ function boot(seed){const store=new Map();
     w.navigator.serviceWorker=undefined; w.scrollTo=()=>{};}});
   d.window.D.onboarded=1; return d.window;}
 const w=boot(); const app=()=>w.document.getElementById('app').innerHTML;
-w.go('quizz'); w.render();
+w.go('quizz'); w.S.qc4=true; w.S.qc5=true; w.render();
 
 L('[1] Structure : 6 étapes numérotées cohérentes');
 const steps=(app().match(/class="stepn"/g)||[]).length;
@@ -52,7 +52,7 @@ ok('objectif revient à 15', t.includes('OBJECTIF=15'));
 
 L('[5] Migration des anciens réglages (utilisateur qui avait choisi « En voiture »)');
 const w2=boot(JSON.stringify({onboarded:1, microStyle:'voiture'}));
-w2.go('quizz'); w2.render();
+w2.go('quizz'); w2.S.qc4=true; w2.S.qc5=true; w2.render();
 ok('l\'ancien choix bascule en contexte', w2.microCtx().includes('voiture'));
 ok('l\'ambiance repasse à Classique', w2.D.microStyle==='classique');
 ok('rien n\'est perdu dans le prompt', w2.briefText().includes('CONTEXTE=VOITURE_BRUIT'));
