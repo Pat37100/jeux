@@ -16,7 +16,7 @@ ok('plus de « C\'est quoi En Jeux ? »', !app().includes("C'est quoi En Jeux"))
 ok('les 4 rubriques restent', ['La Coupe','Tic-Tac','Le Micro','Les Outils'].every(t=>app().includes(t)));
 const words=app().replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().split(' ').filter(Boolean).length;
 L('        (mots accueil : '+words+')');
-ok('accueil encore allégé', words<175);
+ok('accueil : explication assumée', words<225 && app().includes('compagnon de vos jeux'));
 
 L('[2] Mur des champions promu');
 ok('carte pleine largeur (plus un mini-lien)', app().includes('t-champ'));
