@@ -53,8 +53,8 @@ for(const s of ['ANTI-DOUBLON','TOUR DÉFI','QUITTE OU DOUBLE','PRINCIPE DIRECTE
 L('[6] Les 3 axes se cumulent sans se contredire');
 w.setMicroStyle('famille'); w.setMicroTheme('ados'); w.setMicroGoal(8); w.setMicroTeams(true); w.D.microCustom='spécial vacances';
 const all=w.briefText();
-ok('style + thème + objectif + équipes + perso', ["AMBIANCE SÉLECTIONNÉE","THÈME DOMINANT","OBJECTIF (prioritaire","MODE ÉQUIPES","CONSIGNE PERSONNELLE"].every(k=>all.includes(k)));
+ok('style + thème + objectif + équipes + perso', ["AMBIANCE SÉLECTIONNÉE","THÈME DOMINANT","OBJECTIF (prioritaire","MODE ÉQUIPES","CONSIGNE LIBRE"].every(k=>all.includes(k)));
 ok('objectif placé après le style (il tranche)', all.indexOf('OBJECTIF (prioritaire')>all.indexOf("AMBIANCE SÉLECTIONNÉE"));
-ok('la consigne joueurs reste en dernier', all.indexOf('CONSIGNE PERSONNELLE')>all.indexOf('MODE ÉQUIPES'));
+ok('la consigne joueurs reste en dernier', all.indexOf('CONSIGNE LIBRE')>all.indexOf('MODE ÉQUIPES'));
 ok('la liste des joueurs clôt le texte', all.trim().endsWith('.') && all.includes('Les joueurs sont'));
 L(F? '\n*** '+F+' ECHEC(S) ***' : '\nTOUT PASSE ('+F+' échec)');
