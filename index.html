@@ -164,6 +164,9 @@
   .tool.t-outils{border-color:#99f6e4;background:linear-gradient(135deg,#f0fdfa,#ccfbf1)}
   .tool.t-outils .em{background:linear-gradient(135deg,#0f766e,#2dd4bf)}
   .tool.t-outils .tag{background:#ccfbf1;color:#0f766e}
+  html{-webkit-text-size-adjust:100%}
+  button,input,select,textarea,.chip,.tool,.miniact,.swipe{touch-action:manipulation}
+  input,select,textarea{font-size:16px}
   .stepn{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;
     background:var(--gr);color:#fff;font-size:11px;font-weight:800;margin-right:7px;vertical-align:1px}
   .stp1{display:flex;gap:9px;align-items:flex-start;font-size:13.5px;color:#065f46;line-height:1.45}
@@ -374,7 +377,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='55';
+var APP_VERSION='56';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -502,9 +505,11 @@ function render_(){
     hd.innerHTML='<span style="width:38px"></span><h1>En Jeux<span class="sub">Votre maître du jeu de poche</span></h1>'+
       '<button class="icobtn" onclick="go(\'save\')">⚙︎</button>';
     app.innerHTML=banner+
-      '<div class="hero" style="padding:18px 20px 16px"><span class="dice">🎲</span><p style="font-size:15px;font-weight:700;margin:0">Vos jeux existent déjà.<br>On s\'occupe du reste. 👑</p>'+
-        '<div class="pills"><span>🍿 Soirées</span><span>🍽️ À table</span><span>🌳 En balade</span><span>🚗 En voiture</span><span>🏖️ En vacances</span></div></div>'+
-      '<div class="trust"><span><b>🚫</b>Sans pub</span><span><b>📶</b>Hors-ligne</span><span><b>🆓</b>Gratuit</span></div>'+
+      '<div class="hero" style="padding:20px 20px 17px"><span class="dice">🎲</span>'+
+        '<p style="font-size:16px;font-weight:800;margin:0 0 6px;line-height:1.3">Le compagnon de vos jeux</p>'+
+        '<p style="font-size:13.5px;margin:0;line-height:1.5;opacity:.92">Vos cartes, vos dés, votre plateau — ou rien du tout. En Jeux compte les points, chronomètre, anime et retient qui gagne. 👑</p>'+
+        '<div class="pills"><span>🍿 Soirées</span><span>🍽️ À table</span><span>🚗 En voiture</span><span>🏖️ En vacances</span></div></div>'+
+      '<div class="trust"><span><b>🆓</b>Gratuit</span><span><b>📶</b>Hors-ligne</span></div>'+
       (function(){
         if(D.live && D.live.players && D.live.winner===null){
           return '<button class="tool t-tictac" style="padding:12px 16px" onclick="go(\'chrono\')">'+
@@ -776,7 +781,7 @@ function tabRankBody(m){
       h+='<div class="card" style="background:var(--am-l);border-color:var(--am)">'+
         '<b style="color:#92400e">🎯 Objectif '+nf(m.target)+' atteint !</b>'+
         '<p class="mini" style="color:#b45309;margin:4px 0 10px">'+esc(reach.map(function(p){return p.name;}).join(' & '))+' y est. La partie peut se jouer là — ou continuer, c\'est vous qui voyez.</p>'+
-        '<button class="btn" style="background:linear-gradient(135deg,#d97706,#f59e0b)" onclick="finishMatch()">🏁 Terminer & couronner</button></div>';
+        '<button class="btn" style="background:linear-gradient(135deg,#d97706,#f59e0b)" onclick="finishMatch()">🏁 Terminer la partie</button></div>';
     } else if(m.winRule!=='low'){
       var lead2=rAll2.byCumul[0];
       if(lead2&&lead2.points>0) h+='<p class="mini" style="text-align:center;margin:0 0 10px">🎯 Objectif : <b>'+nf(m.target)+' points</b> — '+esc(lead2.name)+' en est à '+nf(lead2.points)+'.</p>';
@@ -1071,12 +1076,9 @@ function tabSet(m){
 
   h+='<div class="card"><h2>État</h2>'+(m.status==='done'?
      '<button class="sm g" onclick="setStatus(\'active\')">▶ Reprendre la partie</button>':
-     '<button class="btn" style="background:linear-gradient(135deg,#d97706,#f59e0b)" onclick="finishMatch()">🏁 Terminer & couronner le champion</button>')+'</div>';
+     '<button class="btn" style="background:linear-gradient(135deg,#d97706,#f59e0b)" onclick="finishMatch()">🏁 Terminer la partie</button>')+'</div>';
 
-  h+='<div class="card"><h2>Zone sensible</h2>'+
-     '<p class="mini" style="margin-bottom:8px">Supprimer efface la partie et toutes ses manches. Tu auras 15 secondes pour annuler.</p>'+
-     '<button class="sm r" style="width:100%" onclick="askDelMatch(\''+m.id+'\')">🗑 Supprimer cette partie</button></div>';
-  return h;
+return h;
 }
 function askDropPlayer(id){ S.confirm='dp'+id; render(); }
 function dropPlayerFull(id){
@@ -1188,13 +1190,18 @@ function renderQuizz(hd,app,banner){
         '<button class="sm" style="width:100%;margin-top:4px;background:var(--card)" onclick="shuffleMicroTeams()">🔀 Tirer au sort</button></div>':'')+
       '</div>';
     h+='<div class="card"><h2><span class="stepn">2</span>Ambiance de l\'animateur</h2>'+
-      '<div class="chips" style="margin-bottom:8px">'+MICRO_STYLES.map(function(sx){
+      '<div class="chips" style="margin-bottom:8px">'+MICRO_STYLES.filter(function(sx){return sx.kind==='personnalite';}).map(function(sx){
+        return '<button class="chip'+((D.microStyle||'classique')===sx.id?' on':'')+'" onclick="setMicroStyle(\''+sx.id+'\')">'+sx.label+'</button>';
+      }).join('')+'</div>'+
+      '<p class="mini" style="margin:10px 0 6px">Contexte & rythme</p>'+
+      '<div class="chips" style="margin-bottom:8px">'+MICRO_STYLES.filter(function(sx){return sx.kind!=='personnalite';}).map(function(sx){
         return '<button class="chip'+((D.microStyle||'classique')===sx.id?' on':'')+'" onclick="setMicroStyle(\''+sx.id+'\')">'+sx.label+'</button>';
       }).join('')+'</div>'+
       (function(){ var sx=MICRO_STYLES.filter(function(x){return x.id===(D.microStyle||'classique');})[0];
         return '<p class="mini" style="margin:0 0 10px;background:var(--bg);border-radius:10px;padding:8px 10px">'+
           esc(sx&&sx.txt? sx.hint||sx.txt.split(':')[0] : 'Animation standard, telle que définie dans le jeu.')+'</p>'; })()+
-      '<input placeholder="Ta touche perso (ex. « années 90 », « spécial ados »…)" value="'+(D.microCustom||'').replace(/"/g,'&quot;')+'" onchange="D.microCustom=this.value;persist();render()"></div>';
+      '<p class="mini" style="margin:0 0 6px">Consigne libre — sur l\'animateur <b>ou</b> sur les questions</p>'+
+      '<input placeholder="ex. « parle avec emphase », « évite le sport », « des questions sur la Bretagne »" value="'+(D.microCustom||'').replace(/"/g,'&quot;')+'" onchange="D.microCustom=this.value;persist();render()"></div>';
     h+='<div class="card"><h2><span class="stepn">3</span>Thème & objectif</h2>'+
       '<div class="chips" style="margin-bottom:10px">'+MICRO_THEMES.map(function(th){
         return '<button class="chip'+((D.microTheme||'libre')===th.id?' on':'')+'" onclick="setMicroTheme(\''+th.id+'\')">'+th.label+'</button>';
@@ -1331,7 +1338,7 @@ function briefText(){
        '\nÉquipe 2 : '+teams.b.join(', ')+'.'+
        '\nInterroge toujours un joueur précis, en alternant systématiquement entre les deux équipes et en tournant à l\'intérieur de chaque équipe : currentPlayerIndex reste mécanique. Les points vont à l\'équipe du joueur interrogé. Annonce le score par équipe. Les coéquipiers n\'ont pas le droit de souffler : si quelqu\'un répond à la place du joueur interrogé, la question est perdue pour son équipe et le fait est brûlé. Pour une question avec vol, seule l\'équipe adverse peut tenter après « Vol ouvert ».';
   }
-  if(D.microCustom && D.microCustom.trim()) t+='\n\nCONSIGNE PERSONNELLE DES JOUEURS (ne modifie aucune règle du moteur) : '+D.microCustom.trim();
+  if(D.microCustom && D.microCustom.trim()) t+='\n\nCONSIGNE LIBRE DES JOUEURS (elle peut porter sur le ton de l\'animateur, sur le contenu des questions, ou sur les deux ; applique-la dans les deux registres si c\'est ambigu, mais elle ne modifie aucune règle du moteur) : '+D.microCustom.trim();
   var recent=D.journal.slice(0,120);
   if(recent.length){
     t+='\n\n=== FAITS DÉJÀ CONSOMMÉS LORS DES PARTIES PRÉCÉDENTES ===\nCharge-les dans askedFacts[] (section I). Ils sont indisponibles, même reformulés :\n\n'+
@@ -2634,7 +2641,7 @@ function chGame(){
        '<button class="btn red" style="margin-top:8px" onclick="chWrong()">⏭ Au suivant</button>'+
        '';
   }
-  h+='<p class="mini" style="text-align:center;margin-top:8px">Bonne réponse : '+esc(p.name)+' continue et son ✓ grimpe. Sinon : la main passe, son chrono se fige.</p>';
+
 
   // barre de comparaison des bonnes réponses
   var maxG=Math.max(1,Math.max.apply(null,CH.players.map(function(p){return p.good;})));
