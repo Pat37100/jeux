@@ -45,7 +45,7 @@ ok('4 manches → chip Courbe présente', app().includes('Courbe'));
 L('[5] Accueil allégé');
 w.go('home'); w.render();
 ok('plus de gros paragraphe explicatif', !app().includes("s'occupe du reste :"));
-ok('accroche courte conservée', app().includes('Vos jeux existent déjà'));
+ok('accroche explicative conservée', app().includes('compagnon de vos jeux'));
 
 L('[6] Tic-Tac : renvoi parasite retiré');
 w.D.tictac=[{id:'d1',date:'2026-08-01',winner:'X',players:[]}];
@@ -59,7 +59,7 @@ w.setMicroStyle('voiture');
 const t=w.briefText();
 ok('le style choisi est bien injecté dans le prompt', t.includes('AMBIANCE SÉLECTIONNÉE') && t.includes('voiture ou en déplacement'));
 ok('le prompt de base reste intact', t.includes('ANTI-DOUBLON') && t.includes('TOUR DÉFI'));
-w.D.microCustom='années 90'; ok('touche perso cumulable avec le style', w.briefText().includes('CONSIGNE PERSONNELLE') && w.briefText().includes('AMBIANCE SÉLECTIONNÉE'));
+w.D.microCustom='années 90'; ok('touche perso cumulable avec le style', w.briefText().includes('CONSIGNE LIBRE') && w.briefText().includes('AMBIANCE SÉLECTIONNÉE'));
 w.setMicroStyle('classique');
 ok('style Classique = aucune surcouche', !w.briefText().includes('AMBIANCE SÉLECTIONNÉE'));
 L(F? '\n*** '+F+' ECHEC(S) ***' : '\nTOUT PASSE ('+F+' échec)');
