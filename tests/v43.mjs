@@ -14,7 +14,7 @@ L('[1] Les 4 étapes du Micro');
 for(const s of ['Qui joue','Ambiance','Thème &amp; objectif','Ton assistant IA']) ok('étape « '+s+' »', app().includes(s));
 
 L('[2] Thèmes disponibles et injectés');
-ok('9 thèmes', w.MICRO_THEMES.length===9);
+ok('thèmes conservés (12 depuis la v61)', w.MICRO_THEMES.length>=9);
 for(const t of ['8090','ados','sport','fete']) ok('thème '+t, w.MICRO_THEMES.some(x=>x.id===t));
 w.setMicroTheme('8090');
 ok('thème injecté dans le prompt', w.briefText().includes('THÈME DOMINANT') && w.briefText().includes('1980'));
