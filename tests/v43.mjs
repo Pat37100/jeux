@@ -11,7 +11,7 @@ w.go('quizz'); w.render();
 const BASE=w.MICRO_PROMPT;
 
 L('[1] Les 4 étapes du Micro');
-for(const s of ['Qui joue','Ambiance','Thème &amp; objectif','Ton assistant IA']) ok('étape « '+s+' »', app().includes(s));
+for(const s of ['Qui joue','Ton animateur','Thème &amp; objectif','Ton assistant IA']) ok('étape « '+s+' »', app().includes(s));
 
 L('[2] Thèmes disponibles et injectés');
 ok('thèmes conservés (12 depuis la v61)', w.MICRO_THEMES.length>=9);
@@ -53,8 +53,8 @@ for(const s of ['ANTI-DOUBLON','TOUR DÉFI','QUITTE OU DOUBLE','PRINCIPE DIRECTE
 L('[6] Les 3 axes se cumulent sans se contredire');
 w.setMicroStyle('famille'); w.setMicroTheme('ados'); w.setMicroGoal(8); w.setMicroTeams(true); w.D.microCustom='spécial vacances';
 const all=w.briefText();
-ok('style + thème + objectif + équipes + perso', ["AMBIANCE SÉLECTIONNÉE","THÈME DOMINANT","OBJECTIF (prioritaire","MODE ÉQUIPES","CONSIGNE LIBRE"].every(k=>all.includes(k)));
-ok('objectif placé après le style (il tranche)', all.indexOf('OBJECTIF (prioritaire')>all.indexOf("AMBIANCE SÉLECTIONNÉE"));
+ok('style + thème + objectif + équipes + perso', ["RAPPEL DE PERSONNAGE","THÈME DOMINANT","OBJECTIF (prioritaire","MODE ÉQUIPES","CONSIGNE LIBRE"].every(k=>all.includes(k)));
+ok('objectif placé après le style (il tranche)', all.indexOf('OBJECTIF (prioritaire')>all.indexOf("RAPPEL DE PERSONNAGE"));
 ok('la consigne joueurs reste en dernier', all.indexOf('CONSIGNE LIBRE')>all.indexOf('MODE ÉQUIPES'));
 ok('la liste des joueurs clôt le texte', all.trim().endsWith('.') && all.includes('Les joueurs sont'));
 L(F? '\n*** '+F+' ECHEC(S) ***' : '\nTOUT PASSE ('+F+' échec)');
