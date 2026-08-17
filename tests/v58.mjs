@@ -61,8 +61,8 @@ L('[6] Ambiances : un seul choix, contextes : plusieurs');
 w.setMicroStyle('sportif');
 ok('changer d\'ambiance remplace la précédente', w.D.microStyle==='sportif' && !w.briefText().includes('pince-sans-rire'));
 ok('les contextes ne bougent pas', w.microCtx().length===2);
-ok('10 personnalités proposées', w.MICRO_STYLES.filter(s=>s.kind==='personnalite').length===10);
-ok('3 contextes proposés', w.MICRO_STYLES.filter(s=>s.kind!=='personnalite').length===3);
+ok('personnalités proposées (9 depuis que Apéro est un contexte)', w.MICRO_STYLES.filter(s=>s.kind==='personnalite').length===9);
+ok('contextes cumulables (4 avec Apéro)', w.MICRO_STYLES.filter(s=>s.kind!=='personnalite').length===4);
 w.render();
 ok('chaque contexte a son explication', ['express','costaud','voiture'].every(id=>{
   const s=w.MICRO_STYLES.find(x=>x.id===id); return s.hint && app().includes(s.hint.slice(0,20));}));
