@@ -65,7 +65,7 @@ w.setMicroStyle('show');   ok('Grand show → incarnation élevée', w.briefText
 w.setMicroStyle('classique'); ok('Classique → pas de surcouche perso', !w.briefText().includes("NIVEAU D'INCARNATION"));
 
 L('\n══ OPTIONS EXISTANTES : aucune perte ══');
-ok('9 thèmes conservés', w.MICRO_THEMES.length===9);
+ok('thèmes conservés (12 depuis la v61)', w.MICRO_THEMES.length>=9);
 w.setMicroTheme('8090'); ok('thème injecté', w.briefText().includes('THÈME DOMINANT') && w.briefText().includes('1980'));
 w.setMicroGoal(30); ok('objectif personnalisé', w.briefText().includes('OBJECTIF=30'));
 w.setMicroTeams(true); const te=w.briefText();
