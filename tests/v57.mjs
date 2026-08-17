@@ -12,7 +12,7 @@ L('[1] Tic-Tac : le son rentre dans la structure numérotée');
 w.go('chrono'); w.render();
 const steps=(app().match(/class="stepn"/g)||[]).length;
 L('        étapes numérotées : '+steps);
-ok('4 étapes (le son n\'est plus une ligne flottante)', steps===4);
+ok('étapes numérotées cohérentes (5 depuis la banque de questions)', steps===5);
 ok('titre explicite « Son du décompte »', app().includes('Son du décompte'));
 ok('réglage toujours fonctionnel', app().includes('chSound(true)') && app().includes('chSound(false)'));
 ok('bouton de lancement toujours en bas', app().lastIndexOf('Démarrer la partie')>app().lastIndexOf('Son du décompte'));
