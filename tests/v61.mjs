@@ -80,10 +80,10 @@ ok('la consigne libre y figure', a2().includes('évite le sport'));
 
 L('[10] Micro : classement final pré-rempli');
 w2.D.lib=[{id:'a',name:'Patrick'},{id:'b',name:'Mélanie'}]; w2.D.microTeam=['a','b'];
-w2.microOpen();
+w2.S.microSheet=true; w2.S.microDetail=true; w2.render();
 const ta=w2.document.getElementById('mqr');
-ok('joueurs déjà inscrits', ta && ta.value.includes('Patrick') && ta.value.includes('Mélanie'));
-ok('consigne allégée', w2.document.body.innerHTML.includes('ajoute juste le score'));
+ok('joueurs déjà inscrits dans les scores facultatifs (v69)', ta && ta.value.includes('Patrick') && ta.value.includes('Mélanie'));
+ok('vainqueur en un appui, scores facultatifs (v69)', w2.document.body.innerHTML.includes('Un appui suffit') && w2.document.body.innerHTML.includes('Ajouter les scores'));
 
 L('[11] La Coupe : balayage pour supprimer une manche');
 const w4=boot(); const ids=w4.D.lib.slice(0,2).map(p=>p.id);
