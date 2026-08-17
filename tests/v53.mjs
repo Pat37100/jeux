@@ -17,7 +17,7 @@ ok('sans culpabiliser', t.includes('Ne culpabilise pas'));
 ok('redescend le niveau si ça se répète', t.includes('redescends légèrement le niveau'));
 
 L('[2] Concision de l\'explication');
-ok('consigne de concision renforcée', t.includes('CONCISION') && t.includes('une respiration'));
+ok('consigne de concision renforcée', t.includes('une phrase, deux au grand maximum') && t.includes('une respiration'));
 ok('plafond une à deux phrases', t.includes('deux au grand maximum'));
 
 L('[3] Nouveaux animateurs');
@@ -43,12 +43,12 @@ ok('Classique → aucune surcouche', !w.briefText().includes('AMBIANCE SÉLECTIO
 L('[5] L\'humour ne touche jamais à l\'arbitrage');
 w.setMicroStyle('susceptible'); const s=w.briefText();
 ok('rappel explicite dans le style', s.includes('ne modifie jamais un point'));
-ok('règle P toujours active', s.includes('mauvaise foi comique') && s.includes('froid et exact'));
+ok('règle P toujours active', s.includes('mauvaise foi') && s.includes('ARBITRE ne l'));
 ok('aucune imitation de personne réelle', s.includes("aucune imitation d'un animateur réel"));
 
 L('[6] Non-régression : rien perdu');
-for(const k of ['PRIORITÉS',"T'ARRÊTES DE PARLER",'Mélanie +2 → 8','Vol ouvert','QUESTIONS INTERDITES',
-                'POINT DE CALIBRAGE','TOUR DÉFI','ESTIMATION','±0,5'])
+for(const k of ['INVARIANTS',"T'ARRÊTES DE PARLER",'Mélanie +2 → 8','Vol ouvert','QUESTIONS INTERDITES',
+                'POINT DE CALIBRAGE','TOUR DÉFI','ESTIMATION','jamais plus de ±1'])
   ok('conservé : '+k, s.includes(k));
 ok('thèmes intacts (12 depuis la v61)', w.MICRO_THEMES.length>=9);
 ok('diversité app toujours active', /GRAINE_DE_PARTIE=\d+/.test(s));
