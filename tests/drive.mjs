@@ -67,7 +67,7 @@ w2.S.period='all'; w2.render();
 L('\n[7] Suppression d\'une manche : confirmation obligatoire');
 const rid = w2.cur().rounds[0].id;
 w2.S.confirm=rid; w2.render();
-check('demande de confirmation affichée', dom2.window.document.body.textContent.includes('Supprimer cette manche ?'));
+check('suppression par balayage + annulation (v61)', dom2.window.document.body.innerHTML.includes('delRound') && dom2.window.document.body.innerHTML.includes('class="swipe"'));
 w2.delRound(rid);
 check('manche supprimée après confirmation', w2.cur().rounds.length===2);
 
