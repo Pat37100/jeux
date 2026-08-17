@@ -9,19 +9,19 @@ const w=dom.window;
 
 L('[1] Le prompt intégral est bien le tien');
 const b=w.briefText();
-for(const k of ['ne demande jamais qui joue','PRIORITÉS','RÉPONSE OFFICIELLE','Triton','Tour Défi','QUESTION AVEC VOL','QUITTE OU DOUBLE','mort subite','PRINCIPE DIRECTEUR','DÉMARRAGE'])
+for(const k of ['ne demande jamais qui joue','INVARIANTS','RÉPONSE OFFICIELLE','Triton','Tour Défi','QUESTION AVEC VOL','QUITTE OU DOUBLE','mort subite','PRINCIPE DIRECTEUR','DÉMARRAGE'])
   ok('contient « '+k+' »', b.includes(k));
 ok('contient le coup d\'envoi + l\'équipe', b.includes('On fait un quiz') && b.includes('Ne demande pas qui joue'));
 
 L('[2] Le journal s\'ajoute au prompt sans l\'écraser');
 w.D.journal=[{id:'a',text:'astronomie — satellite Triton',fp:'x',date:'2026-01-01'}];
 const b2=w.briefText();
-ok('prompt complet TOUJOURS présent avec journal', b2.includes('PRIORITÉS') && b2.includes('FAITS DÉJÀ CONSOMMÉS') && b2.includes('satellite Triton'));
+ok('prompt complet TOUJOURS présent avec journal', b2.includes('INVARIANTS') && b2.includes('FAITS DÉJÀ CONSOMMÉS') && b2.includes('satellite Triton'));
 
 L('[3] L\'écran ne DÉVOILE pas le prompt');
 w.go('quizz'); w.S.qtab='play'; w.render();
 const screen=w.document.getElementById('app').innerHTML;
-ok('l\'écran n\'affiche PAS le texte du prompt', !screen.includes('PRIORITÉS') && !screen.includes('PRINCIPE DIRECTEUR'));
+ok('l\'écran n\'affiche PAS le texte du prompt', !screen.includes('INVARIANTS') && !screen.includes('PRINCIPE DIRECTEUR'));
 ok('l\'écran propose le lancement en un geste + copie seule', screen.includes('Générer et lancer') && screen.includes('Copier'));
 
 L(F===0?'\nTOUT PASSE':'\n*** '+F+' ECHEC(S) ***');
