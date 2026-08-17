@@ -383,7 +383,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='69';
+var APP_VERSION='70';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -1486,6 +1486,26 @@ function renderQuizz(hd,app,banner){
        le travail de l'utilisateur, et la diversité est déjà assurée par la
        graine et le plan de formats générés par l'app. */
     h+='<button class="btn micro" style="margin-top:12px" onclick="S.microSheet=true;render()">🏆 Enregistrer le résultat de la partie</button>';
+    /* Même motif que « Derniers duels » du Tic-Tac : l'historique de la
+       rubrique était écrit mais devenu inatteignable depuis la v46. */
+    if(D.micro.length){
+      h+='<button class="sm" style="width:100%;margin-top:10px;background:var(--card)" onclick="S.qHist=!S.qHist;render()">'+
+         (S.qHist?'▾':'›')+' Dernières parties ('+D.micro.length+')</button>';
+      if(S.qHist){
+        h+='<div class="card" style="margin-top:8px">'+D.micro.slice(0,8).map(function(g){
+          var win=g.players&&g.players[0];
+          var row='<div style="display:flex;align-items:center;gap:8px;padding:7px 4px;background:var(--card)">'+
+            '<span class="mini" style="width:64px;flex-shrink:0">'+fr(g.date)+'</span>'+
+            '<b style="flex:1;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(win?'👑 '+esc(win.name):'—')+'</b>'+
+            (win&&win.score!==null&&win.score!==undefined?'<span class="mini" style="flex-shrink:0">'+nf(win.score)+' pts</span>':'')+
+            '</div>';
+          return '<div style="border-bottom:1px solid var(--line)">'+swipeRow(row, delAct("microDel('"+g.id+"')"))+'</div>';
+        }).join('')+'</div>';
+        h+='<button class="sm" style="width:100%;margin-top:8px;background:var(--card)" onclick="S.qPal=!S.qPal;render()">'+
+           (S.qPal?'▾':'›')+' Palmarès du Micro</button>';
+        if(S.qPal) h+=microPalmares();
+      }
+    }
   }else if(S.qtab==='j'){
     h+='<div class="card"><h2>Ajouter les questions d\'une partie</h2>'+
       '<p class="mini" style="margin-bottom:8px">Colle la liste donnée en fin de partie (une par ligne). Les doublons sont détectés automatiquement.</p>'+
@@ -1972,7 +1992,13 @@ function microSave(){
   reviewMoment(); persist(); S.microSheet=false; toast('Résultat enregistré 🏆'); render();
   try{ microOfferCoupe(); }catch(e){}
 }
-function microDel(id){ D.micro=D.micro.filter(function(g){return g.id!==id;}); persist(); render(); }
+function microDel(id){
+  var idx=D.micro.findIndex(function(g){return g.id===id;});
+  if(idx<0) return;
+  var backup=JSON.parse(JSON.stringify(D.micro[idx]));
+  D.micro.splice(idx,1); persist(); render();
+  offerUndo('Partie supprimée', function(){ D.micro.splice(Math.min(idx,D.micro.length),0,backup); persist(); render(); });
+}
 function microAgg(){
   var agg={};
   D.micro.forEach(function(g){
