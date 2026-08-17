@@ -383,7 +383,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='72';
+var APP_VERSION='73';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -2967,6 +2967,36 @@ function fanfare(){ if(!sndOn()) return;
     hit(PENTA[7],{delay:.42,dur:1.2,vol:.22,fm:.5,fmRatio:4.02,cut:9000,rev:.6});
   }catch(e){}
 }
+/* Banque de questions du Tic-Tac. Embarquée aujourd'hui : hors-ligne, sans
+   compte, sans clé API (impossible à protéger sur un site statique). La forme
+   {q,a,t,n} est exactement celle qu'une API renverra : le jour venu, seule la
+   source change, le reste du jeu est inchangé. */
+var QBANK=[{"q": "Quel élément fait lever une pâte à pain ?", "a": "La levure", "t": "Sciences", "n": 1}, {"q": "Combien de côtés a un hexagone ?", "a": "Six", "t": "Logique", "n": 1}, {"q": "Quelle planète est la plus proche du Soleil ?", "a": "Mercure", "t": "Sciences", "n": 1}, {"q": "Dans quel pays se trouve la ville de Marrakech ?", "a": "Le Maroc", "t": "Géographie", "n": 1}, {"q": "Quel animal est le plus grand mammifère marin ?", "a": "La baleine bleue", "t": "Nature", "n": 1}, {"q": "De quelle couleur est le drapeau du Japon en son centre ?", "a": "Rouge", "t": "Géographie", "n": 1}, {"q": "Combien de joueurs compte une équipe de football sur le terrain ?", "a": "Onze", "t": "Sport", "n": 1}, {"q": "Quel instrument a des touches noires et blanches ?", "a": "Le piano", "t": "Musique", "n": 1}, {"q": "Quel métal est liquide à température ambiante ?", "a": "Le mercure", "t": "Sciences", "n": 2}, {"q": "Quelle mer sépare l'Italie de la Croatie ?", "a": "L'Adriatique", "t": "Géographie", "n": 2}, {"q": "Quel est l'os le plus long du corps humain ?", "a": "Le fémur", "t": "Sciences", "n": 2}, {"q": "Quel fruit est à la base du guacamole ?", "a": "L'avocat", "t": "Gastronomie", "n": 1}, {"q": "Combien de cordes a un violon ?", "a": "Quatre", "t": "Musique", "n": 2}, {"q": "Quel gaz les plantes absorbent-elles pour la photosynthèse ?", "a": "Le dioxyde de carbone", "t": "Sciences", "n": 2}, {"q": "Dans quelle ville se trouve le Colisée ?", "a": "Rome", "t": "Géographie", "n": 1}, {"q": "Quel est le plus petit pays du monde ?", "a": "Le Vatican", "t": "Géographie", "n": 2}, {"q": "Quel animal peut dormir debout ?", "a": "Le cheval", "t": "Nature", "n": 1}, {"q": "Quelle épice est la plus chère au monde au poids ?", "a": "Le safran", "t": "Gastronomie", "n": 2}, {"q": "Combien de temps dure un match de basket NBA, en minutes ?", "a": "Quarante-huit", "t": "Sport", "n": 3}, {"q": "Quel scientifique a formulé la théorie de la relativité ?", "a": "Einstein", "t": "Sciences", "n": 1}, {"q": "Quel océan borde la côte ouest des États-Unis ?", "a": "Le Pacifique", "t": "Géographie", "n": 1}, {"q": "Combien de dents a un adulte, sagesse comprise ?", "a": "Trente-deux", "t": "Sciences", "n": 2}, {"q": "Quelle est la capitale de la Norvège ?", "a": "Oslo", "t": "Géographie", "n": 2}, {"q": "Quel oiseau ne peut pas voler mais nage très bien ?", "a": "Le manchot", "t": "Nature", "n": 1}, {"q": "De quel pays vient le fromage feta ?", "a": "La Grèce", "t": "Gastronomie", "n": 2}, {"q": "Quel est le symbole chimique du fer ?", "a": "Fe", "t": "Sciences", "n": 2}, {"q": "Quel sport se pratique à Roland-Garros ?", "a": "Le tennis", "t": "Sport", "n": 1}, {"q": "Quelle est la monnaie du Royaume-Uni ?", "a": "La livre sterling", "t": "Géographie", "n": 1}, {"q": "Combien de continents compte la Terre ?", "a": "Cinq ou sept selon la convention", "t": "Géographie", "n": 2}, {"q": "Quel arbre produit les glands ?", "a": "Le chêne", "t": "Nature", "n": 1}, {"q": "Quel liquide compose environ 60 % du corps humain ?", "a": "L'eau", "t": "Sciences", "n": 1}, {"q": "Quelle ville accueille le siège de l'Union européenne ?", "a": "Bruxelles", "t": "Géographie", "n": 2}, {"q": "Quel légume est à la base du bortsch ?", "a": "La betterave", "t": "Gastronomie", "n": 2}, {"q": "Combien de pattes a une araignée ?", "a": "Huit", "t": "Nature", "n": 1}, {"q": "Quel est le point culminant des Alpes ?", "a": "Le Mont Blanc", "t": "Géographie", "n": 1}, {"q": "Quel appareil mesure la pression atmosphérique ?", "a": "Le baromètre", "t": "Sciences", "n": 2}, {"q": "Dans quel sport marque-t-on un « strike » ?", "a": "Le bowling", "t": "Sport", "n": 2}, {"q": "Quelle note vient après le do ?", "a": "Le ré", "t": "Musique", "n": 1}, {"q": "Quel animal change de couleur pour se camoufler ?", "a": "Le caméléon", "t": "Nature", "n": 1}, {"q": "Quel pays a inventé le papier ?", "a": "La Chine", "t": "Géographie", "n": 2}, {"q": "Combien de minutes dure une mi-temps de football ?", "a": "Quarante-cinq", "t": "Sport", "n": 1}, {"q": "Quel est le plus grand désert chaud du monde ?", "a": "Le Sahara", "t": "Géographie", "n": 1}, {"q": "Quel organe produit l'insuline ?", "a": "Le pancréas", "t": "Sciences", "n": 3}, {"q": "Quelle pâte est utilisée pour les croissants ?", "a": "La pâte feuilletée", "t": "Gastronomie", "n": 2}, {"q": "Combien de touches a un piano standard ?", "a": "Quatre-vingt-huit", "t": "Musique", "n": 3}, {"q": "Quel est le plus rapide animal terrestre ?", "a": "Le guépard", "t": "Nature", "n": 1}, {"q": "Quelle mer est la plus salée du monde ?", "a": "La mer Morte", "t": "Géographie", "n": 2}, {"q": "Quel élément a pour symbole O ?", "a": "L'oxygène", "t": "Sciences", "n": 1}, {"q": "Dans quel pays est né le tango ?", "a": "L'Argentine", "t": "Musique", "n": 2}, {"q": "Quel fruit sèche pour devenir un pruneau ?", "a": "La prune", "t": "Gastronomie", "n": 1}, {"q": "Combien de joueurs par équipe au volley-ball ?", "a": "Six", "t": "Sport", "n": 2}, {"q": "Quel est le plus long fleuve d'Europe ?", "a": "La Volga", "t": "Géographie", "n": 3}, {"q": "Quelle vitamine le soleil aide-t-il à produire ?", "a": "La vitamine D", "t": "Sciences", "n": 2}, {"q": "Quel animal marin a huit bras ?", "a": "La pieuvre", "t": "Nature", "n": 1}, {"q": "Quelle céréale sert à faire le risotto ?", "a": "Le riz", "t": "Gastronomie", "n": 1}, {"q": "Quel pays a le plus d'habitants au monde ?", "a": "L'Inde", "t": "Géographie", "n": 2}, {"q": "Combien font sept fois huit ?", "a": "Cinquante-six", "t": "Logique", "n": 1}, {"q": "Si trois poules pondent trois œufs en trois jours, combien un œuf demande-t-il de jours à une poule ?", "a": "Trois", "t": "Logique", "n": 3}, {"q": "Quel mot désigne un animal qui mange de tout ?", "a": "Omnivore", "t": "Nature", "n": 2}, {"q": "Quelle est la forme d'un ballon de rugby ?", "a": "Ovale", "t": "Sport", "n": 1}];
+function qbankAll(){ return QBANK.concat(D.qbank||[]); }
+function qbankThemes(){
+  var s={}; qbankAll().forEach(function(x){ s[x.t]=(s[x.t]||0)+1; });
+  var out=[]; for(var k in s) out.push({t:k,n:s[k]});
+  out.sort(function(a,b){return b.n-a.n;});
+  return out;
+}
+function qbankPick(){
+  var s=chSettings();
+  var used=(CH&&CH.qUsed)||[];
+  var ok=function(x){ return !s.qTheme || s.qTheme==='*' || x.t===s.qTheme; };
+  var pool=qbankAll().filter(function(x){ return ok(x) && used.indexOf(x.q)<0; });
+  if(!pool.length){ if(CH) CH.qUsed=[]; pool=qbankAll().filter(ok); }
+  if(!pool.length) return null;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+function qbankNext(){
+  if(!CH) return;
+  var q=qbankPick();
+  CH.q=q; CH.qShow=false;
+  if(q) CH.qUsed=(CH.qUsed||[]).concat([q.q]);
+  chPersist(); render();
+}
+function qbankReveal(){ if(CH){ CH.qShow=true; chPersist(); render(); } }
+function chSetQTheme(t){ chSettings().qTheme=t; persist(); if(CH) qbankNext(); else render(); }
 function chSettings(){
   if(!D.chrono) D.chrono={secs:60, players:['Joueur 1','Joueur 2','Joueur 3'], sound:true};
   return D.chrono;
@@ -3094,7 +3124,16 @@ function chConfig(){
       return '<button class="chip'+(pr===o[0]?' on':'')+'" style="text-align:left;padding:10px 12px;white-space:normal" onclick="chSetPass(\''+o[0]+'\')">'+
         '<b>'+o[1]+'</b><br><span style="font-weight:400;font-size:11.5px;opacity:.85">'+o[2]+'</span></button>';
     }).join('')+'</div></div>';
-  h+='<div class="card"><h2><span class="stepn">4</span>Son du décompte</h2>'+
+  h+='<div class="card"><h2><span class="stepn">4</span>Questions <span style="font-weight:400;font-size:12px;color:#a8a29e">(facultatif)</span></h2>'+
+     '<p class="mini" style="margin:0 0 8px">Posez vos propres questions, ou laissez l\'app vous en proposer.</p>'+
+     '<div class="chips">'+
+       '<button class="chip'+(!s.qTheme?' on':'')+'" onclick="chSetQTheme(null)">✋ Les nôtres</button>'+
+       '<button class="chip'+(s.qTheme==='*'?' on':'')+'" onclick="chSetQTheme(\'*\')">🎲 Tous thèmes</button>'+
+       qbankThemes().map(function(x){
+         return '<button class="chip'+(s.qTheme===x.t?' on':'')+'" onclick="chSetQTheme(\''+x.t+'\')">'+esc(x.t)+' '+x.n+'</button>';
+       }).join('')+
+     '</div></div>';
+  h+='<div class="card"><h2><span class="stepn">5</span>Son du décompte</h2>'+
      '<div class="row" style="gap:8px">'+
      '<button class="chip'+(s.sound?' on':'')+'" style="flex:1;text-align:center" onclick="chSound(true)">🔔 Activé</button>'+
      '<button class="chip'+(!s.sound?' on':'')+'" style="flex:1;text-align:center" onclick="chSound(false)">🔕 Silencieux</button></div></div>';
@@ -3223,6 +3262,7 @@ function chAdvance(auto){
 }
 /* Boutons animateur */
 function chGood(){
+  if(chSettings().qTheme && CH && !CH.winner) setTimeout(function(){ if(CH&&!CH.winner) qbankNext(); },0);
   if(CH.winner) return;
   CH.players[CH.active].good++; chPersist();
   hit(PENTA[3],{dur:.16,vol:.34,fm:.5,fmRatio:3.01,cut:6000,rev:.28});
@@ -3249,6 +3289,7 @@ function chKeepWrong(){
   chRun();
 }
 function chSkip(){
+  if(chSettings().qTheme && CH && !CH.winner) setTimeout(function(){ if(CH&&!CH.winner) qbankNext(); },0);
   if(!CH||CH.winner) return;
   chStopTick(); CH.running=false;
   perc({dur:.08,f1:500,f2:300,vol:.14,filter:'lowpass'});
@@ -3256,6 +3297,7 @@ function chSkip(){
   if(!CH.winner){ setTimeout(function(){ swoosh(); },140); chRun(); } else render();
 }
 function chWrong(){
+  if(chSettings().qTheme && CH && !CH.winner) setTimeout(function(){ if(CH&&!CH.winner) qbankNext(); },0);
   chStopTick(); CH.running=false;
   sub(140,.2,.45);
   hit(196,{dur:.26,vol:.3,bend:.62,wave:'triangle',cut:1200,rev:.25});
@@ -3285,6 +3327,20 @@ function chReset(){ chStopTick(); CH=null; render(); }
 function fmtT(sec){ sec=Math.max(0,Math.ceil(sec)); var m=Math.floor(sec/60), s=sec%60; return m+':'+(s<10?'0':'')+s; }
 function chGame(){
   var p=CH.players[CH.active];
+  var qBlock='';
+  if(chSettings().qTheme && CH.winner===null){
+    if(!CH.q){ var q0=qbankPick(); if(q0){ CH.q=q0; CH.qUsed=(CH.qUsed||[]).concat([q0.q]); } }
+    if(CH.q){
+      qBlock='<div class="card" style="border-color:var(--am);background:var(--am-l)">'+
+        '<p class="mini" style="margin:0 0 6px;color:#92400e">'+esc(CH.q.t)+' · niveau '+CH.q.n+'</p>'+
+        '<p style="margin:0;font-size:16px;font-weight:700;line-height:1.35">'+esc(CH.q.q)+'</p>'+
+        (CH.qShow
+          ? '<p style="margin:9px 0 0;font-size:15px;font-weight:800;color:#059669">→ '+esc(CH.q.a)+'</p>'
+          : '<button class="sm" style="width:100%;margin-top:9px;background:var(--card)" onclick="qbankReveal()">👁 Voir la réponse</button>')+
+        '<button class="sm" style="width:100%;margin-top:6px;background:var(--card)" onclick="qbankNext()">🔄 Autre question</button>'+
+      '</div>';
+    }
+  }
   var col = p.left<=5 ? '#e11d48' : p.left<=20 ? '#f59e0b' : '#059669';
   if(CH.winner!==null || chAlive().length<=1){
     var w = CH.winner!==null ? CH.winner : (chAlive()[0]&&chAlive()[0].name);
@@ -3320,7 +3376,7 @@ function chGame(){
   var nCol = CH.players.length<=4 ? 'n'+CH.players.length : 'nx';
   var maxGood = Math.max.apply(null, CH.players.map(function(x){return x.good;}));
 
-  var h='<div class="card" style="padding:9px 12px;margin-bottom:10px;background:var(--am-l);border-color:var(--am);text-align:center">'+
+  var h=qBlock+'<div class="card" style="padding:9px 12px;margin-bottom:10px;background:var(--am-l);border-color:var(--am);text-align:center">'+
     '<p style="margin:0;font-size:13px;color:#92400e"><b>\uD83D\uDC65 '+alive+' en course</b> \u00B7 \u00E0 z\u00E9ro seconde on est \u00E9limin\u00E9 \u00B7 <b>le dernier debout gagne</b> \uD83C\uDFC6</p></div>';
 
   // Qui a la main : gros titre lisible de loin
