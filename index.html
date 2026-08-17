@@ -383,7 +383,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='73';
+var APP_VERSION='74';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -1320,6 +1320,27 @@ function offerUndo(label,restore){
 /* iOS gèle les minuteurs en arrière-plan : la barre pouvait rester des
    minutes. On mémorise une échéance, vérifiée à chaque rendu et au retour
    au premier plan. */
+/* Mise à jour forcée : un simple location.reload() ne vidait ni les caches
+   ni le service worker, si bien qu'une nouvelle version pouvait rester
+   invisible. On efface tout et on recharge en contournant le cache HTTP. */
+function forceUpdate(){
+  toast('Mise à jour…');
+  var done=function(){
+    try{ location.replace(location.pathname+'?maj='+Date.now()); }
+    catch(e){ location.reload(); }
+  };
+  var jobs=[];
+  try{ if(window.caches && caches.keys) jobs.push(caches.keys().then(function(ks){
+    return Promise.all(ks.map(function(k){ return caches.delete(k); }));
+  })); }catch(e){}
+  try{ if(navigator.serviceWorker && navigator.serviceWorker.getRegistrations) jobs.push(
+    navigator.serviceWorker.getRegistrations().then(function(rs){
+      return Promise.all(rs.map(function(r){ return r.unregister(); }));
+    })); }catch(e){}
+  if(!jobs.length){ done(); return; }
+  Promise.all(jobs).then(done).catch(done);
+  setTimeout(done, 2500);
+}
 function sweepUndo(){
   if(UNDO && UNDO.until && Date.now()<UNDO.until) return;
   var b=document.getElementById('undobar'); if(b)b.remove();
@@ -2362,7 +2383,7 @@ function renderSave(hd,app,banner){
      '<p class="mini" style="margin-top:8px">Touche <b>Avatar</b> pour mettre une <b>photo</b> 📷 ou un personnage. Un participant peut être une personne <b>ou une équipe</b> (ex. « Les Bleus »). Le retirer ici ne touche pas aux parties déjà jouées.</p></div>';
   h+='<div class="card"><h2>Options</h2>'+
      '<button class="sm" style="width:100%;margin-bottom:10px" onclick="obReplay()">🎬 Revoir la présentation de bienvenue</button>'+
-     '<button class="sm" style="width:100%;margin-bottom:10px" onclick="location.reload()">🔄 Recharger l\'app (récupérer la dernière version)</button>'+
+     '<button class="sm" style="width:100%;margin-bottom:10px" onclick="forceUpdate()">🔄 Forcer la mise à jour</button>'+
      '<div class="row">'+
      '<button class="chip'+(D.voice?' on':'')+'" style="flex:1;text-align:center" onclick="setVoice(true)">🔊 Annonce vocale</button>'+
      '<button class="chip'+(!D.voice?' on':'')+'" style="flex:1;text-align:center" onclick="setVoice(false)">🔇 Silencieux</button></div>'+
