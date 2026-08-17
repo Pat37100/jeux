@@ -383,7 +383,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='75';
+var APP_VERSION='76';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -783,21 +783,27 @@ function chResults(){
     if(d.winner&&fp(d.winner)===k) agg[k].wins++;
   }); });
   var list=[]; for(var k in agg) list.push(agg[k]);
+  if(!list.length) return resEmpty('⏱️','Aucun joueur','Les prochaines parties rempliront ce classement.','');
   list.sort(function(a,b){return b.wins-a.wins || b.good-a.good;});
-  var best=Math.max(1,list[0].wins);
-  var h=resHero('Roi du Tic-Tac', list[0].name, pl(list[0].wins,'victoire')+' sur '+pl(list[0].games,'partie'), ['🎉','⏱️','⭐️','✨']);
-  h+='<div class="card"><h2>🏆 Classement</h2>'+podiumBoard(list.map(function(p){
+  var topW=list[0].wins;
+  var byGood=list.slice().sort(function(a,b){return b.good-a.good;});
+  var winners=list.filter(function(p){return p.wins===topW && topW>0;}).map(function(p){return p.name;});
+  var bestG=byGood.filter(function(p){return p.good===byGood[0].good && p.good>0;}).map(function(p){return p.name;});
+  var g0=byGood[0].good;
+  var h=statPair('🏆 Le plus de victoires', nmList(winners), topW?topW+' victoire'+(topW>1?'s':''):'—',
+                 '✓ Le plus de bonnes réponses', nmList(bestG), g0?g0+' bonne'+(g0>1?'s':'')+' réponse'+(g0>1?'s':''):'—');
+  h+='<div class="card"><h2>🏅 Classement</h2>'+rankRows(list.map(function(p){
       var t=p.good+p.bad;
-      return {name:p.name, ratio:p.wins/best,
-        sub:pl(p.games,'partie')+(t?' · ✓'+p.good+' ✗'+p.bad+' · '+Math.round(p.good/t*100)+'%':''),
-        main:'<b>'+p.wins+'</b> <span style="color:#a8a29e;font-size:11.5px">victoire'+(p.wins>1?'s':'')+'</span>'};
+      return {name:p.name, top:(p.wins===topW&&topW>0), badge:(p.wins===topW&&topW>0?' 👑':''),
+        sub:pl(p.games,'partie')+' · ✓'+p.good+' ✗'+p.bad+(t?' · '+Math.round(p.good/t*100)+'% de réussite':''),
+        val:p.wins, unit:'victoire'+(p.wins>1?'s':'')};
     }))+'</div>';
   h+='<div class="card"><h2>Historique</h2>'+D.tictac.slice(0,20).map(function(d){
-      var w0=(d.players||[])[0];
-      var row='<div style="display:flex;align-items:center;gap:8px;padding:7px 4px;background:var(--card)">'+
-        '<span class="mini" style="width:64px;flex-shrink:0">'+fr(d.date)+'</span>'+
-        '<b style="flex:1;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(d.winner?'👑 '+esc(d.winner):'—')+'</b>'+
-        (w0?'<span class="mini" style="flex-shrink:0">✓'+(w0.good||0)+' ✗'+(w0.bad||0)+'</span>':'')+'</div>';
+      var row='<div class="hist" style="margin:0;border:0;border-radius:0"><div class="top"><span class="dt">'+fr(d.date)+'</span>'+
+        (d.winner?'<span class="w">👑 '+esc(d.winner)+'</span>':'')+'</div>'+
+        '<div class="sc">'+(d.players||[]).map(function(p){
+          return '<span>'+esc(p.name)+' <b>✓'+(p.good||0)+'</b> ✗'+(p.bad||0)+'</span>';
+        }).join('')+'</div></div>';
       return '<div style="border-bottom:1px solid var(--line)">'+swipeRow(row, delAct("chDelDuel('"+d.id+"')"))+'</div>';
     }).join('')+'</div>';
   return h;
@@ -806,19 +812,26 @@ function microResults(){
   if(!D.micro.length) return resEmpty('🎙️','Aucune partie',
     'Lance un quiz : les vainqueurs apparaîtront ici.',
     '<button class="btn micro" style="max-width:260px;margin:0 auto" onclick="setRtab(\'play\')">Lancer un quiz</button>');
-  var agg=microAgg(), best=Math.max(1,agg[0].wins);
-  var h=resHero('Maître du Micro', agg[0].name, pl(agg[0].wins,'victoire')+' sur '+pl(agg[0].games,'partie'), ['🎉','🎙️','⭐️','✨']);
-  h+='<div class="card"><h2>🏆 Classement</h2>'+podiumBoard(agg.map(function(p){
-      return {name:p.name, ratio:p.wins/best,
+  var agg=microAgg();
+  if(!agg.length) return resEmpty('🎙️','Aucun joueur','Les prochaines parties rempliront ce classement.','');
+  var topW=agg[0].wins;
+  var winners=agg.filter(function(p){return p.wins===topW && topW>0;}).map(function(p){return p.name;});
+  var wb=agg.filter(function(p){return p.best!==null;}).sort(function(a,b){return b.best-a.best;});
+  var recs=wb.length? wb.filter(function(p){return p.best===wb[0].best;}).map(function(p){return p.name;}) : [];
+  var h=statPair('🏆 Le plus de victoires', nmList(winners), topW?topW+' victoire'+(topW>1?'s':''):'—',
+                 '⭐️ Meilleur score', nmList(recs), wb.length?nf(wb[0].best)+' pts':'—');
+  h+='<div class="card"><h2>🏅 Classement</h2>'+rankRows(agg.map(function(p){
+      return {name:p.name, top:(p.wins===topW&&topW>0), badge:(p.wins===topW&&topW>0?' 👑':''),
         sub:pl(p.games,'partie')+(p.best!==null?' · record '+nf(p.best)+' pts':''),
-        main:'<b>'+p.wins+'</b> <span style="color:#a8a29e;font-size:11.5px">victoire'+(p.wins>1?'s':'')+'</span>'};
+        val:p.wins, unit:'victoire'+(p.wins>1?'s':'')};
     }))+'</div>';
   h+='<div class="card"><h2>Historique</h2>'+D.micro.slice(0,20).map(function(g){
       var win=(g.players||[])[0];
-      var row='<div style="display:flex;align-items:center;gap:8px;padding:7px 4px;background:var(--card)">'+
-        '<span class="mini" style="width:64px;flex-shrink:0">'+fr(g.date)+'</span>'+
-        '<b style="flex:1;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(win?'👑 '+esc(win.name):'—')+'</b>'+
-        (win&&win.score!==null&&win.score!==undefined?'<span class="mini" style="flex-shrink:0">'+nf(win.score)+' pts</span>':'')+'</div>';
+      var row='<div class="hist" style="margin:0;border:0;border-radius:0"><div class="top"><span class="dt">'+fr(g.date)+'</span>'+
+        (win?'<span class="w">👑 '+esc(win.name)+'</span>':'')+'</div>'+
+        '<div class="sc">'+(g.players||[]).map(function(p){
+          return '<span>'+esc(p.name)+(p.score!==null&&p.score!==undefined?' <b>'+nf(p.score)+'</b>':'')+'</span>';
+        }).join('')+'</div></div>';
       return '<div style="border-bottom:1px solid var(--line)">'+swipeRow(row, delAct("microDel('"+g.id+"')"))+'</div>';
     }).join('')+'</div>';
   return h;
@@ -834,17 +847,26 @@ function coupeResults(){
     var lead=leaders(r.byCumul,'points',m.winRule);
     m.players.forEach(function(p){
       var k=fp(p.name); if(!k) return;
-      if(!agg[k]) agg[k]={name:p.name,wins:0,games:0};
-      agg[k].games++; if(lead.indexOf(p.id)>=0) agg[k].wins++;
+      if(!agg[k]) agg[k]={name:p.name,wins:0,games:0,manches:0};
+      agg[k].games++;
+      var st=r.byCumul.filter(function(x){return x.id===p.id;})[0];
+      if(st) agg[k].manches+=st.wins;
+      if(lead.indexOf(p.id)>=0) agg[k].wins++;
     });
   });
   var list=[]; for(var k in agg) list.push(agg[k]);
-  list.sort(function(a,b){return b.wins-a.wins || b.games-a.games;});
-  var best=Math.max(1,list[0].wins);
-  var h=resHero('Champion de La Coupe', list[0].name, pl(list[0].wins,'victoire')+' sur '+pl(list[0].games,'partie'), ['🎉','🏆','⭐️','✨']);
-  h+='<div class="card"><h2>🏆 Classement</h2>'+podiumBoard(list.map(function(p){
-      return {name:p.name, ratio:p.wins/best, sub:pl(p.games,'partie'),
-        main:'<b>'+p.wins+'</b> <span style="color:#a8a29e;font-size:11.5px">victoire'+(p.wins>1?'s':'')+'</span>'};
+  if(!list.length) return resEmpty('🏆','Aucun résultat','Saisis une manche pour voir les classements.','');
+  list.sort(function(a,b){return b.wins-a.wins || b.manches-a.manches;});
+  var topW=list[0].wins;
+  var byM=list.slice().sort(function(a,b){return b.manches-a.manches;});
+  var winners=list.filter(function(p){return p.wins===topW && topW>0;}).map(function(p){return p.name;});
+  var bestM=byM.filter(function(p){return p.manches===byM[0].manches && p.manches>0;}).map(function(p){return p.name;});
+  var h=statPair('🏆 Le plus de parties gagnées', nmList(winners), topW?topW+' partie'+(topW>1?'s':''):'—',
+                 '🥇 Le plus de manches gagnées', nmList(bestM), byM[0].manches?pl(byM[0].manches,'manche'):'—');
+  h+='<div class="card"><h2>🏅 Classement</h2>'+rankRows(list.map(function(p){
+      return {name:p.name, top:(p.wins===topW&&topW>0), badge:(p.wins===topW&&topW>0?' 👑':''),
+        sub:pl(p.games,'partie')+' · '+p.manches+' manche'+(p.manches>1?'s':'')+' gagnée'+(p.manches>1?'s':''),
+        val:p.wins, unit:'partie'+(p.wins>1?'s':'')};
     }))+'</div>';
   h+=champGameBlocks();
   return h;
@@ -868,6 +890,27 @@ function podiumBoard(rows){
     '</div>';
   }).join('')+'</div>';
 }
+/* Composants partagés, calqués sur La Coupe : les trois rubriques
+   présentent leurs résultats avec exactement les mêmes briques. */
+function statPair(l1,v1,s1,l2,v2,s2){
+  var box=function(cls,l,v,s){
+    var tie=(v||'').length>16;
+    return '<div class="champ '+cls+'"><div class="l">'+l+'</div>'+
+      '<div class="v'+(tie?' tie':'')+'" title="'+esc(v||'')+'">'+esc(v||'—')+'</div>'+
+      '<div class="s">'+(s||'—')+'</div></div>';
+  };
+  return '<div class="grid2">'+box('g',l1,v1,s1)+box('a',l2,v2,s2)+'</div>';
+}
+function rankRows(rows){
+  return rows.map(function(p,i){
+    return '<div class="rank'+(p.top?' lead':'')+(i===0?' first':'')+'"><div class="pos">'+
+      (i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1))+'</div>'+
+      av(p.name,'sm')+'<div class="nm" style="margin-left:8px"><b>'+esc(p.name)+(p.badge||'')+'</b>'+
+      '<small>'+(p.sub||'')+'</small></div>'+
+      '<div class="pts"><b>'+p.val+'</b><small>'+(p.unit||'')+'</small></div></div>';
+  }).join('');
+}
+function nmList(a){ return !a.length?'—' : a.length===1?a[0] : a.length===2?a.join(' & ') : a.length+' ex æquo'; }
 function swipeRow(inner, actions, reveal){
   reveal=reveal||96;
   return '<div class="swipe" data-reveal="'+reveal+'" style="--reveal:'+reveal+'px"><div class="acts">'+
