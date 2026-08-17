@@ -14,9 +14,9 @@ w.D.micro=[{id:'q1',date:'2026-08-16',players:[{name:'Anna',score:15},{name:'Bob
            {id:'q2',date:'2026-08-12',players:[{name:'Bob',score:12}]}];
 w.go('quizz'); w.render();
 ok('historique proposé', A(w).includes('Dernières parties (2)'));
-ok('replié par défaut (écran non alourdi)', !A(w).includes('class="swipe"'));
+ok('replié par défaut (écran non alourdi)', !A(w).includes('class="swipe'));
 w.S.qHist=true; w.render();
-ok('une ligne par partie', (A(w).match(/class="swipe"/g)||[]).length===2);
+ok('une ligne par partie', (A(w).match(/class="swipe(?: flat)?"/g)||[]).length===2);
 ok('vainqueur mis en avant', A(w).includes('👑 Anna'));
 ok('score affiché quand connu', A(w).includes('15'));
 ok('palmarès désormais atteignable', A(w).includes('Palmarès du Micro'));
