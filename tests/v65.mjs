@@ -35,7 +35,7 @@ ok('pas de mention d\'égalité', !app().includes('à égalité'));
 L('[2] Retirer un joueur : par balayage');
 w.S.tab='set'; w.render();
 ok('lignes de joueurs balayables', app().includes('askDropPlayer'));
-ok('dans un bloc swipe', /class="swipe"[\s\S]{0,400}askDropPlayer/.test(app()));
+ok('dans un bloc swipe', /class="swipe(?: flat)?"[\s\S]{0,400}askDropPlayer/.test(app()));
 ok('plus de bouton « Retirer » visible', !/<button class="sm r"[^>]*askDropPlayer/.test(app()));
 const n0=w.cur().players.length;
 w.askDropPlayer(ids[3]); 
@@ -50,11 +50,11 @@ const zones={
   'joueurs d\'une partie':()=>{w.S.tab='set';w.render();return app();},
   'bibliothèque de joueurs':()=>{w.go('save');w.render();return app();},
 };
-for(const [k,fn] of Object.entries(zones)) ok('balayage : '+k, fn().includes('class="swipe"'));
+for(const [k,fn] of Object.entries(zones)) ok('balayage : '+k, fn().includes('class="swipe'));
 const w2=boot();
 w2.D.tictac=[{id:'d1',date:'2026-08-12',winner:'A',players:[{name:'A',good:3,bad:1}]}];
 w2.go('chrono'); w2.S.chHist=true; w2.render();
-ok('balayage : duels Tic-Tac', w2.document.getElementById('app').innerHTML.includes('class="swipe"'));
+ok('balayage : duels Tic-Tac', w2.document.getElementById('app').innerHTML.includes('class="swipe'));
 ok('helper commun swipeRow', typeof w2.swipeRow==='function');
 
 L('[4] Toute suppression est annulable');
@@ -77,7 +77,7 @@ ok('aucune question sur le Mur', !w4.document.getElementById('app').innerHTML.in
 ok('la seule question porte sur La Coupe', w4.document.getElementById('app').innerHTML.includes('Compter aussi dans une partie de La Coupe'));
 const w5=boot();
 w5.D.lib=[{id:'a',name:'A'},{id:'b',name:'B'}]; w5.D.microTeam=['a','b'];
-w5.go('quizz'); w5.microOpen(); w5.document.getElementById('mqr').value='A 10\nB 5'; w5.microSave();
+w5.go('quizz'); w5.S.microSheet=true; w5.S.microDetail=true; w5.render(); w5.document.getElementById('mqr').value='A 10\nB 5'; w5.microSave();
 ok('Micro : enregistré sans décision', w5.D.micro.length===1);
 ok('Micro : question = La Coupe uniquement', w5.document.body.innerHTML.includes('Compter dans La Coupe ?'));
 const w6=boot(); const jd=w6.D.lib.slice(0,2).map(p=>p.id);
