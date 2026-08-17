@@ -50,7 +50,7 @@ ok('une seule fois, jamais répété', t.includes('sans jamais reposer la questi
 
 L('\n══ OPTIONS UI : inchangées ══');
 ok('les 9 ambiances d\'origine sont conservées', ['classique','show','prof','taquin','famille','express','costaud','voiture','apero'].every(id=>w.MICRO_STYLES.some(s=>s.id===id)) && w.MICRO_STYLES.length>=9);
-ok('9 thèmes', w.MICRO_THEMES.length===9);
+ok('thèmes conservés (12 depuis la v61)', w.MICRO_THEMES.length>=9);
 w.toggleMicroCtx('costaud'); ok('Costaud → niveau 7', w.briefText().includes('NIVEAU_INITIAL=7'));
 w.setMicroTeams(true); ok('équipes', w.briefText().includes('MODE=EQUIPES'));
 w.setMicroTeams(false);
