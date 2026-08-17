@@ -383,7 +383,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='74';
+var APP_VERSION='75';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -917,16 +917,18 @@ function drawSheet(){
   var el=document.createElement('div');el.className='sheet';el.id='sh';
   el.innerHTML='<div class="in" onclick="event.stopPropagation()"><div class="grab"></div>'+
     '<h2 style="margin:0 0 12px;font-size:19px">Nouvelle partie</h2>'+
-    '<label class="lb">Jeu</label>'+
+    /* Même ordre que Tic-Tac et Le Micro : les participants d'abord,
+       puis les modalités propres au jeu. */
+    '<label class="lb"><b>1.</b> Participants</label><div id="pk" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px">'+
+      D.lib.map(function(p){return '<button class="chip on" data-id="'+p.id+'" onclick="this.classList.toggle(\'on\')" style="display:inline-flex;align-items:center;gap:6px">'+av(p.name,'xs')+esc(p.name)+'</button>';}).join('')+
+    '</div><input id="mx" placeholder="Ou ajoute des invités, séparés par des virgules" style="margin-bottom:16px">'+
+    '<label class="lb"><b>2.</b> Jeu</label>'+
     '<div class="chips" id="gk" style="margin-bottom:8px">'+gamesForPicker().map(function(g){
       return '<button class="chip" data-g="'+esc(g)+'" onclick="pickGame(this)">'+esc(g)+'</button>';
     }).join('')+'</div>'+
     '<input id="gnew" placeholder="Ou tape un autre jeu (Dixit, Loup-Garou, Skip-Bo…)" style="margin-bottom:10px" oninput="if(this.value.trim()){var b=document.querySelector(\'#gk .chip.on\'); if(b) b.classList.remove(\'on\');}">'+
-    '<label class="lb">Nom</label><input id="mn" value="Partie du '+fr(today())+'">'+
-    '<label class="lb" style="margin-top:14px">Joueurs</label><div id="pk" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px">'+
-      D.lib.map(function(p){return '<button class="chip on" data-id="'+p.id+'" onclick="this.classList.toggle(\'on\')" style="display:inline-flex;align-items:center;gap:6px">'+av(p.name,'xs')+esc(p.name)+'</button>';}).join('')+
-    '</div><label class="lb" style="font-weight:400;color:#78716c">Ou ajoute des invités</label><input id="mx" placeholder="Prénoms séparés par des virgules">'+
-    '<label class="lb" style="margin-top:14px">Règle</label><div class="row" style="margin-bottom:12px">'+
+    '<label class="lb">Nom de la partie</label><input id="mn" value="Partie du '+fr(today())+'">'+
+    '<label class="lb" style="margin-top:14px"><b>3.</b> Règle</label><div class="row" style="margin-bottom:12px">'+
       '<button class="chip on" id="rh" style="flex:1;text-align:center" onclick="pickRule(1)">Le plus de points</button>'+
       '<button class="chip" id="rl" style="flex:1;text-align:center" onclick="pickRule(0)">Le moins de points</button></div>'+
     '<label class="lb">Objectif de points <span style="font-weight:400;color:#78716c">(optionnel — ex. 500 au tarot, 100 au Uno)</span></label>'+
@@ -1541,7 +1543,7 @@ function renderQuizz(hd,app,banner){
   if(S.qtab==='play'){
     var sel=D.microTeam||D.lib.map(function(p){return p.id;});
     var team=microTeam();
-    h+='<div class="card"><h2><span class="stepn">1</span>Qui joue ? ('+team.length+')</h2>'+
+    h+='<div class="card"><h2><span class="stepn">1</span>Participants ('+team.length+')</h2>'+
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'+
       D.lib.map(function(p){ var on=sel.indexOf(p.id)>=0;
         return '<button onclick="microToggleP(\''+p.id+'\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;border:2px solid '+(on?'var(--gr)':'var(--line)')+';background:'+(on?'var(--gr-l)':'var(--card)')+';border-radius:14px;padding:8px 4px;cursor:pointer;opacity:'+(on?'1':'.5')+';min-width:0">'+
@@ -3114,14 +3116,7 @@ function chDelDuel(id){
 function chConfig(){
   var s=chSettings();
   var presets=[30,45,60,90,120];
-  var h='<div class="card"><h2><span class="stepn">1</span>Temps par joueur</h2>'+
-    '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px">'+presets.map(function(p){
-      var lb=p<60?p+'s':(p%60?Math.floor(p/60)+'\u2032'+(p%60):(p/60)+' min');
-      return '<button class="chip'+(s.secs===p?' on':'')+'" style="padding:9px 2px;text-align:center;font-size:13px" onclick="chSetSecs('+p+')">'+lb+'</button>';}).join('')+
-    '</div>'+
-    '<div class="row"><span class="mini" style="flex:1">Personnalisé (secondes)</span>'+
-    '<input type="number" inputmode="numeric" style="width:90px;text-align:center" value="'+s.secs+'" onchange="chSetSecs(parseInt(this.value)||60)"></div></div>';
-  h+='<div class="card"><h2><span class="stepn">2</span>Joueurs ou équipes ('+s.players.length+')</h2>'+
+  var h='<div class="card"><h2><span class="stepn">1</span>Participants ('+s.players.length+')</h2>'+
     '<div class="chrow" style="margin-bottom:4px"><span></span>'+
       '<span style="font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:#a8a29e;font-weight:700">Nom</span>'+
       '<span style="font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:#a8a29e;font-weight:700;text-align:center">Temps</span>'+
@@ -3136,6 +3131,13 @@ function chConfig(){
   if(s.players.length<8) h+='<button class="sm g" style="width:100%;margin-top:4px" onclick="chAddP()">+ Ajouter</button>';
   h+='</div>';
   var pr=s.pass||'wrong';
+  h+='<div class="card"><h2><span class="stepn">2</span>Temps par joueur</h2>'+
+    '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px">'+presets.map(function(p){
+      var lb=p<60?p+'s':(p%60?Math.floor(p/60)+'\u2032'+(p%60):(p/60)+' min');
+      return '<button class="chip'+(s.secs===p?' on':'')+'" style="padding:9px 2px;text-align:center;font-size:13px" onclick="chSetSecs('+p+')">'+lb+'</button>';}).join('')+
+    '</div>'+
+    '<div class="row"><span class="mini" style="flex:1">Personnalisé (secondes)</span>'+
+    '<input type="number" inputmode="numeric" style="width:90px;text-align:center" value="'+s.secs+'" onchange="chSetSecs(parseInt(this.value)||60)"></div></div>';
   h+='<div class="card"><h2><span class="stepn">3</span>Quand passe-t-on la main ?</h2>'+
     '<div style="display:flex;flex-direction:column;gap:8px">'+
     [['wrong','❌ Après une erreur','Garde la main tant qu\'il répond juste'],
@@ -3293,6 +3295,7 @@ function chGood(){
 }
 /* Mode « la bonne réponse passe la main » : le succès fait tourner */
 function chPassGood(){
+  if(chSettings().qTheme && CH && !CH.winner) setTimeout(function(){ if(CH&&!CH.winner) qbankNext(); },0);
   if(CH.winner) return;
   CH.players[CH.active].good++; chPersist();
   hit(PENTA[3],{dur:.16,vol:.34,fm:.5,fmRatio:3.01,cut:6000,rev:.28});
@@ -3303,6 +3306,7 @@ function chPassGood(){
 }
 /* …et l'échec le laisse en difficulté sur son propre temps */
 function chKeepWrong(){
+  if(chSettings().qTheme && CH && !CH.winner) setTimeout(function(){ if(CH&&!CH.winner) qbankNext(); },0);
   try{ var _p=CH.players[CH.active]; if(_p) _p.bad=(_p.bad||0)+1; }catch(e){}
   if(CH.winner) return;
   sub(140,.2,.45);
