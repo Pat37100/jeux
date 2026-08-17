@@ -59,7 +59,7 @@ w.toggleMicroCtx('voiture');
 const t=w.briefText();
 ok('le contexte choisi est bien injecté dans le prompt', t.includes('CONTEXTE ET RYTHME') && t.includes('voiture ou en déplacement'));
 ok('le prompt de base reste intact', t.includes('ANTI-DOUBLON') && t.includes('TOUR DÉFI'));
-w.setMicroStyle('taquin'); w.D.microCustom='années 90'; ok('consigne libre cumulable avec ambiance ET contexte', ['CONSIGNE LIBRE','AMBIANCE SÉLECTIONNÉE','CONTEXTE ET RYTHME'].every(k=>w.briefText().includes(k)));
+w.setMicroStyle('taquin'); w.D.microCustom='années 90'; ok('consigne libre cumulable avec ambiance ET contexte', ['CONSIGNE LIBRE','RAPPEL DE PERSONNAGE','CONTEXTE ET RYTHME'].every(k=>w.briefText().includes(k)));
 w.setMicroStyle('classique');
 ok('style Classique = aucune surcouche', !w.briefText().includes('AMBIANCE SÉLECTIONNÉE'));
 L(F? '\n*** '+F+' ECHEC(S) ***' : '\nTOUT PASSE ('+F+' échec)');
