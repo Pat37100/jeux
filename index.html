@@ -383,7 +383,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='68';
+var APP_VERSION='69';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -460,6 +460,12 @@ function leaders(sorted,key,rule){
 /* ============================== ÉTAT UI =========================== */
 var S={dateOpen:false,view:'home',matchId:null,tab:'rank',qtab:'play',period:'all',from:'',to:'',inputs:{},date:today(),sheet:false,confirm:null,detail:null,avPick:null,tipOff:0,microSheet:false,chTab:'play',whoSheet:false};
 function go(v){
+  /* Toute feuille modale est retirée au changement de vue : elle ne doit
+     jamais survivre à la navigation. */
+  if(S.view!==v){
+    ['msh','mcsh','tcsh','dmsh'].forEach(function(id){ var e=document.getElementById(id); if(e) e.remove(); });
+    S.microSheet=false; S.microDetail=false;
+  }
   if(S.view==='chrono' && v!=='chrono' && CH && CH.winner){ CH=null; try{chPersist();}catch(e){} }S.view=v;S.tab='rank';S.qtab='play';S.histAll=false;S.ceremony=false;S.histMode=Object.prototype.hasOwnProperty.call(S,'histGrid')?(S.histGrid===false?'list':'grid'):(S.histMode||'rank');window.scrollTo(0,0);render();}
 function cur(){return D.matches.filter(function(m){return m.id===S.matchId;})[0];}
 function setVoice(b){
@@ -1499,6 +1505,9 @@ function renderQuizz(hd,app,banner){
   }
   app.innerHTML=h;
   document.getElementById('nav').innerHTML='';
+  /* La feuille s'empilait à chaque rendu et n'était jamais retirée :
+     « Annuler » laissait l'écran bloqué. On la resynchronise à chaque fois. */
+  var old=document.getElementById('msh'); if(old) old.remove();
   if(S.microSheet) microDrawSheet();
 }
 var AI_APPS=[
@@ -1720,16 +1729,46 @@ function microCtxStyles(){
 }
 /* Un prénom donne corps à l'animateur : les joueurs peuvent l'interpeller,
    il se présente, il devient un membre du groupe. */
-var HOST_NAMES=['Roger','Sacha','Vincent','Nadia','Clara','Bruno','Manu','Léo','Josy','Karim','Sylvie','Hugo'];
+/* Un prénom par personnalité, court, facile à prononcer et cohérent avec
+   le rôle. Choisi par l'app : aucune saisie demandée à l'utilisateur. */
+var HOST_NAMES_BY_STYLE={
+  classique:  ['Alain','Claire','Michel'],
+  show:       ['Sacha','Ruby','Max'],
+  prof:       ['Hélène','Bruno','Sylvie'],
+  taquin:     ['Nino','Zoé','Manu'],
+  famille:    ['Lucie','Marc','Anna'],
+  apero:      ['Jo','Vince','Nadia'],
+  sportif:    ['Thierry','Nadia','Didier'],
+  tragedien:  ['Octave','Cassandre','Aurèle'],
+  inspecteur: ['Vasseur','Lenoir','Malo'],
+  susceptible:['Gérald','Édith','Raymond']
+};
+var HOST_NAMES=['Sacha','Nadia','Bruno','Clara','Léo','Manu'];
 function hostName(){
-  if(!D.microHost) D.microHost=HOST_NAMES[Math.floor(Math.random()*HOST_NAMES.length)];
-  return D.microHost;
+  var sid=D.microStyle||'classique';
+  if(!D.hostNames) D.hostNames={};
+  if(!D.hostNames[sid]){
+    var pool=HOST_NAMES_BY_STYLE[sid]||HOST_NAMES;
+    D.hostNames[sid]=pool[Math.floor(Math.random()*pool.length)];
+    persist();
+  }
+  /* Compatibilité : un prénom choisi avant la v69 reste prioritaire. */
+  return D.microHost || D.hostNames[sid];
 }
-function setHostName(v){ D.microHost=(v||'').trim().slice(0,18); persist(); }
+function setHostName(v){
+  var sid=D.microStyle||'classique';
+  var n=(v||'').replace(/\s+/g,' ').trim().slice(0,18);
+  if(!D.hostNames) D.hostNames={};
+  if(n){ D.hostNames[sid]=n.charAt(0).toUpperCase()+n.slice(1); }
+  D.microHost=null; persist();
+}
 function rollHostName(){
-  var cur=D.microHost, n=cur;
-  for(var i=0;i<12 && n===cur;i++) n=HOST_NAMES[Math.floor(Math.random()*HOST_NAMES.length)];
-  D.microHost=n; persist(); render();
+  var sid=D.microStyle||'classique';
+  var pool=HOST_NAMES_BY_STYLE[sid]||HOST_NAMES;
+  var cur=hostName(), n=cur;
+  for(var i=0;i<12 && n===cur;i++) n=pool[Math.floor(Math.random()*pool.length)];
+  if(!D.hostNames) D.hostNames={};
+  D.hostNames[sid]=n; D.microHost=null; persist(); render();
 }
 /* Registres régionaux : vocabulaire et tournures, jamais une imitation d'accent. */
 var MICRO_PARLERS=[
@@ -1873,17 +1912,47 @@ function microToCoupe(id){
 function microOpen(){ S.microSheet=true; render(); }
 function microClose(){ S.microSheet=false; render(); }
 function microDrawSheet(){
+  /* On connaît déjà les joueurs : désigner le vainqueur doit tenir en un
+     appui. Les scores restent possibles, mais facultatifs. */
+  var names=microTeam();
+  var teams=(D.microTeams && (D.microTeams.a||[]).length && (D.microTeams.b||[]).length)?D.microTeams:null;
+  var choices = teams ? ['Équipe 1','Équipe 2'] : names;
   var el=document.createElement('div'); el.className='sheet'; el.id='msh';
   el.innerHTML='<div class="in" onclick="event.stopPropagation()"><div class="grab"></div>'+
-    '<h2 style="margin:0 0 4px;font-size:19px">Résultat de la partie</h2>'+
-    '<p class="mini" style="margin:0 0 12px">Recopie le classement final annoncé par l\'animateur. Le 1er de la liste est le vainqueur.</p>'+
-    '<label class="lb">Date</label><input type="date" id="mqd" value="'+today()+'">'+
-    '<label class="lb" style="margin-top:12px">Classement final</label>'+
-    '<p class="mini" style="margin:0 0 6px">Les joueurs sont déjà là : ajoute juste le score après chaque prénom. Je trie tout seul.</p>'+
-    '<textarea id="mqr" rows="5" placeholder="Mattéo 15&#10;Patrick 12&#10;Mélanie 9">'+esc(microTeam().map(function(n){return n+' ';}).join('\n'))+'</textarea>'+
-    '<div class="row" style="margin-top:14px"><button class="btn grey" onclick="microClose()">Annuler</button>'+
-    '<button class="btn" onclick="microSave()">Enregistrer</button></div></div>';
+    '<h2 style="margin:0 0 4px;font-size:19px">Qui a gagné ?</h2>'+
+    '<p class="mini" style="margin:0 0 12px">Un appui suffit. '+(teams?'':'Les scores sont facultatifs.')+'</p>'+
+    (choices.length
+      ? '<div style="display:flex;flex-direction:column;gap:7px">'+choices.map(function(n,i){
+          return '<button class="btn" style="background:var(--card);color:var(--ink);border:2px solid var(--line);text-align:left;display:flex;align-items:center;gap:9px" onclick="microWin('+i+')">'+
+            (teams?'<span style="font-size:19px">'+(i?'🅱️':'🅰️')+'</span>':av(n,'sm'))+'<span style="flex:1">'+esc(n)+'</span><span style="opacity:.5">🏆</span></button>';
+        }).join('')+'</div>'
+      : '<p class="mini">Aucun joueur sélectionné.</p>')+
+    '<button class="sm" style="width:100%;margin-top:12px;background:var(--card)" onclick="S.microDetail=!S.microDetail;render()">'+(S.microDetail?'▾':'›')+' Ajouter les scores</button>'+
+    (S.microDetail
+      ? '<div style="margin-top:8px">'+
+        '<label class="lb">Date</label><input type="date" id="mqd" value="'+today()+'">'+
+        '<label class="lb" style="margin-top:10px">Classement</label>'+
+        '<textarea id="mqr" rows="4" placeholder="Mattéo 15&#10;Patrick 12">'+esc(names.map(function(n){return n+' ';}).join('\n'))+'</textarea>'+
+        '<button class="btn" style="margin-top:8px" onclick="microSave()">Enregistrer avec les scores</button></div>'
+      : '')+
+    '<button class="btn grey" style="margin-top:10px" onclick="microClose()">Annuler</button></div>';
   el.onclick=microClose; document.body.appendChild(el);
+}
+function microWin(i){
+  var teams=(D.microTeams && (D.microTeams.a||[]).length && (D.microTeams.b||[]).length)?D.microTeams:null;
+  var players;
+  if(teams){
+    var win=i===0?teams.a:teams.b, lose=i===0?teams.b:teams.a;
+    players=win.map(function(n){return {name:n,score:null};}).concat(lose.map(function(n){return {name:n,score:null};}));
+  } else {
+    var names=microTeam();
+    if(!names.length){ toast('Aucun joueur'); return; }
+    players=[{name:names[i],score:null}].concat(names.filter(function(_,k){return k!==i;}).map(function(n){return {name:n,score:null};}));
+  }
+  D.micro.unshift({id:uid(), date:today(), players:players});
+  reviewMoment(); persist(); S.microSheet=false; S.microDetail=false;
+  toast((players[0]?players[0].name:'Résultat')+' gagne 🏆'); render();
+  try{ microOfferCoupe(); }catch(e){}
 }
 function microSave(){
   var date=document.getElementById('mqd').value||today();
@@ -1977,9 +2046,67 @@ function championsAgg(){
   D.tictac.forEach(function(d){
     d.players.forEach(function(p){ var s=slot(p.name); if(s){ s.duels++; if(d.winner&&fp(d.winner)===fp(p.name)) s.duelWins++; } });
   });
-  var list=[]; for(var k in agg){ var a=agg[k]; a.crowns=a.coupes+a.quizWins+a.duelWins; list.push(a); }
+  /* Le total unique mélangeait des victoires incomparables : une partie de
+     Uno entière valait autant qu'une manche de Tic-Tac de 30 secondes.
+     On garde les couronnes pour l'ordre d'affichage, mais chaque discipline
+     est désormais restituée séparément (voir renderChampions). */
+  var list=[]; for(var k in agg){ var a=agg[k];
+    a.crowns=a.coupes+a.quizWins+a.duelWins;
+    a.parties=a.coupes+a.quizGames+a.duels;
+    list.push(a); }
   list.sort(function(a,b){return b.crowns-a.crowns || (b.coupeManches+b.quizGames+b.duels)-(a.coupeManches+a.quizGames+a.duels);});
   return list;
+}
+/* Palmarès par discipline : comparer ce qui est comparable. */
+function champByGame(){
+  var out=[];
+  var byGame={};
+  D.matches.forEach(function(m){
+    var r=rank(m,function(){return true;}); if(!r.count) return;
+    var g=gameOf(m)||'Autre';
+    if(!byGame[g]) byGame[g]={};
+    var lead=leaders(r.byCumul,'points',m.winRule);
+    m.players.forEach(function(p){
+      if(!byGame[g][p.name]) byGame[g][p.name]={name:p.name,wins:0,played:0};
+      byGame[g][p.name].played++;
+      if(lead.indexOf(p.id)>=0) byGame[g][p.name].wins++;
+    });
+  });
+  for(var g in byGame){
+    var arr=[]; for(var n in byGame[g]) arr.push(byGame[g][n]);
+    arr.sort(function(a,b){return b.wins-a.wins || b.played-a.played;});
+    if(arr.length) out.push({game:g, players:arr});
+  }
+  var tt={};
+  D.tictac.forEach(function(d){ (d.players||[]).forEach(function(p){
+    if(!tt[p.name]) tt[p.name]={name:p.name,wins:0,played:0};
+    tt[p.name].played++; if(d.winner&&fp(d.winner)===fp(p.name)) tt[p.name].wins++; }); });
+  var ttArr=[]; for(var n2 in tt) ttArr.push(tt[n2]);
+  if(ttArr.length){ ttArr.sort(function(a,b){return b.wins-a.wins||b.played-a.played;}); out.push({game:'⏱️ Tic-Tac', players:ttArr}); }
+  var mq={};
+  D.micro.forEach(function(g2){ (g2.players||[]).forEach(function(p,i){
+    if(!mq[p.name]) mq[p.name]={name:p.name,wins:0,played:0};
+    mq[p.name].played++; if(i===0) mq[p.name].wins++; }); });
+  var mqArr=[]; for(var n3 in mq) mqArr.push(mq[n3]);
+  if(mqArr.length){ mqArr.sort(function(a,b){return b.wins-a.wins||b.played-a.played;}); out.push({game:'🎙️ Le Micro', players:mqArr}); }
+  out.sort(function(a,b){ return b.players.reduce(function(s,x){return s+x.played;},0)-a.players.reduce(function(s,x){return s+x.played;},0); });
+  return out;
+}
+function champGameBlocks(){
+  var g=champByGame(); if(!g.length) return '';
+  var med=['🥇','🥈','🥉'];
+  return '<div class="card"><h2>Par jeu</h2>'+
+    '<p class="mini" style="margin:0 0 10px">Une victoire au Uno et une manche de Tic-Tac ne se comparent pas : chaque jeu a son classement.</p>'+
+    g.map(function(b){
+      return '<div style="margin-bottom:12px">'+
+        '<p style="margin:0 0 5px;font-weight:800;font-size:13.5px">'+esc(b.game)+'</p>'+
+        b.players.slice(0,5).map(function(p,i){
+          return '<div style="display:flex;align-items:center;gap:7px;font-size:13px;padding:3px 0">'+
+            '<span style="width:18px">'+(med[i]||'')+'</span>'+av(p.name,'sm')+
+            '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name)+'</span>'+
+            '<b>'+p.wins+'</b><span class="mini" style="margin:0"> / '+p.played+'</span></div>';
+        }).join('')+'</div>';
+    }).join('')+'</div>';
 }
 function renderChampions(hd,app,banner){
   hd.innerHTML=back()+'<h1>🏅 Mur des champions<span class="sub">Tous les jeux réunis</span></h1><span style="width:38px"></span>';
@@ -2004,7 +2131,9 @@ function renderChampions(hd,app,banner){
       : '💥 <b>'+esc(list[1].name)+'</b> n\'est qu\'à '+pl(gap,'couronne')+' de <b>'+esc(list[0].name)+'</b> — ça se joue à rien !';
     if(gap<=3) h+='<div class="card" style="background:var(--am-l);border-color:var(--am)"><p style="margin:0;font-size:13.5px;color:#92400e;line-height:1.5">'+rival+'</p></div>';
   }
-  h+='<div class="card"><h2>Classement général (couronnes)</h2>';
+  h+=champGameBlocks();
+  h+='<div class="card"><h2>Toutes disciplines confondues</h2>'+
+     '<p class="mini" style="margin:0 0 8px">Vue d\'ensemble, à prendre avec le sourire : les jeux n\'ont pas la même durée.</p>';
   list.forEach(function(p,i){
     var open=S.detail==='champ'+fp(p.name);
     h+='<div class="rank'+(i===0?' first lead':'')+'" style="cursor:pointer" onclick="S.detail=S.detail===\'champ'+fp(p.name)+'\'?null:\'champ'+fp(p.name)+'\';render()"><div class="pos">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1))+'</div>'+
