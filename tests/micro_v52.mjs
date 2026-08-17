@@ -10,12 +10,12 @@ const w=boot(); const t=w.briefText();
 
 L('══ COMPRESSION SANS PERTE : les 12 règles critiques ══');
 const RULES={
- 'priorités numérotées':'PRIORITÉS','état interne':'currentPlayerIndex','frontière de tour':"T'ARRÊTES DE PARLER",
+ 'priorités numérotées':'INVARIANTS','état interne':'currentPlayerIndex','frontière de tour':"T'ARRÊTES DE PARLER",
  'ordre de décision':'ORDRE DE DÉCISION','identité avant exactitude':"jamais l'exactitude avant l'identité",
  'réponse officielle':'Ta réponse officielle','choicesStarted non rétroactif':'jamais rétroactivement',
  'registre transactionnel':'Mélanie +2 → 8','anti-doublon sur faits':"symbole de l'or = Au",
- 'amplitude ±0,5':'±0,5','interdiction saut 2→8':'INTERDIT de sauter de 2 à 8',
- 'estimation collective':'TOUS les joueurs','vol procédural':'Vol ouvert'};
+ 'amplitude ±0,5':'jamais plus de ±1','interdiction saut 2→8':'INTERDIT de sauter de 2 à 8',
+ 'estimation collective':'CHAQUE joueur','vol procédural':'Vol ouvert'};
 for(const [k,v] of Object.entries(RULES)) ok(k, t.includes(v));
 
 L('\n══ MÉCANIQUES ET FONCTIONS : rien perdu ══');
@@ -44,7 +44,7 @@ const plan=(t.match(/PLAN_DE_VARIETE=([^\n]+)/)||[])[1].split(' > ');
 ok('8 domaines planifiés, sans doublon', plan.length===8 && new Set(plan).size===8);
 
 L('\n══ CALIBRAGE DE NIVEAU (ta question) ══');
-ok('adaptation silencieuse conservée', t.includes('fenêtre de 4 à 6'));
+ok('adaptation silencieuse conservée', t.includes('4 à 6 dernières questions'));
 ok('point de calibrage unique en cours de partie', t.includes('POINT DE CALIBRAGE') && t.includes('trop facile, bien, ou trop dur'));
 ok('une seule fois, jamais répété', t.includes('sans jamais reposer la question'));
 
