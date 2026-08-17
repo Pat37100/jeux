@@ -27,7 +27,7 @@ ok('affiche le meneur quand il y en a un', /mène avec/.test(app()) || app().inc
 
 L('[3] Le Micro : écran unique, cohérent avec Tic-Tac et Outils');
 w.go('quizz'); w.render();
-ok('plus de sous-onglets', nav().trim()==='');
+ok('onglets de rubrique unifiés Jouer/Résultats (v72)', nav().includes('Jouer') && nav().includes('Résultats'));
 ok('plus d\'onglet Journal visible', !nav().includes('Journal') && !app().includes('📖'));
 ok('plus d\'onglet Palmarès visible', !nav().includes('Palmarès'));
 ok('fin de partie : un seul bouton, comme au Tic-Tac (v68)', app().includes('Enregistrer le résultat de la partie'));
