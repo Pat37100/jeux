@@ -40,19 +40,19 @@ ok('anti-doublon toujours injecté dans le prompt', (function(){ w.D.journal=[{t
 L('[4] Tic-Tac : un seul bouton d\'enregistrement');
 w.go('chrono'); w.chStart(); w.CH.players.forEach((p,i)=>p.good=i+2); w.chFinishNow(); w.render();
 const btns=(app().match(/Mur des champions|dans La Coupe|Enregistrer la manche/g)||[]);
-ok('un seul bouton d\'enregistrement', app().includes('Enregistrer la manche') && !app().includes('Compter cette manche'));
+ok('aucun bouton d\'enregistrement : le Mur prend tout (v62)', app().includes('Ajoutée au 🏅 Mur des champions') && !app().includes('🏆 Enregistrer la manche'));
 w.chToCoupe();
-ok('le choix se fait dans la feuille', body().includes('Au Mur des champions seulement') && body().includes('Nouvelle partie'));
+ok('la seule question restante porte sur La Coupe', body().includes('Compter dans La Coupe') && body().includes('Nouvelle partie'));
 ok('chSaveOnly exposé', typeof w.chSaveOnly==='function');
 w.chSaveOnly();
-ok('enregistrement au Mur effectif', w.D.tictac.length>=1 && w.CH.saved===true);
+ok('enregistrement au Mur effectif (automatique)', w.D.tictac.length>=1 && w.CH.saved===true);
 
 L('[5] Enregistrer dans La Coupe enregistre AUSSI au Mur (pas de perte)');
 w.go('chrono'); w.chStart(); w.CH.players.forEach((p,i)=>p.good=i+1); w.chFinishNow();
 const before=w.D.tictac.length;
 w.chToCoupeGo('');
 ok('la manche est dans La Coupe', w.D.matches[0].rounds.length===1);
-ok('et aussi au Mur des champions', w.D.tictac.length===before+1);
+ok('et le Mur avait déjà tout enregistré', w.D.tictac.length===before);
 
 L('[6] Textes pédagogiques retirés');
 w.go('outils'); w.render();
