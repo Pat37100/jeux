@@ -15,7 +15,7 @@ L('        étapes numérotées : '+steps);
 ok('4 étapes (le son n\'est plus une ligne flottante)', steps===4);
 ok('titre explicite « Son du décompte »', app().includes('Son du décompte'));
 ok('réglage toujours fonctionnel', app().includes('chSound(true)') && app().includes('chSound(false)'));
-ok('bouton de lancement toujours en bas', app().lastIndexOf('Démarrer la manche')>app().lastIndexOf('Son du décompte'));
+ok('bouton de lancement toujours en bas', app().lastIndexOf('Démarrer la partie')>app().lastIndexOf('Son du décompte'));
 
 L('[2] La Coupe : règle et objectif étaient FIGÉS après création');
 const ids=w.D.lib.slice(0,2).map(p=>p.id);
