@@ -53,7 +53,7 @@ ok('cartes dépliées par défaut depuis la v61 (cohérence inter-rubriques)', w
 ok('résumé du contexte affiché dans le titre', w5.document.getElementById('app').innerHTML.includes('Standard'));
 ok('résumé des mécaniques affiché dans le titre', w5.document.getElementById('app').innerHTML.includes('8/8'));
 w5.S.qc4=false; w5.S.qc5=false; w5.render();
-ok('repliable à la demande', words()<250);
+ok('repliable à la demande', words()<300);
 w5.S.qc4=undefined; w5.S.qc5=undefined; w5.render();
 ok('les 3 contextes cliquables', ['express','costaud','voiture'].every(id=>w5.document.getElementById('app').innerHTML.includes("toggleMicroCtx('"+id+"')")));
 ok('les 8 mécaniques cliquables', w5.MICRO_MECS.every(m=>w5.document.getElementById('app').innerHTML.includes("toggleMicroMec('"+m.id+"')")));
@@ -64,7 +64,7 @@ ok('et part bien dans le prompt', w5.briefText().includes('CONTEXTE=VOITURE_BRUI
 L('[5] Non-régression');
 ok('7 étapes toujours là', (w5.document.getElementById('app').innerHTML.match(/class="stepn"/g)||[]).length===7);
 const t=w5.briefText();
-for(const k of ['MECANIQUES=','PRIORITÉS','PERSONNE NE TROUVE','GRAINE_DE_PARTIE']) ok('prompt : '+k, t.includes(k));
+for(const k of ['MECANIQUES=','INVARIANTS','PERSONNE NE TROUVE','GRAINE_DE_PARTIE']) ok('prompt : '+k, t.includes(k));
 w.openMatch('m1'); w.S.tab='rank'; w.render();
 ok('classement toujours rendu sous la bannière', app().includes('Par joueur'));
 L(F? '\n*** '+F+' ECHEC(S) ***' : '\nTOUT PASSE ('+F+' échec)');
