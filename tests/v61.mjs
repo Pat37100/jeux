@@ -30,9 +30,9 @@ ok('les fautes sont enregistrées au Mur', (w.D.tictac[0].players[0].bad||0)>=0 
 
 L('[3] Tic-Tac : un seul geste pour enregistrer');
 w.render();
-ok('enregistrement immédiat au Mur', app().includes('Enregistrée au Mur des champions'));
+ok('enregistrement automatique au Mur (v62)', app().includes('Ajoutée au 🏅 Mur des champions'));
 ok('La Coupe devient secondaire et optionnelle', app().includes('Compter aussi dans une partie de La Coupe'));
-ok('plus de choix confus en amont', !app().includes('Au Mur des champions seulement'));
+ok('plus de choix confus : le Mur est implicite', !app().includes('Au Mur des champions seulement'));
 
 L('[4] Libellés simplifiés');
 ok('« Rejouer » sans précision', app().includes('>Rejouer<'));
