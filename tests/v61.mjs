@@ -92,7 +92,7 @@ w4.D.matches.unshift({id:'m',name:'U',date:'2026-08-16',status:'live',winRule:'h
   rounds:[{id:'r1',date:'2026-08-16',scores:{[ids[0]]:5,[ids[1]]:3}},{id:'r2',date:'2026-08-15',scores:{[ids[0]]:2,[ids[1]]:7}}]});
 w4.openMatch('m'); w4.setResMode('list'); w4.render();
 const a4=()=>w4.document.getElementById('app').innerHTML;
-ok('lignes balayables', (a4().match(/class="swipe"/g)||[]).length===2);
+ok('lignes balayables', (a4().match(/class="swipe(?: flat)?"/g)||[]).length===2);
 ok('action Corriger', a4().includes('editRound'));
 ok('action Supprimer', a4().includes('delRound'));
 ok('plus de confirmation en ligne', !a4().includes('Supprimer cette manche ?'));
