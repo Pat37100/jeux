@@ -383,7 +383,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='67';
+var APP_VERSION='68';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -482,6 +482,7 @@ function toast(t){var d=document.createElement('div');d.className='toast';d.text
 /* ============================== RENDU ============================= */
 var __lastView=null;
 function render(){
+  sweepUndo();
   try{
     var appEl=document.getElementById('app');
     if(appEl){
@@ -965,7 +966,7 @@ function tabPlay(m){
         : '<button class="chip" style="flex:1;text-align:left" onclick="S.dateOpen=true;render()">📅 '+(S.date===today()?'Aujourd\'hui':fr(S.date))+'</button>')+
       [1,5,10].map(function(v){return '<button class="chip'+(step===v?' on':'')+'" style="flex:0 0 54px;text-align:center;padding-left:0;padding-right:0" aria-label="Pas de '+v+' point'+(v>1?'s':'')+'" onclick="S.step='+v+';render()">±'+v+'</button>';}).join('')+
     '</div>';
-  m.players.forEach(function(p){
+  activePlayers(m).forEach(function(p){
     var on=w.indexOf(p.id)>=0;
     var c=cumOf[p.id]||{points:0,played:0};
     h+='<div class="plr'+(on?' win':'')+'"><span class="n" style="display:flex;align-items:center;gap:7px;min-width:0">'+av(p.name,'sm')+
@@ -1052,7 +1053,10 @@ function histGrid(m){
     var barW=Math.max(4,Math.round(100*Math.abs(p.points)/maxPts));
     return '<tr class="'+(pi===0?'lead':'')+'">'+
       '<td class="stick nmcell"><span class="nmwrap">'+av(p.name,'sm')+
-        '<span class="nmtxt"><b>'+esc(p.name)+medal+'</b>'+
+        '<span class="nmtxt"><b>'+esc(p.name)+medal+(function(){
+          var pp=m.players.filter(function(q){return q.id===p.id;})[0];
+          return (pp&&pp.out)? ' <span style="font-size:10px;font-weight:700;color:#a8a29e;background:var(--bg);border-radius:99px;padding:1px 5px">retiré</span>' : '';
+        })()+'</b>'+
         '<span class="nmbar"><i style="width:'+barW+'%"></i></span></span></span></td>'+
       cells+'<td class="tot"><b>'+nf(p.points)+'</b><small>'+pl(p.wins,'V')+'</small></td></tr>';
   }).join('');
@@ -1170,7 +1174,16 @@ function offerUndo(label,restore){
   bar.innerHTML='<span style="flex:1">'+esc(label)+'</span>'+
     '<button onclick="doUndo()" style="background:#fbbf24;color:#1c1917;border:0;border-radius:9px;padding:7px 13px;font-weight:800;font-family:inherit;font-size:13px;cursor:pointer">Annuler</button>';
   document.body.appendChild(bar);
-  UNDO_T=setTimeout(function(){ var b=document.getElementById('undobar'); if(b)b.remove(); UNDO=null; },15000);
+  UNDO.until=Date.now()+15000;
+  UNDO_T=setTimeout(sweepUndo,15000);
+}
+/* iOS gèle les minuteurs en arrière-plan : la barre pouvait rester des
+   minutes. On mémorise une échéance, vérifiée à chaque rendu et au retour
+   au premier plan. */
+function sweepUndo(){
+  if(UNDO && UNDO.until && Date.now()<UNDO.until) return;
+  var b=document.getElementById('undobar'); if(b)b.remove();
+  UNDO=null; if(UNDO_T){ clearTimeout(UNDO_T); UNDO_T=null; }
 }
 function doUndo(){
   if(!UNDO) return;
@@ -1195,26 +1208,30 @@ function tabSet(m){
     '<div class="row"><input id="rn" value="'+esc(m.name).replace(/"/g,'&quot;')+'" style="flex:1" aria-label="Nom de la partie">'+
     '<button class="sm g" onclick="renameMatch()">Renommer</button></div></div>';
 
-  h+='<div class="card"><h2>Joueurs de cette partie ('+m.players.length+')</h2>'+
+  h+='<div class="card"><h2>Joueurs de cette partie ('+activePlayers(m).length+(m.players.length>activePlayers(m).length?' + '+(m.players.length-activePlayers(m).length)+' en retrait':'')+')</h2>'+
      '<div style="display:flex;flex-direction:column;gap:7px">'+
      m.players.map(function(p){
        var played=m.rounds.filter(function(r){return r.scores[p.id]!==undefined;}).length;
-       var row='<div class="row" style="gap:8px;align-items:center;background:var(--bg);border-radius:10px;padding:8px 10px">'+av(p.name,'sm')+
-         '<span style="flex:1;min-width:0"><b style="font-size:13.5px">'+esc(p.name)+'</b>'+
-         '<small style="display:block;font-size:11px;color:var(--mut)">'+pl(played,'manche')+' jouée'+(played>1?'s':'')+'</small></span></div>';
-       var canDrop=(m.players.length>2 && m.status!=='done');
+       var out=!!p.out;
+       var row='<div class="row" style="gap:8px;align-items:center;background:var(--bg);border-radius:10px;padding:8px 10px'+(out?';opacity:.6':'')+'">'+av(p.name,'sm')+
+         '<span style="flex:1;min-width:0"><b style="font-size:13.5px'+(out?';text-decoration:line-through':'')+'">'+esc(p.name)+'</b>'+
+         '<small style="display:block;font-size:11px;color:var(--mut)">'+pl(played,'manche')+' jouée'+(played>1?'s':'')+
+         (out?' · ne joue plus les suivantes':'')+'</small></span>'+
+         (out && m.status!=='done' ? '<button class="sm g" style="flex:0 0 auto" onclick="rejoinPlayer(\''+p.id+'\')">Réintégrer</button>' : '')+
+         '</div>';
+       var canDrop = !out && m.status!=='done' && activePlayers(m).length>2;
        return (canDrop? swipeRow(row, delAct("askDropPlayer('"+p.id+"')",'Retirer')) : row)+
          (S.confirm==='dp'+p.id
            ? '<div style="background:var(--ro-l);padding:10px;border-radius:10px"><p style="margin:0 0 8px;font-size:12.5px;color:#9f1239;font-weight:600">Retirer '+esc(p.name)+' de la partie ?</p>'+
-             '<p class="mini" style="margin:0 0 8px;color:#9f1239">'+(played?'Ses '+pl(played,'score')+' seront effacés de cette partie.':'Il n\'a encore aucun score.')+'</p>'+
-             '<div class="row" style="gap:8px"><button class="sm r" style="flex:1" onclick="dropPlayerFull(\''+p.id+'\')">Retirer</button>'+
+             '<p class="mini" style="margin:0 0 8px;color:#9f1239">'+(played
+                ? 'Ses '+pl(played,'score')+' restent visibles dans l\'historique, il ne jouera plus les manches suivantes.'
+                : 'Il n\'a aucun score : il sera simplement supprimé.')+'</p>'+
+             '<div class="row" style="gap:8px"><button class="sm r" style="flex:1" onclick="dropPlayerFull(\''+p.id+'\')">'+(played?'Mettre en retrait':'Supprimer')+'</button>'+
              '<button class="sm" style="flex:1" onclick="S.confirm=null;render()">Annuler</button></div></div>'
            : '');
      }).join('')+'</div>'+
      (m.status!=='done'
-       ? '<div class="row" style="margin-top:10px"><input id="addp" placeholder="Un invité arrive ? Son prénom…" style="flex:1" aria-label="Ajouter un joueur">'+
-         '<button class="sm g" onclick="addPlayerToMatch()">Ajouter</button></div>'+
-         '<p class="mini" style="margin-top:6px">Il entre au classement dès sa première manche — les manches déjà jouées ne comptent pas contre lui.</p>'
+       ? '<div class="row" style="gap:8px;margin-top:9px"><input id="apn" placeholder="Ajouter un joueur" style="flex:1"><button class="sm g" style="flex:0 0 84px" onclick="addPlayerToMatch()">Ajouter</button></div>'
        : '')+'</div>';
 
   h+='<div class="card"><h2>Jeu</h2>'+
@@ -1243,21 +1260,38 @@ function tabSet(m){
 return h;
 }
 function askDropPlayer(id){ S.confirm='dp'+id; render(); }
+/* Deux cas distincts :
+   - le joueur a déjà des scores  -> mis EN RETRAIT (out=true) : son
+     historique reste visible, il ne participe plus aux manches suivantes ;
+   - aucun score (ajouté par erreur) -> supprimé purement. */
 function dropPlayerFull(id){
   var m=cur(); var idx=m.players.findIndex(function(p){return p.id===id;});
   if(idx<0) return;
-  var backupP=JSON.parse(JSON.stringify(m.players[idx]));
-  var backupS=m.rounds.map(function(r){ return r.scores[id]; });
-  m.players.splice(idx,1);
-  m.rounds.forEach(function(r){ delete r.scores[id]; });
-  S.confirm=null; persist(); render();
   var mid=m.id;
-  offerUndo(backupP.name+' retiré', function(){
-    var mm=D.matches.filter(function(x){return x.id===mid;})[0]; if(!mm) return;
-    mm.players.splice(Math.min(idx,mm.players.length),0,backupP);
-    mm.rounds.forEach(function(r,i){ if(backupS[i]!==undefined) r.scores[backupP.id]=backupS[i]; });
-  });
+  var played=m.rounds.filter(function(r){return r.scores[id]!==undefined;}).length;
+  var backupP=JSON.parse(JSON.stringify(m.players[idx]));
+  if(played){
+    m.players[idx].out=true;
+    S.confirm=null; persist(); render();
+    offerUndo(backupP.name+' mis en retrait', function(){
+      var mm=D.matches.filter(function(x){return x.id===mid;})[0]; if(!mm) return;
+      var p=mm.players.filter(function(q){return q.id===id;})[0]; if(p) delete p.out;
+    });
+  } else {
+    m.players.splice(idx,1);
+    S.confirm=null; persist(); render();
+    offerUndo(backupP.name+' retiré', function(){
+      var mm=D.matches.filter(function(x){return x.id===mid;})[0]; if(!mm) return;
+      mm.players.splice(Math.min(idx,mm.players.length),0,backupP);
+    });
+  }
 }
+function rejoinPlayer(id){
+  var m=cur(); if(!m) return;
+  var p=m.players.filter(function(q){return q.id===id;})[0]; if(!p) return;
+  delete p.out; persist(); toast(p.name+' est de retour'); render();
+}
+function activePlayers(m){ return m.players.filter(function(p){return !p.out;}); }
 function renameMatch(){var m=cur(),v=document.getElementById('rn').value.trim();if(v)m.name=v;persist();toast('Nom mis à jour');render();}
 function addPlayerToMatch(){
   var el=document.getElementById('addp'); var name=(el&&el.value||'').trim();
@@ -1441,15 +1475,11 @@ function renderQuizz(hd,app,banner){
         '<button class="sm" style="flex:1;background:var(--card)" onclick="briefCopy()">📋 Copier</button>'+
         '<button class="sm" style="flex:1;background:var(--card)" onclick="briefShare()">📤 Envoyer</button>'+
       '</div>';
-    h+='<button class="sm" style="width:100%;margin-top:12px;background:var(--card)" onclick="S.qafter=!S.qafter;render()">'+(S.qafter?'▾':'›')+' Après la partie</button>';
-    if(S.qafter){
-      h+='<div class="card" style="margin-top:8px">'+
-        '<button class="sm g" style="width:100%;margin-bottom:8px" onclick="S.microSheet=true;render()">🏆 Enregistrer le classement final</button>'+
-        '<textarea id="jp" rows="3" placeholder="Colle ici les questions posées (une par ligne)"></textarea>'+
-        '<button class="sm" style="width:100%;margin-top:6px;background:var(--card)" onclick="addJournal()">Mémoriser pour ne pas les reposer</button>'+
-        (D.journal.length?'<p class="mini" style="margin:8px 0 0;text-align:center">'+pl(D.journal.length,'question')+' en mémoire</p>':'')+
-      '</div>';
-    }
+    /* Même geste qu'au Tic-Tac : un seul bouton en fin de partie.
+       La saisie manuelle des questions posées a été retirée : ce n'est pas
+       le travail de l'utilisateur, et la diversité est déjà assurée par la
+       graine et le plan de formats générés par l'app. */
+    h+='<button class="btn micro" style="margin-top:12px" onclick="S.microSheet=true;render()">🏆 Enregistrer le résultat de la partie</button>';
   }else if(S.qtab==='j'){
     h+='<div class="card"><h2>Ajouter les questions d\'une partie</h2>'+
       '<p class="mini" style="margin-bottom:8px">Colle la liste donnée en fin de partie (une par ligne). Les doublons sont détectés automatiquement.</p>'+
@@ -2947,12 +2977,34 @@ function chGame(){
       ['🎉','🏆','⭐️','🎊','✨','🥇'].map(function(e,i){return '<span style="left:'+(8+i*15)+'%;animation-delay:'+(i*.35)+'s">'+e+'</span>';}).join('')+'</div>';
     return '<div class="card" style="text-align:center;padding:28px 16px;position:relative;overflow:hidden">'+conf+
       '<div style="font-size:52px" class="winbig">🏆</div><div style="margin:4px 0">'+(w?av(w,'big'):'')+'</div><h2 style="font-size:22px;margin:4px 0 2px">'+esc(w||'—')+'</h2>'+
-      '<p class="mini">dernier joueur en course</p>'+
-      '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">'+
-        CH.players.slice().sort(function(a,b){return b.good-a.good;}).map(function(pl){
-          return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0"><span style="display:flex;align-items:center;gap:6px">'+av(pl.name,'sm')+esc(pl.name)+'</span><b style="color:#059669">✓ '+pl.good+'</b></div>';
-        }).join('')+
-      '</div></div>'+
+      (function(){
+        /* Tableau de fin : podium, taux de réussite et comparaison — pas
+           seulement le nombre de bonnes réponses. */
+        var srt=CH.players.slice().sort(function(a,b){ return b.good-a.good || (a.bad||0)-(b.bad||0); });
+        var champ=srt[0], tot=CH.players.reduce(function(s,x){return s+x.good+(x.bad||0);},0);
+        var best=Math.max(1,srt[0].good);
+        var med=['🥇','🥈','🥉'];
+        return '<p class="mini" style="margin:0">'+
+            (champ&&champ.good? '✓ '+champ.good+' bonne'+(champ.good>1?'s':'')+' réponse'+(champ.good>1?'s':'') : 'dernier joueur en course')+
+            (tot? ' · '+pl(tot,'question')+' en tout' : '')+'</p>'+
+          '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">'+
+          srt.map(function(pl,pi){
+            var t=pl.good+(pl.bad||0);
+            var w=Math.round(100*pl.good/best);
+            return '<div style="padding:5px 0;text-align:left">'+
+              '<div style="display:flex;align-items:center;gap:6px;font-size:13px">'+
+                '<span style="width:20px;text-align:center">'+(med[pi]||'')+'</span>'+
+                av(pl.name,'sm')+
+                '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(pl.name)+'</span>'+
+                '<b style="color:#059669">✓ '+pl.good+'</b>'+
+                '<b style="color:#9f1239;font-weight:600">✗ '+(pl.bad||0)+'</b>'+
+                (t? '<span style="color:#a8a29e;font-size:11.5px;width:38px;text-align:right">'+Math.round(pl.good/t*100)+'%</span>' : '<span style="width:38px"></span>')+
+              '</div>'+
+              '<div style="height:5px;border-radius:99px;background:var(--bg);margin:4px 0 0 26px;overflow:hidden">'+
+                '<i style="display:block;height:100%;width:'+w+'%;background:linear-gradient(90deg,#34d399,#059669)"></i></div>'+
+            '</div>';
+          }).join('')+
+          '</div></div>'; })()+
       '<p class="mini" style="text-align:center;color:#059669;margin-top:12px">✓ Ajoutée au 🏅 Mur des champions</p>'+
       '<button class="sm" style="width:100%;margin-top:8px;background:var(--card)" onclick="chToCoupe()">➕ Compter aussi dans une partie de La Coupe</button>'+
       '<button class="btn" style="margin-top:8px" onclick="chStart()">Rejouer</button>'+
@@ -3010,14 +3062,16 @@ function chGame(){
   var pass=(chSettings().pass||'wrong');
   /* Deux boutons de score + une sortie neutre : un joueur qui passe son tour
      ne doit pas être compté comme s'étant trompé. */
-  var subLbl = pass==='good' ? 'au suivant' : (pass==='both' ? 'au suivant' : 'il garde la main');
-  var subLblBad = pass==='good' ? 'il continue' : 'au suivant';
+  /* La précision « au suivant / garde la main » n'est affichée que
+     lorsqu'elle distingue réellement les deux boutons. En mode « les deux
+     font tourner », elle serait identique des deux côtés : on l'omet. */
+  var sub=function(txt){ return pass==='both' ? '' : ' <span style="font-weight:500;opacity:.85">— '+txt+'</span>'; };
   if(pass==='good'){
-    h+='<button class="btn" style="margin-top:10px" onclick="chPassGood()">✓ Bonne réponse <span style="font-weight:500;opacity:.85">— '+subLbl+'</span></button>'+
-       '<button class="btn red" style="margin-top:8px" onclick="chKeepWrong()">✗ Mauvaise réponse <span style="font-weight:500;opacity:.85">— '+subLblBad+'</span></button>';
+    h+='<button class="btn" style="margin-top:10px" onclick="chPassGood()">✓ Bonne réponse'+sub('au suivant')+'</button>'+
+       '<button class="btn red" style="margin-top:8px" onclick="chKeepWrong()">✗ Mauvaise réponse'+sub('il continue')+'</button>';
   } else {
-    h+='<button class="btn" style="margin-top:10px" onclick="chGood()">✓ Bonne réponse <span style="font-weight:500;opacity:.85">— '+subLbl+'</span></button>'+
-       '<button class="btn red" style="margin-top:8px" onclick="chWrong()">✗ Mauvaise réponse <span style="font-weight:500;opacity:.85">— '+subLblBad+'</span></button>';
+    h+='<button class="btn" style="margin-top:10px" onclick="chGood()">✓ Bonne réponse'+sub('il garde la main')+'</button>'+
+       '<button class="btn red" style="margin-top:8px" onclick="chWrong()">✗ Mauvaise réponse'+sub('au suivant')+'</button>';
   }
   h+='<button class="sm" style="width:100%;margin-top:8px;background:var(--card)" onclick="chSkip()">⏭ Passer sans compter</button>';
 
