@@ -30,10 +30,10 @@ for(const v of ['points','chrono','quizz']){
   ok(v+' : médailles', A(w).includes('🥇'));
 }
 w.go('chrono'); w.setRtab('res'); w.render();
-ok('Tic-Tac : historique balayable', A(w).includes('class="swipe"') && A(w).includes('chDelDuel'));
+ok('Tic-Tac : historique balayable', A(w).includes('class="swipe') && A(w).includes('chDelDuel'));
 ok('Tic-Tac : ✓ et ✗ au classement', A(w).includes('✓3') || A(w).includes('✓ 3'));
 w.go('quizz'); w.setRtab('res'); w.render();
-ok('Micro : historique balayable', A(w).includes('class="swipe"') && A(w).includes('microDel'));
+ok('Micro : historique balayable', A(w).includes('class="swipe') && A(w).includes('microDel'));
 w.go('points'); w.setRtab('res'); w.render();
 ok('Coupe : palmarès par jeu conservé', A(w).includes('Par jeu'));
 
