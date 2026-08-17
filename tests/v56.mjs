@@ -76,6 +76,6 @@ for(const k of ['PRIORITÉS',"T'ARRÊTES DE PARLER",'Mélanie +2 → 8','Vol ouv
 w.toggleMicroCtx('voiture'); ok('En voiture toujours actif', w.briefText().includes('CONTEXTE=VOITURE_BRUIT'));
 w.toggleMicroCtx('costaud'); ok('Costaud toujours actif', w.briefText().includes('NIVEAU_INITIAL=7'));
 w.setMicroStyle('sportif'); ok('Commentateur sportif incarné', w.briefText().includes("NIVEAU D'INCARNATION"));
-ok('9 thèmes', w.MICRO_THEMES.length===9);
+ok('thèmes conservés (12 depuis la v61)', w.MICRO_THEMES.length>=9);
 ok('diversité app', /GRAINE_DE_PARTIE=\d+/.test(w.briefText()));
 L(F? '\n*** '+F+' ECHEC(S) ***' : '\nTOUT PASSE ('+F+' échec)');
