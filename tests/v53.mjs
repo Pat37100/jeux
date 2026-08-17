@@ -50,7 +50,7 @@ L('[6] Non-régression : rien perdu');
 for(const k of ['PRIORITÉS',"T'ARRÊTES DE PARLER",'Mélanie +2 → 8','Vol ouvert','QUESTIONS INTERDITES',
                 'POINT DE CALIBRAGE','TOUR DÉFI','ESTIMATION','±0,5'])
   ok('conservé : '+k, s.includes(k));
-ok('9 thèmes intacts', w.MICRO_THEMES.length===9);
+ok('thèmes intacts (12 depuis la v61)', w.MICRO_THEMES.length>=9);
 ok('diversité app toujours active', /GRAINE_DE_PARTIE=\d+/.test(s));
 w.go('quizz'); w.S.qc4=true; w.S.qc5=true; w.render();
 const app=w.document.getElementById('app').innerHTML;
