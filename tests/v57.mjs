@@ -41,7 +41,7 @@ w.go('points'); w.render(); w.openSheet();
 const sh=w.document.querySelector('.sheet .in').innerHTML;
 ok('joueurs avec avatar (comme partout ailleurs)', /data-id="[^"]+"[^>]*>\s*<[^>]*class="av/.test(sh) || sh.includes('av '));
 ok('champ invités enfin étiqueté', sh.includes('Ou ajoute des invités'));
-ok('placeholder simplifié', sh.includes('Prénoms séparés par des virgules'));
+ok('invités : champ unique et explicite (v75)', sh.includes('Ou ajoute des invités, séparés par des virgules'));
 ok('création toujours possible', sh.includes('createMatch()'));
 
 L('[4] Non-régression');
