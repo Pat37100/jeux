@@ -38,9 +38,9 @@ for(const mode of ['wrong','good','both']){
   w.chAbandon&&w.S; w.CH=null;
 }
 w.chSetPass('good'); w.chStart(); w.render();
-ok('mode « bonne réponse passe la main » : libellés cohérents', app().includes('Réussi — au suivant') && app().includes('Raté — il continue'));
+ok('mode « bonne réponse passe la main » : libellés cohérents', app().includes('✓ Bonne réponse') && app().includes('au suivant') && app().includes('il continue'));
 w.CH=null; w.chSetPass('wrong'); w.chStart(); w.render();
-ok('mode « erreur passe la main » : libellés cohérents', app().includes('garde la main') && app().includes('Au suivant'));
+ok('mode « erreur passe la main » : libellés cohérents', app().includes('garde la main') && app().includes('✗ Mauvaise réponse'));
 w.CH=null;
 
 L('[5] Accueil : explication claire');
@@ -62,12 +62,12 @@ ok('toutes les options restent sélectionnables', w.MICRO_STYLES.every(s=>app().
 ok('13 ambiances conservées', w.MICRO_STYLES.length===13);
 
 L('[7] Consigne libre clarifiée');
-ok('intitulé explicite', app().includes('Consigne libre') && app().includes('sur les questions'));
-ok('exemples des deux registres', app().includes('parle avec emphase') && app().includes('Bretagne'));
+ok('intitulé explicite', app().includes('Consigne libre') && app().includes('un thème, une règle'));
+ok('exemples couvrant tous les registres', app().includes('Bretagne') && app().includes('tutoie-nous'));
 w.D.microCustom='évite le sport';
 w.setMicroStyle('taquin');
 const t=w.briefText();
-ok('prompt : les deux registres', t.includes('CONSIGNE LIBRE') && t.includes('ton de l\'animateur') && t.includes('contenu des questions'));
+ok('prompt : portée élargie à tout le jeu', t.includes('CONSIGNE LIBRE') && t.includes("n'importe quel aspect du jeu"));
 
 L('[8] NON-RÉGRESSION du prompt');
 for(const k of ['PRIORITÉS',"T'ARRÊTES DE PARLER",'Mélanie +2 → 8','Vol ouvert','PERSONNE NE TROUVE',
