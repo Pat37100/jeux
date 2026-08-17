@@ -30,10 +30,10 @@ w.go('quizz'); w.render();
 ok('plus de sous-onglets', nav().trim()==='');
 ok('plus d\'onglet Journal visible', !nav().includes('Journal') && !app().includes('📖'));
 ok('plus d\'onglet Palmarès visible', !nav().includes('Palmarès'));
-ok('point d\'entrée unique « Après la partie »', app().includes('Après la partie'));
-w.S.qafter=true; w.render();
-ok('enregistrement du classement accessible', app().includes('Enregistrer le classement final'));
-ok('journal conservé mais discret', app().includes('Mémoriser pour ne pas les reposer'));
+ok('fin de partie : un seul bouton, comme au Tic-Tac (v68)', app().includes('Enregistrer le résultat de la partie'));
+w.S.microSheet=true; w.render();
+ok('feuille de résultat accessible', w.document.body.innerHTML.includes('mqr'));
+ok('journal conservé techniquement (plus de saisie manuelle)', typeof w.addJournal==='function');
 ok('addJournal toujours fonctionnel', typeof w.addJournal==='function');
 ok('anti-doublon toujours injecté dans le prompt', (function(){ w.D.journal=[{text:'q1'}]; return w.briefText().includes('ANTI-DOUBLON'); })());
 
