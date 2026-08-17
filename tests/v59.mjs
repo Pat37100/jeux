@@ -33,7 +33,7 @@ const line=(t.match(/MECANIQUES=([^\n]+)/)||[])[1];
 ok('la liste ne contient plus Duel', !line.includes('Duel'));
 ok('ni Quitte ou double', !line.includes('Quitte'));
 ok('mais garde Cash et vol', line.includes('Cash') && line.includes('vol'));
-ok('règle de filtrage dans le moteur', t.includes('MÉCANIQUES AUTORISÉES') && t.includes('sont DÉSACTIVÉES pour cette partie'));
+ok('règle de filtrage dans le moteur', t.includes('Tu n\'utilises QUE les mécaniques listées') && t.includes('sont interdites'));
 ok('rappel dans la lecture de config', t.includes('liste EXHAUSTIVE des mécaniques autorisées'));
 
 L('[4] Cas extrême : aucune mécanique');
@@ -41,7 +41,7 @@ w.setAllMecs(false);
 ok('liste vide', w.microMecs().length===0);
 t=w.briefText();
 ok('config explicite', t.includes('AUCUNE — questions classiques uniquement'));
-ok('consigne de repli', t.includes('joue uniquement en questions classiques'));
+ok('consigne de repli', t.includes('questions classiques uniquement'));
 w.setAllMecs(true);
 ok('tout réactivable', w.microMecs().length===8);
 
@@ -49,23 +49,23 @@ L('[5] Nouvelle mécanique « Question en or »');
 t=w.briefText();
 ok('décrite dans le moteur', t.includes('QUESTION EN OR'));
 ok('barème doublé', t.includes('4 points sans propositions, 2 après'));
-ok('annoncée avant', t.includes("annoncée AVANT d'être posée"));
-ok('usage limité', t.includes('pas plus de deux fois par partie'));
+ok('annoncée avant', t.includes('AVANT de poser'));
+ok('usage limité', t.includes('2 fois maximum par partie'));
 
 L('[6] Les 7 mécaniques d\'origine sont intactes dans le moteur');
 for(const k of ['TOUR DÉFI','CASH','QUESTION AVEC VOL','QUESTION MYSTÈRE','ESTIMATION','DUEL','QUITTE OU DOUBLE'])
   ok('moteur : '+k, t.includes(k));
 ok('procédure de vol intacte', t.includes('Vol ouvert') && t.includes('avant « Vol ouvert » ne rapporte rien'));
-ok('estimation collective intacte', t.includes('tu poses à TOUS les joueurs'));
-ok('Tour Défi calibré intact', t.includes('gravitation universelle'));
+ok('estimation collective intacte', t.includes('tu demandes une valeur à CHAQUE joueur'));
+ok('Tour Défi calibré intact', t.includes('un 5/5 doit être nettement plus dur'));
 
 L('[7] Non-régression générale');
-for(const k of ['PRIORITÉS',"T'ARRÊTES DE PARLER",'Mélanie +2 → 8','PERSONNE NE TROUVE','QUESTIONS INTERDITES',
+for(const k of ['INVARIANTS',"T'ARRÊTES DE PARLER",'Mélanie +2 → 8','PERSONNE NE TROUVE','QUESTIONS INTERDITES',
                 'POINT DE CALIBRAGE','GRAINE_DE_PARTIE','A0. LECTURE DE CONFIG_APP'])
   ok('conservé : '+k, t.includes(k));
 w.setMicroStyle('taquin'); w.toggleMicroCtx('voiture'); w.D.microCustom='évite le sport';
 t=w.briefText();
-ok('ambiance + contexte + consigne cumulés', ['AMBIANCE SÉLECTIONNÉE','CONTEXTE ET RYTHME','CONSIGNE LIBRE'].every(k=>t.includes(k)));
+ok('ambiance + contexte + consigne cumulés', ['RAPPEL DE PERSONNAGE','CONTEXTE ET RYTHME','CONSIGNE LIBRE'].every(k=>t.includes(k)));
 ok('mécaniques dans CONFIG_APP', t.indexOf('MECANIQUES=')<t.indexOf('</CONFIG_APP>'));
 
 L('[8] Migration : ancien utilisateur sans réglage de mécaniques');
