@@ -74,7 +74,7 @@ L('[9] Micro : récapitulatif des choix');
 w2.S.qc4=undefined; w2.render();
 const a2=()=>w2.document.getElementById('app').innerHTML;
 ok('carte « Ce que tu as choisi »', a2().includes('Ce que tu as choisi'));
-for(const k of ['Joueurs','Ambiance','Thème','Contexte','Mécaniques']) ok('récap : '+k, a2().includes('<b>'+k+'</b>'));
+for(const k of ['Joueurs','Animateur','Thème','Contexte','Mécaniques']) ok('récap : '+k, a2().includes('<b>'+k+'</b>'));
 w2.D.microCustom='évite le sport'; w2.render();
 ok('la consigne libre y figure', a2().includes('évite le sport'));
 
@@ -102,7 +102,7 @@ ok('annulation proposée', typeof w4.UNDO==='object' || html.includes("offerUndo
 
 L('[12] Non-régression');
 const t=w2.briefText();
-for(const k of ['PRIORITÉS','MECANIQUES=','GRAINE_DE_PARTIE','PERSONNE NE TROUVE','A0. LECTURE']) ok('prompt : '+k, t.includes(k));
+for(const k of ['INVARIANTS','MECANIQUES=','GRAINE_DE_PARTIE','PERSONNE NE TROUVE','A0. LECTURE']) ok('prompt : '+k, t.includes(k));
 ok('7 étapes Micro', (a2().match(/class="stepn"/g)||[]).length===7);
 w4.setResMode('rank'); w4.render();
 ok('classement intact', a4().includes('Classement'));
