@@ -381,7 +381,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='62';
+var APP_VERSION='63';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -644,22 +644,74 @@ function renderPoints(hd,app,banner){
       h+='<button class="tool t-coupe" style="padding:12px 16px" onclick="go(\'palmares\')"><span class="em" style="width:44px;height:44px;font-size:22px">🏅</span>'+
          '<span style="flex:1;min-width:0"><b>Palmarès</b><small>Les champions, toutes parties confondues.</small></span>'+
          '<span style="color:#d6d3d1">›</span></button>';
-    h+='<label class="lb">En cours</label>'+(act.length?act.map(mcard).join(''):'<p class="mini" style="margin-bottom:14px">Aucune partie en cours.</p>');
-    if(dn.length) h+='<label class="lb" style="margin-top:16px">Terminées</label>'+dn.map(mcard).join('');
+    /* Filtres : n'apparaissent que quand ils servent vraiment. */
+    var cnts=gameCounts(D.matches);
+    if(D.matches.length>=5 && cnts.length>=2){
+      h+='<div style="display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;-webkit-overflow-scrolling:touch">'+
+        '<button class="chip'+(!S.gameFilter?' on':'')+'" style="white-space:nowrap" onclick="S.gameFilter=null;render()">Tous '+D.matches.length+'</button>'+
+        cnts.map(function(c){
+          return '<button class="chip'+(S.gameFilter===c.game?' on':'')+'" style="white-space:nowrap" onclick="setGameFilter(\''+c.game.replace(/'/g,"\\'")+'\')">'+esc(c.game)+' '+c.n+'</button>';
+        }).join('')+'</div>';
+    }
+    if(D.matches.length>=12){
+      h+='<input placeholder="🔍 Chercher une partie" value="'+esc(S.matchQ||'')+'" oninput="S.matchQ=this.value;render()" style="margin-bottom:10px">';
+    }
+    var actF=matchesFiltered(act), dnF=matchesFiltered(dn);
+    if(!actF.length && !dnF.length){
+      h+='<div class="empty"><div class="e">🔍</div><h3>Aucune partie</h3><p>Aucun résultat pour ce filtre.</p>'+
+         '<button class="sm g" onclick="S.gameFilter=null;S.matchQ=\'\';render()">Tout afficher</button></div>';
+    } else {
+      h+='<label class="lb">En cours</label>'+(actF.length?actF.map(mcard).join(''):'<p class="mini" style="margin-bottom:14px">Aucune partie en cours.</p>');
+      if(dnF.length) h+='<label class="lb" style="margin-top:16px">Terminées</label>'+dnF.map(mcard).join('');
+    }
   }
   app.innerHTML=h;
   document.getElementById('nav').innerHTML='<div class="navbar"><div class="in"><button class="btn" onclick="openSheet()">+  Nouvelle partie</button></div></div>';
   if(S.sheet) drawSheet();
 }
+/* ── Catégorie « jeu » ──────────────────────────────────────────────
+   La liste était purement chronologique : à 200 parties, plus rien n'est
+   trouvable. Chaque partie porte désormais un jeu, déduit pour l'existant
+   (aucune ressaisie), et la liste se filtre. */
+var GAMES=['Uno','Belote','Tarot','Rami','Yams','Skyjo','Molkky','Triominos','Scrabble','Mille Bornes',
+  'Monopoly','Petits Chevaux','Dames','Échecs','Pétanque','Fléchettes','Bowling','Palet','Quiz','Autre'];
+function inferGame(name){
+  var n=(name||'').toLowerCase();
+  for(var i=0;i<GAMES.length;i++){
+    var g=GAMES[i].toLowerCase();
+    if(g!=='autre' && n.indexOf(g)>=0) return GAMES[i];
+  }
+  if(/tic.?tac/.test(n)) return 'Quiz';
+  if(/micro/.test(n)) return 'Quiz';
+  return 'Autre';
+}
+function gameOf(m){ return m.game || inferGame(m.name); }
+function setMatchGame(g){ var m=cur(); if(!m) return; m.game=g; persist(); toast('Jeu : '+g); render(); }
+function gameCounts(list){
+  var c={}; list.forEach(function(m){ var g=gameOf(m); c[g]=(c[g]||0)+1; });
+  return Object.keys(c).sort(function(a,b){return c[b]-c[a] || a.localeCompare(b);}).map(function(k){return {game:k,n:c[k]};});
+}
+function setGameFilter(g){ S.gameFilter=(S.gameFilter===g?null:g); S.matchQ=S.matchQ||''; render(); }
+function matchesFiltered(list){
+  var q=(S.matchQ||'').trim().toLowerCase();
+  return list.filter(function(m){
+    if(S.gameFilter && gameOf(m)!==S.gameFilter) return false;
+    if(q && (m.name||'').toLowerCase().indexOf(q)<0 && gameOf(m).toLowerCase().indexOf(q)<0) return false;
+    return true;
+  });
+}
 function mcard(m){
   var r=rank(m),ld=leaders(r.byCumul,'points',m.winRule);
+  var gm=gameOf(m);
   var nm=ld.length?r.byCumul.filter(function(p){return ld.indexOf(p.id)>=0;}).map(function(p){return p.name;}).join(' & '):'—';
+  var badge=(gm && gm!=='Autre' && gm.toLowerCase()!==(m.name||'').toLowerCase())
+    ? '<span class="tag" style="background:var(--bg);color:#78716c;margin-left:6px">'+esc(gm)+'</span>' : '';
   var actv=m.status!=='done';
   return '<div class="swipe" data-reveal="'+(actv?168:96)+'" style="--reveal:'+(actv?168:96)+'px"><div class="acts">'+
     (actv?'<button class="arch" onclick="archMatch(\''+m.id+'\')"><span class="ic">🏁</span>Terminer</button>':'')+
     '<button class="del" style="width:'+(actv?84:96)+'px" onclick="askDelMatch(\''+m.id+'\')"><span class="ic">🗑</span>Supprimer</button></div>'+
     '<div class="front"><button class="tool on" style="width:100%" onclick="openMatch(\''+m.id+'\')"><span class="em" style="background:#d1fae5;font-size:20px">🧮</span>'+
-    '<span style="flex:1;min-width:0"><b>'+esc(m.name)+'</b><small>'+pl(m.players.length,'joueur')+' · '+pl(r.count,'manche')+
+    '<span style="flex:1;min-width:0"><b>'+esc(m.name)+badge+'</b><small>'+pl(m.players.length,'joueur')+' · '+pl(r.count,'manche')+
     (m.winRule==='low'?' · moins gagne':'')+'</small></span>'+
     '<span style="text-align:right;flex-shrink:0"><b style="font-size:13px">'+(r.count?'🏆 '+esc(nm):'—')+'</b>'+
     '<small style="display:block;font-size:10px;color:#78716c;text-transform:uppercase">'+(r.count?'en tête':'à démarrer')+'</small></span></button></div></div>';
@@ -689,6 +741,10 @@ function drawSheet(){
   var el=document.createElement('div');el.className='sheet';el.id='sh';
   el.innerHTML='<div class="in" onclick="event.stopPropagation()"><div class="grab"></div>'+
     '<h2 style="margin:0 0 12px;font-size:19px">Nouvelle partie</h2>'+
+    '<label class="lb">Jeu</label>'+
+    '<div class="chips" id="gk" style="margin-bottom:10px">'+GAMES.map(function(g){
+      return '<button class="chip" data-g="'+esc(g)+'" onclick="pickGame(this)">'+esc(g)+'</button>';
+    }).join('')+'</div>'+
     '<label class="lb">Nom</label><input id="mn" value="Partie du '+fr(today())+'">'+
     '<label class="lb" style="margin-top:14px">Joueurs</label><div id="pk" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px">'+
       D.lib.map(function(p){return '<button class="chip on" data-id="'+p.id+'" onclick="this.classList.toggle(\'on\')" style="display:inline-flex;align-items:center;gap:6px">'+av(p.name,'xs')+esc(p.name)+'</button>';}).join('')+
@@ -704,8 +760,23 @@ function drawSheet(){
 var NEWRULE='high';
 function pickRule(hi){NEWRULE=hi?'high':'low';
   document.getElementById('rh').className='chip'+(hi?' on':'');document.getElementById('rl').className='chip'+(hi?'':' on');}
+function pickGame(btn){
+  var box=document.getElementById('gk'); if(!box) return;
+  var was=btn.classList.contains('on');
+  [].forEach.call(box.querySelectorAll('.chip'),function(b){b.classList.remove('on');});
+  if(!was){
+    btn.classList.add('on');
+    var g=btn.getAttribute('data-g');
+    var nm=document.getElementById('mn');
+    var v=nm?nm.value.trim():'';
+    var replaceable = !v || GAMES.indexOf(v)>=0 || /^Partie( du .*)?$/i.test(v);
+    if(nm && replaceable && g!=='Autre') nm.value=g;
+  }
+}
 function createMatch(){
   var name=document.getElementById('mn').value.trim()||'Partie';
+  var gsel=document.querySelector('#gk .chip.on');
+  var game=gsel? gsel.getAttribute('data-g') : inferGame(name);
   var roster=[];
   [].forEach.call(document.querySelectorAll('#pk .chip.on'),function(b){
     var p=D.lib.filter(function(x){return x.id===b.getAttribute('data-id');})[0];
@@ -713,7 +784,7 @@ function createMatch(){
   document.getElementById('mx').value.split(',').forEach(function(s){s=s.trim();if(s)roster.push({id:uid(),name:s});});
   if(roster.length<2){toast(roster.length?'Il faut au moins 2 joueurs pour un classement':'Choisis au moins un joueur');return;}
   var tEl=document.getElementById('mt'); var tgt=tEl?parseInt(tEl.value):NaN;
-  var m={id:uid(),name:name,winRule:NEWRULE,status:'active',created:today(),players:roster,rounds:[],target:(!isNaN(tgt)&&tgt>0)?tgt:null};
+  var m={id:uid(),name:name,game:game,winRule:NEWRULE,status:'active',created:today(),players:roster,rounds:[],target:(!isNaN(tgt)&&tgt>0)?tgt:null};
   D.matches.unshift(m);persist();S.sheet=false;removeSheet();openMatch(m.id);
 }
 
@@ -1084,6 +1155,11 @@ function tabSet(m){
          '<p class="mini" style="margin-top:6px">Il entre au classement dès sa première manche — les manches déjà jouées ne comptent pas contre lui.</p>'
        : '')+'</div>';
 
+  h+='<div class="card"><h2>Jeu</h2>'+
+     '<div class="chips">'+GAMES.map(function(g){
+       return '<button class="chip'+(gameOf(m)===g?' on':'')+'" onclick="setMatchGame(\''+g.replace(/'/g,"\\'")+'\')">'+esc(g)+'</button>';
+     }).join('')+'</div></div>';
+
   h+='<div class="card"><h2>Règle & objectif</h2>'+
      '<div class="row" style="gap:8px;margin-bottom:10px">'+
        '<button class="chip'+(m.winRule!=='low'?' on':'')+'" style="flex:1;text-align:center" onclick="setMatchRule(\'high\')">Le plus de points</button>'+
@@ -1238,7 +1314,7 @@ function renderQuizz(hd,app,banner){
     h+='<div class="card"><h2 style="cursor:pointer" onclick="S.qc4=(S.qc4===false);render()"><span class="stepn">4</span>Contexte & rythme'+
       '<span style="float:right;font-weight:400;font-size:12px;color:#a8a29e">'+(ctxSel?esc(ctxSel):'Standard')+' '+(S.qc4!==false?'▾':'▸')+'</span></h2>'+
       (S.qc4!==false?
-      '<p class="mini" style="margin:0 0 8px">Cumulables, et compatibles avec toutes les ambiances.</p>'+
+      '<p class="mini" style="margin:0 0 8px">Cumulables avec toute ambiance.</p>'+
       '<div style="display:flex;flex-direction:column;gap:7px">'+
       MICRO_STYLES.filter(function(sx){return sx.kind!=='personnalite';}).map(function(sx){
         var on=microCtx().indexOf(sx.id)>=0;
@@ -1249,7 +1325,7 @@ function renderQuizz(hd,app,banner){
     h+='<div class="card"><h2 style="cursor:pointer" onclick="S.qc5=(S.qc5===false);render()"><span class="stepn">5</span>Mécaniques du jeu'+
       '<span style="float:right;font-weight:400;font-size:12px;color:#a8a29e">'+mecs.length+'/'+MICRO_MECS.length+' '+(S.qc5!==false?'▾':'▸')+'</span></h2>'+
       (S.qc5!==false?
-      '<p class="mini" style="margin:0 0 8px">Ce que l\'animateur peut sortir en cours de partie.</p>'+
+      '<p class="mini" style="margin:0 0 8px">Ce que l\'animateur peut sortir en jeu.</p>'+
       '<div style="display:flex;flex-direction:column;gap:6px">'+
       MICRO_MECS.map(function(mc){
         var on=mecs.indexOf(mc.id)>=0;
@@ -1267,7 +1343,7 @@ function renderQuizz(hd,app,banner){
       '<p class="mini" style="margin-top:8px">Il te faut son app et un compte — les versions gratuites suffisent. Rien n\'est payant ni envoyé par En Jeux.</p></div>';
     var stl=MICRO_STYLES.filter(function(x){return x.id===(D.microStyle||'classique');})[0];
     h+='<div class="card"><h2><span class="stepn">7</span>Consigne libre <span style="font-weight:400;font-size:12px;color:#a8a29e">(facultatif)</span></h2>'+
-      '<p class="mini" style="margin:0 0 8px">Un ton, un thème, une règle, un sujet à éviter — tout ce que tu veux ajouter.</p>'+
+      '<p class="mini" style="margin:0 0 8px">Un ton, un thème, une règle — ce que tu veux ajouter.</p>'+
       '<input placeholder="ex. « beaucoup de questions sur la Bretagne », « pas de sport », « tutoie-nous »" value="'+(D.microCustom||'').replace(/"/g,'&quot;')+'" onchange="D.microCustom=this.value;persist();render()"></div>';
     var thm=MICRO_THEMES.filter(function(x){return x.id===(D.microTheme||'libre');})[0];
     var ctxLbl=microCtxStyles().map(function(x){return x.label;}).join(' · ');
@@ -1505,13 +1581,13 @@ function microCtxStyles(){
   return MICRO_STYLES.filter(function(s){return c.indexOf(s.id)>=0;});
 }
 var MICRO_MECS=[
-  {id:'defi',    label:'🎯 Tour Défi',       hint:"Le joueur choisit sa difficulté de 1 à 5 — et empoche autant de points."},
-  {id:'cash',    label:'💰 Cash',            hint:"Il refuse les propositions et joue en direct : 3 points s'il trouve."},
+  {id:'defi',    label:'🎯 Tour Défi',       hint:"Il choisit sa difficulté de 1 à 5, et gagne autant de points."},
+  {id:'cash',    label:'💰 Cash',            hint:"Il refuse les propositions : 3 points s'il trouve."},
   {id:'vol',     label:'🕵️ Question avec vol', hint:"S'il se trompe, les autres peuvent voler la réponse."},
-  {id:'mystere', label:'❓ Question Mystère', hint:"Aucune catégorie annoncée : on saute dans le vide."},
+  {id:'mystere', label:'❓ Question Mystère', hint:"Aucune catégorie annoncée."},
   {id:'estim',   label:'📏 Estimation',      hint:"Tout le monde donne un chiffre, le plus proche gagne."},
-  {id:'duel',    label:'⚔️ Duel',            hint:"Deux joueurs au coude-à-coude s'affrontent sur le même thème."},
-  {id:'quitte',  label:'🎲 Quitte ou double', hint:"Pour celui qui est derrière : il mise un point pour en gagner deux."},
+  {id:'duel',    label:'⚔️ Duel',            hint:"Deux joueurs au coude-à-coude s'affrontent."},
+  {id:'quitte',  label:'🎲 Quitte ou double', hint:"Celui qui est derrière mise 1 point pour en gagner 2."},
   {id:'or',      label:'⭐ Question en or',   hint:"Une question qui compte double, annoncée à l'avance."}
 ];
 function microMecs(){ if(!D.microMecs) D.microMecs=MICRO_MECS.map(function(m){return m.id;}); return D.microMecs; }
@@ -1621,7 +1697,7 @@ function microToCoupe(id){
   var last=D.micro&&D.micro[0]; if(!last) return;
   var m=D.matches.filter(function(x){return x.id===id;})[0];
   if(!m){
-    m={id:uid(),name:'Le Micro',date:today(),status:'live',winRule:'high',target:null,players:[],rounds:[]};
+    m={id:uid(),name:'Le Micro',game:'Quiz',date:today(),status:'live',winRule:'high',target:null,players:[],rounds:[]};
     D.matches.unshift(m);
   }
   var scores={};
@@ -2483,7 +2559,7 @@ function chToCoupeGo(id){
   if(!CH.saved) chSaveDuel();
   var m=D.matches.filter(function(x){return x.id===id;})[0];
   if(!m){
-    m={id:uid(),name:'Tic-Tac',date:today(),status:'live',winRule:'high',target:null,players:[],rounds:[]};
+    m={id:uid(),name:'Tic-Tac',game:'Quiz',date:today(),status:'live',winRule:'high',target:null,players:[],rounds:[]};
     D.matches.unshift(m);
   }
   var scores={};
