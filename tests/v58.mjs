@@ -14,7 +14,7 @@ L('[1] Structure : 6 étapes numérotées cohérentes');
 const steps=(app().match(/class="stepn"/g)||[]).length;
 L('        étapes : '+steps);
 ok('cartes numérotées homogènes (7 depuis la v59)', steps===7);
-for(const s of ['Qui joue','Ambiance de l','Thème','Contexte','assistant IA','Consigne libre'])
+for(const s of ['Qui joue','Ton animateur','Thème','Contexte','assistant IA','Consigne libre'])
   ok('étape « '+s+' »', app().includes(s));
 ok('Consigne libre en dernier avant le bouton',
    app().lastIndexOf('Consigne libre')<app().lastIndexOf('Générer et lancer') &&
@@ -39,7 +39,7 @@ ok('CADENCE=RAPIDE (Express)', t.includes('CADENCE=RAPIDE'));
 ok('CONTEXTE=VOITURE_BRUIT', t.includes('CONTEXTE=VOITURE_BRUIT'));
 ok('objectif ramené à 8 par Express', t.includes('OBJECTIF=8'));
 ok('bloc CONTEXTE ET RYTHME listé', t.includes('CONTEXTE ET RYTHME') && (t.match(/\n- /g)||[]).length>=3);
-ok('ambiance toujours distincte', t.includes('AMBIANCE SÉLECTIONNÉE') && t.includes('pince-sans-rire'));
+ok('ambiance toujours distincte', t.includes('RAPPEL DE PERSONNAGE') && t.includes('pince-sans-rire'));
 ok('les contextes ne remplacent pas l\'ambiance', t.includes("s'ajoutent à l'ambiance sans la remplacer"));
 
 L('[4] Désélection propre');
@@ -69,7 +69,7 @@ ok('chaque contexte a son explication', ['express','costaud','voiture'].every(id
 
 L('[7] Non-régression du prompt');
 t=w.briefText();
-for(const k of ['PRIORITÉS',"T'ARRÊTES DE PARLER",'Mélanie +2 → 8','Vol ouvert','PERSONNE NE TROUVE',
+for(const k of ['INVARIANTS',"T'ARRÊTES DE PARLER",'Mélanie +2 → 8','Vol ouvert','PERSONNE NE TROUVE',
                 'QUESTIONS INTERDITES','POINT DE CALIBRAGE','A0. LECTURE DE CONFIG_APP','GRAINE_DE_PARTIE'])
   ok('conservé : '+k, t.includes(k));
 w.D.microCustom='évite le sport';
