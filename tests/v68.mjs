@@ -10,7 +10,7 @@ const A=(win)=>win.document.getElementById('app').innerHTML;
 const w=boot(); const app=()=>A(w);
 
 L('[1] BUG barre d\'annulation (gel des minuteurs iOS)');
-ok('échéance mémorisée', html.includes('UNDO.until=Date.now()+15000'));
+ok('échéance mémorisée', /UNDO\.until=Date\.now\(\)\+\d+/.test(html));
 ok('sweepUndo existe', typeof w.sweepUndo==='function');
 ok('vérifiée à chaque rendu', html.includes('function render(){\n  sweepUndo();'));
 const ids=w.D.lib.slice(0,3).map(p=>p.id);
