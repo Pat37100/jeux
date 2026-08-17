@@ -381,7 +381,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='63';
+var APP_VERSION='64';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -673,19 +673,53 @@ function renderPoints(hd,app,banner){
    La liste était purement chronologique : à 200 parties, plus rien n'est
    trouvable. Chaque partie porte désormais un jeu, déduit pour l'existant
    (aucune ressaisie), et la liste se filtre. */
-var GAMES=['Uno','Belote','Tarot','Rami','Yams','Skyjo','Molkky','Triominos','Scrabble','Mille Bornes',
-  'Monopoly','Petits Chevaux','Dames','Échecs','Pétanque','Fléchettes','Bowling','Palet','Quiz','Autre'];
+/* Raccourcis des jeux les plus courants. La liste n'est PAS fermée :
+   la famille ajoute ses propres jeux, qui deviennent ensuite des raccourcis. */
+var GAMES_BASE=['Uno','Belote','Tarot','Rami','Yams','Skyjo','Molkky','Triominos','Scrabble','Mille Bornes',
+  'Monopoly','Petits Chevaux','Dames','Échecs','Pétanque','Fléchettes','Bowling','Palet','Quiz'];
+function userGames(){ if(!D.games) D.games=[]; return D.games; }
+function allGames(){
+  var seen={}, out=[];
+  userGames().concat(GAMES_BASE).forEach(function(g){
+    var k=(g||'').toLowerCase().trim(); if(!k||seen[k]) return; seen[k]=1; out.push(g);
+  });
+  return out;
+}
+function cleanGame(s){
+  s=(s||'').replace(/\s+/g,' ').trim().slice(0,28);
+  if(!s) return '';
+  return s.charAt(0).toUpperCase()+s.slice(1);
+}
+function addGame(name){
+  var g=cleanGame(name); if(!g) return '';
+  var exists=allGames().filter(function(x){return x.toLowerCase()===g.toLowerCase();})[0];
+  if(exists) return exists;
+  userGames().unshift(g); persist(); return g;
+}
+/* Jeux triés : ceux réellement utilisés d'abord, puis les raccourcis. */
+function gamesForPicker(){
+  var used={};
+  (D.matches||[]).forEach(function(m){ var g=gameOf(m); if(g) used[g]=(used[g]||0)+1; });
+  return allGames().slice().sort(function(a,b){ return (used[b]||0)-(used[a]||0); });
+}
 function inferGame(name){
   var n=(name||'').toLowerCase();
-  for(var i=0;i<GAMES.length;i++){
-    var g=GAMES[i].toLowerCase();
-    if(g!=='autre' && n.indexOf(g)>=0) return GAMES[i];
+  var list=allGames().slice().sort(function(a,b){return b.length-a.length;});
+  for(var i=0;i<list.length;i++){
+    var g=list[i].toLowerCase();
+    if(g && n.indexOf(g)>=0) return list[i];
   }
   if(/tic.?tac/.test(n)) return 'Quiz';
   if(/micro/.test(n)) return 'Quiz';
   return 'Autre';
 }
 function gameOf(m){ return m.game || inferGame(m.name); }
+function addGameHere(){
+  var el=document.getElementById('gadd'); if(!el) return;
+  var g=addGame(el.value);
+  if(!g){ toast('Donne un nom de jeu'); return; }
+  setMatchGame(g);
+}
 function setMatchGame(g){ var m=cur(); if(!m) return; m.game=g; persist(); toast('Jeu : '+g); render(); }
 function gameCounts(list){
   var c={}; list.forEach(function(m){ var g=gameOf(m); c[g]=(c[g]||0)+1; });
@@ -742,9 +776,10 @@ function drawSheet(){
   el.innerHTML='<div class="in" onclick="event.stopPropagation()"><div class="grab"></div>'+
     '<h2 style="margin:0 0 12px;font-size:19px">Nouvelle partie</h2>'+
     '<label class="lb">Jeu</label>'+
-    '<div class="chips" id="gk" style="margin-bottom:10px">'+GAMES.map(function(g){
+    '<div class="chips" id="gk" style="margin-bottom:8px">'+gamesForPicker().map(function(g){
       return '<button class="chip" data-g="'+esc(g)+'" onclick="pickGame(this)">'+esc(g)+'</button>';
     }).join('')+'</div>'+
+    '<input id="gnew" placeholder="Ou tape un autre jeu (Dixit, Loup-Garou, Skip-Bo…)" style="margin-bottom:10px" oninput="if(this.value.trim()){var b=document.querySelector(\'#gk .chip.on\'); if(b) b.classList.remove(\'on\');}">'+
     '<label class="lb">Nom</label><input id="mn" value="Partie du '+fr(today())+'">'+
     '<label class="lb" style="margin-top:14px">Joueurs</label><div id="pk" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px">'+
       D.lib.map(function(p){return '<button class="chip on" data-id="'+p.id+'" onclick="this.classList.toggle(\'on\')" style="display:inline-flex;align-items:center;gap:6px">'+av(p.name,'xs')+esc(p.name)+'</button>';}).join('')+
@@ -769,14 +804,18 @@ function pickGame(btn){
     var g=btn.getAttribute('data-g');
     var nm=document.getElementById('mn');
     var v=nm?nm.value.trim():'';
-    var replaceable = !v || GAMES.indexOf(v)>=0 || /^Partie( du .*)?$/i.test(v);
+    var replaceable = !v || allGames().indexOf(v)>=0 || /^Partie( du .*)?$/i.test(v);
     if(nm && replaceable && g!=='Autre') nm.value=g;
   }
 }
 function createMatch(){
   var name=document.getElementById('mn').value.trim()||'Partie';
+  var gnew=document.getElementById('gnew');
+  var _t=gnew?cleanGame(gnew.value):'';
+  if(_t && /^Partie( du .*)?$/i.test(name)) name=_t;
+  var typed=gnew? cleanGame(gnew.value) : '';
   var gsel=document.querySelector('#gk .chip.on');
-  var game=gsel? gsel.getAttribute('data-g') : inferGame(name);
+  var game = typed ? addGame(typed) : (gsel? gsel.getAttribute('data-g') : inferGame(name));
   var roster=[];
   [].forEach.call(document.querySelectorAll('#pk .chip.on'),function(b){
     var p=D.lib.filter(function(x){return x.id===b.getAttribute('data-id');})[0];
@@ -1156,9 +1195,13 @@ function tabSet(m){
        : '')+'</div>';
 
   h+='<div class="card"><h2>Jeu</h2>'+
-     '<div class="chips">'+GAMES.map(function(g){
+     '<div class="chips" style="margin-bottom:8px">'+gamesForPicker().map(function(g){
        return '<button class="chip'+(gameOf(m)===g?' on':'')+'" onclick="setMatchGame(\''+g.replace(/'/g,"\\'")+'\')">'+esc(g)+'</button>';
-     }).join('')+'</div></div>';
+     }).join('')+'</div>'+
+     '<div class="row" style="gap:8px">'+
+       '<input id="gadd" placeholder="Ajouter un jeu" style="flex:1">'+
+       '<button class="sm g" style="flex:0 0 84px" onclick="addGameHere()">Ajouter</button>'+
+     '</div></div>';
 
   h+='<div class="card"><h2>Règle & objectif</h2>'+
      '<div class="row" style="gap:8px;margin-bottom:10px">'+
