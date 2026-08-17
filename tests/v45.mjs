@@ -44,5 +44,5 @@ ok('Mur des champions intact', (function(){ w.go('champions'); w.render(); retur
 
 L('[5] Accessibilité');
 ok('conseil d\'installation étiqueté', html.includes('aria-label="Masquer ce conseil"'));
-ok('suppression de duel étiquetée', html.includes('aria-label="Supprimer ce duel"'));
+ok('suppression de duel accessible par balayage, action étiquetée', html.includes('chDelDuel') && html.includes(">'+(label||'Supprimer')+'"));
 L(F? '\n*** '+F+' ECHEC(S) ***' : '\nTOUT PASSE ('+F+' échec)');
