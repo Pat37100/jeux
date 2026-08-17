@@ -41,7 +41,7 @@ const n0=w.cur().players.length;
 w.askDropPlayer(ids[3]); 
 ok('confirmation demandée (scores en jeu)', typeof w.dropPlayerFull==='function');
 w.dropPlayerFull(ids[3]);
-ok('joueur retiré', w.cur().players.length===n0-1);
+ok('joueur avec historique : mis en retrait, pas effacé (v68)', w.cur().players.length===n0 && w.cur().players.some(p=>p.out===true) && w.activePlayers(w.cur()).length===n0-1);
 
 L('[3] Balayage : cohérence dans toute l\'app');
 const zones={
