@@ -25,8 +25,8 @@ ok('deux onglets, pas plus', (()=>{w.go('chrono');w.render();return w.document.q
 L('[2] Onglet Résultats : même présentation partout');
 for(const v of ['points','chrono','quizz']){
   w.go(v); w.setRtab('res'); w.render();
-  ok(v+' : champion en tête', A(w).includes('👑'));
-  ok(v+' : classement commun', A(w).includes('linear-gradient(90deg,#34d399,#059669)'));
+  ok(v+' : leader couronné', A(w).includes('👑'));
+  ok(v+' : classement aux composants de La Coupe (v76)', A(w).includes('class="rank') && A(w).includes('class="champ'));
   ok(v+' : médailles', A(w).includes('🥇'));
 }
 w.go('chrono'); w.setRtab('res'); w.render();
