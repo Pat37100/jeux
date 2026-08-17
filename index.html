@@ -299,7 +299,9 @@
   .champ.a{background:var(--am-l);border-color:#fde68a}
   .champ .l{font-size:11px;font-weight:700;text-transform:uppercase}
   .champ.g .l{color:#047857}.champ.a .l{color:#b45309}
-  .champ .v{font-size:18px;font-weight:800;margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .champ .v{font-size:18px;font-weight:800;margin-top:5px;line-height:1.2;overflow:hidden;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
+  .champ .v.tie{font-size:15px}
   .champ .s{font-size:13px;font-variant-numeric:tabular-nums}
   .champ.g .v,.champ.g .s{color:#064e3b}.champ.a .v,.champ.a .s{color:#78350f}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
@@ -381,7 +383,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='64';
+var APP_VERSION='65';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -734,6 +736,17 @@ function matchesFiltered(list){
     return true;
   });
 }
+/* Balayage : un seul motif pour toute l'app.
+   Règle : on balaie pour supprimer un ENREGISTREMENT ; la croix ✕ reste
+   réservée aux lignes d'un formulaire en cours de saisie. */
+function swipeRow(inner, actions, reveal){
+  reveal=reveal||96;
+  return '<div class="swipe" data-reveal="'+reveal+'" style="--reveal:'+reveal+'px"><div class="acts">'+
+    actions+'</div><div class="front">'+inner+'</div></div>';
+}
+function delAct(fn,label){
+  return '<button class="del" style="width:96px" onclick="'+fn+'"><span class="ic">🗑</span>'+(label||'Supprimer')+'</button>';
+}
 function mcard(m){
   var r=rank(m),ld=leaders(r.byCumul,'points',m.winRule);
   var gm=gameOf(m);
@@ -1065,11 +1078,22 @@ function resChamps(m){
   var r=rank(m,keeper()); if(!r.count) return goalBanner(m);
   var lp=leaders(r.byCumul,'points',m.winRule), lw=leaders(r.byWins,'wins',m.winRule);
   function nmOf(list,ids){return list.filter(function(p){return ids.indexOf(p.id)>=0;}).map(function(p){return p.name;}).join(' & ');}
+  /* Égalité : au-delà de deux noms, on annonce le nombre plutôt que de
+     tronquer une liste illisible. Le détail reste dans l'infobulle. */
+  function champBox(list,ids){
+    var names=list.filter(function(p){return ids.indexOf(p.id)>=0;}).map(function(p){return p.name;});
+    if(!names.length) return {v:'—',cls:'',n:0,full:''};
+    if(names.length===1) return {v:esc(names[0]),cls:'',n:1,full:names[0]};
+    if(names.length===2) return {v:esc(names[0]+' & '+names[1]),cls:'tie',n:2,full:names.join(' & ')};
+    return {v:names.length+' ex æquo',cls:'tie',n:names.length,full:names.join(' & ')};
+  }
   return goalBanner(m)+'<div class="grid2">'+
-    '<div class="champ g"><div class="l">🏆 Meilleur cumul</div><div class="v">'+esc(lp.length?nmOf(r.byCumul,lp):'—')+'</div>'+
-      '<div class="s">'+(lp.length?nf(r.byCumul.filter(function(p){return lp.indexOf(p.id)>=0;})[0].points)+' pts':'—')+'</div></div>'+
-    '<div class="champ a"><div class="l">👑 Plus de victoires</div><div class="v">'+esc(lw.length?nmOf(r.byWins,lw):'—')+'</div>'+
-      '<div class="s">'+(lw.length?pl(r.byWins.filter(function(p){return lw.indexOf(p.id)>=0;})[0].wins,'victoire'):'—')+'</div></div></div>';
+    (function(){ var b=champBox(r.byCumul,lp);
+      return '<div class="champ g"><div class="l">🏆 Meilleur cumul</div><div class="v '+b.cls+'" title="'+esc(b.full)+'">'+b.v+'</div>'+
+      '<div class="s">'+(lp.length?nf(r.byCumul.filter(function(p){return lp.indexOf(p.id)>=0;})[0].points)+' pts'+(b.n>1?' · à égalité':''):'—')+'</div></div>'; })()+
+    (function(){ var b=champBox(r.byWins,lw);
+      return '<div class="champ a"><div class="l">👑 Plus de victoires</div><div class="v '+b.cls+'" title="'+esc(b.full)+'">'+b.v+'</div>'+
+      '<div class="s">'+(lw.length?pl(r.byWins.filter(function(p){return lw.indexOf(p.id)>=0;})[0].wins,'victoire')+(b.n>1?' · à égalité':''):'—')+'</div></div>'; })()+'</div>';
 }
 function resPeriod(m){
   var per=[['all','Tout'],['month','Ce mois'],['year','Cette année'],['custom','Dates']];
@@ -1175,12 +1199,11 @@ function tabSet(m){
      '<div style="display:flex;flex-direction:column;gap:7px">'+
      m.players.map(function(p){
        var played=m.rounds.filter(function(r){return r.scores[p.id]!==undefined;}).length;
-       return '<div class="row" style="gap:8px;align-items:center">'+av(p.name,'sm')+
+       var row='<div class="row" style="gap:8px;align-items:center;background:var(--bg);border-radius:10px;padding:8px 10px">'+av(p.name,'sm')+
          '<span style="flex:1;min-width:0"><b style="font-size:13.5px">'+esc(p.name)+'</b>'+
-         '<small style="display:block;font-size:11px;color:var(--mut)">'+pl(played,'manche')+' jouée'+(played>1?'s':'')+'</small></span>'+
-         (m.players.length>2 && m.status!=='done'
-           ? '<button class="sm r" aria-label="Retirer '+esc(p.name)+'" onclick="askDropPlayer(\''+p.id+'\')">Retirer</button>'
-           : '')+'</div>'+
+         '<small style="display:block;font-size:11px;color:var(--mut)">'+pl(played,'manche')+' jouée'+(played>1?'s':'')+'</small></span></div>';
+       var canDrop=(m.players.length>2 && m.status!=='done');
+       return (canDrop? swipeRow(row, delAct("askDropPlayer('"+p.id+"')",'Retirer')) : row)+
          (S.confirm==='dp'+p.id
            ? '<div style="background:var(--ro-l);padding:10px;border-radius:10px"><p style="margin:0 0 8px;font-size:12.5px;color:#9f1239;font-weight:600">Retirer '+esc(p.name)+' de la partie ?</p>'+
              '<p class="mini" style="margin:0 0 8px;color:#9f1239">'+(played?'Ses '+pl(played,'score')+' seront effacés de cette partie.':'Il n\'a encore aucun score.')+'</p>'+
@@ -1926,11 +1949,11 @@ function renderSave(hd,app,banner){
     '<p class="mini" style="margin:8px 0 0">Coupe d\'un geste tous les jeux et outils — pratique tard le soir.</p></div>';
   h+='<div class="card"><h2>Joueurs & équipes</h2>';
   D.lib.forEach(function(p){
-    h+='<div class="row" style="background:var(--bg);border-radius:10px;padding:8px 10px;margin-bottom:6px">'+
+    var row='<div class="row" style="background:var(--bg);border-radius:10px;padding:8px 10px">'+
       '<button style="border:0;background:none;padding:0;cursor:pointer" onclick="openAv(\''+p.id+'\')">'+av(p.name)+'</button>'+
       '<span style="flex:1;font-weight:600">'+esc(p.name)+'</span>'+
-      '<button class="sm" onclick="openAv(\''+p.id+'\')">Avatar</button>'+
-      '<button class="sm r" onclick="delLib(\''+p.id+'\')">Retirer</button></div>';});
+      '<button class="sm" onclick="openAv(\''+p.id+'\')">Avatar</button></div>';
+    h+='<div style="margin-bottom:6px">'+swipeRow(row, delAct("delLib('"+p.id+"')",'Retirer'))+'</div>';});
   h+='<div class="row" style="margin-top:8px"><input id="nl" placeholder="Prénom ou nom d\'équipe"><button class="sm g" onclick="addLib()">Ajouter</button></div>'+
      '<p class="mini" style="margin-top:8px">Touche <b>Avatar</b> pour mettre une <b>photo</b> 📷 ou un personnage. Un participant peut être une personne <b>ou une équipe</b> (ex. « Les Bleus »). Le retirer ici ne touche pas aux parties déjà jouées.</p></div>';
   h+='<div class="card"><h2>Options</h2>'+
@@ -2214,7 +2237,13 @@ function avPhoto(inp){
 }
 function addLib(){var v=document.getElementById('nl').value.trim();if(!v)return;
   v.split(',').forEach(function(s){s=s.trim();if(s)D.lib.push({id:uid(),name:s});});persist();render();}
-function delLib(id){D.lib=D.lib.filter(function(p){return p.id!==id;});persist();render();}
+function delLib(id){
+  var idx=D.lib.findIndex(function(p){return p.id===id;});
+  if(idx<0) return;
+  var backup=JSON.parse(JSON.stringify(D.lib[idx]));
+  D.lib.splice(idx,1); persist(); render();
+  offerUndo(backup.name+' retiré', function(){ D.lib.splice(Math.min(idx,D.lib.length),0,backup); persist(); render(); });
+}
 function shareBackup(){var t=JSON.stringify(D);
   if(navigator.share){navigator.share({text:t}).catch(function(){});}else copy(t,'Sauvegarde copiée');}
 /* Sauvegarde dans un vrai fichier (plus fiable qu'un copier-coller) */
@@ -2615,7 +2644,13 @@ function chToCoupeGo(id){
   persist(); toast('Manche ajoutée à « '+m.name+' » 🏆');
   S.matchId=m.id; S.tab='rank'; S.histMode='grid'; go('match');
 }
-function chDelDuel(id){ D.tictac=D.tictac.filter(function(d){return d.id!==id;}); persist(); render(); }
+function chDelDuel(id){
+  var idx=D.tictac.findIndex(function(d){return d.id===id;});
+  if(idx<0) return;
+  var backup=JSON.parse(JSON.stringify(D.tictac[idx]));
+  D.tictac.splice(idx,1); persist(); render();
+  offerUndo('Duel supprimé', function(){ D.tictac.splice(Math.min(idx,D.tictac.length),0,backup); persist(); render(); });
+}
 function chConfig(){
   var s=chSettings();
   var presets=[30,45,60,90,120];
@@ -2662,10 +2697,12 @@ function chConfig(){
        (S.chHist?'▾':'›')+' Derniers duels ('+D.tictac.length+')</button>';
     if(S.chHist){
       h+='<div class="card" style="margin-top:8px">'+D.tictac.slice(0,8).map(function(d){
-        return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)">'+
+        var row='<div style="display:flex;align-items:center;gap:8px;padding:7px 4px;background:var(--card)">'+
           '<span class="mini" style="width:64px;flex-shrink:0">'+fr(d.date)+'</span>'+
           '<b style="flex:1;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(d.winner?'👑 '+esc(d.winner):'—')+'</b>'+
-          '<button class="icobtn" style="font-size:15px;padding:2px 6px" aria-label="Supprimer ce duel" onclick="chDelDuel(\''+d.id+'\')">🗑</button></div>';
+          (d.players&&d.players[0]?'<span class="mini" style="flex-shrink:0">✓ '+(d.players[0].good||0)+' · ✗ '+(d.players[0].bad||0)+'</span>':'')+
+          '</div>';
+        return '<div style="border-bottom:1px solid var(--line)">'+swipeRow(row, delAct("chDelDuel('"+d.id+"')"))+'</div>';
       }).join('')+'</div>';
     }
   }
