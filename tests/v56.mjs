@@ -70,8 +70,8 @@ const t=w.briefText();
 ok('prompt : portée élargie à tout le jeu', t.includes('CONSIGNE LIBRE') && t.includes("n'importe quel aspect du jeu"));
 
 L('[8] NON-RÉGRESSION du prompt');
-for(const k of ['PRIORITÉS',"T'ARRÊTES DE PARLER",'Mélanie +2 → 8','Vol ouvert','PERSONNE NE TROUVE',
-                'QUESTIONS INTERDITES','POINT DE CALIBRAGE','±0,5','A0. LECTURE DE CONFIG_APP','sections A à S'])
+for(const k of ['INVARIANTS',"T'ARRÊTES DE PARLER",'Mélanie +2 → 8','Vol ouvert','PERSONNE NE TROUVE',
+                'QUESTIONS INTERDITES','POINT DE CALIBRAGE','jamais plus de ±1','A0. LECTURE DE CONFIG_APP','VERROU DU PROPRIÉTAIRE'])
   ok('conservé : '+k, t.includes(k));
 w.toggleMicroCtx('voiture'); ok('En voiture toujours actif', w.briefText().includes('CONTEXTE=VOITURE_BRUIT'));
 w.toggleMicroCtx('costaud'); ok('Costaud toujours actif', w.briefText().includes('NIVEAU_INITIAL=7'));
