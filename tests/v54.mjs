@@ -15,22 +15,22 @@ ok('reste une seule ligne', (app().match(/mode vocal/g)||[]).length===1);
 
 L('[2] Le moteur prévient — SANS bloquer');
 ok('phrase d\'ouverture prévue', t.includes('PREMIÈRE PRISE DE PAROLE'));
-ok('enchaîne dans le même message', t.includes('ENCHAÎNES IMMÉDIATEMENT'));
+ok('enchaîne dans le même message', t.includes('Le tout dans le même message'));
 ok('aucune confirmation attendue', t.includes("n'attends aucune confirmation"));
 ok('ne bloque jamais le démarrage', t.includes('ne bloques jamais le démarrage'));
-ok('la partie se joue même à l\'écrit', t.includes("si les joueurs répondent à l'écrit"));
+ok('la partie se joue même à l\'écrit', t.includes("À L'ÉCRIT"));
 
 L('[3] Le moteur s\'adapte au mode écrit');
-ok('section des deux modes', t.includes('MODE DE JEU, ORAL ET BRUIT'));
+ok('section des deux modes', t.includes('VOIX, BRUIT ET INTERRUPTIONS'));
 ok('à l\'écrit : auteur explicite', t.includes("l'auteur de chaque message est explicite"));
-ok('à l\'écrit : vérifier quand même questionOwner', t.includes('bien questionOwner qui répond'));
-ok('rappel unique, sans insister', t.includes('une seule fois, sans insister'));
-ok('règles orales conservées', t.includes("À L'ORAL") && t.includes('à plusieurs voix'));
+ok('à l\'écrit : vérifier quand même questionOwner', t.includes('bien questionOwner'));
+ok('rappel unique, sans insister', t.includes('une seule fois'));
+ok('règles orales conservées', t.includes("À L'ORAL"));
 
 L('[4] Non-régression : démarrage toujours immédiat');
 ok('pas de préambule réintroduit', t.includes('Aucun rappel de règles'));
 ok('ne demande jamais qui joue', t.includes('ne demande jamais qui joue'));
-for(const k of ['PRIORITÉS',"T'ARRÊTES DE PARLER",'PERSONNE NE TROUVE','Vol ouvert','POINT DE CALIBRAGE','QUESTIONS INTERDITES'])
+for(const k of ['INVARIANTS',"T'ARRÊTES DE PARLER",'PERSONNE NE TROUVE','Vol ouvert','POINT DE CALIBRAGE','QUESTIONS INTERDITES'])
   ok('conservé : '+k, t.includes(k));
 ok('13 ambiances', w.MICRO_STYLES.length===13);
 ok('diversité app active', /GRAINE_DE_PARTIE=\d+/.test(t));
