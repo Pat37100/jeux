@@ -201,6 +201,9 @@
   .swipe .del{background:linear-gradient(135deg,#e11d48,#f43f5e)}
   .swipe .arch{background:linear-gradient(135deg,#d97706,#f59e0b)}
   .swipe .front{position:relative;z-index:1;transition:transform .18s ease;will-change:transform;background:transparent;touch-action:pan-y}
+  .swipe .front::after{content:'';position:absolute;top:6px;right:0;bottom:6px;width:16px;border-radius:0 14px 14px 0;
+    background:linear-gradient(90deg,rgba(0,0,0,0),rgba(0,0,0,.07));pointer-events:none;transition:opacity .18s ease}
+  .swipe.open .front::after{opacity:0}
   .swipe .front>*{margin-bottom:0 !important}
   .swipe.open .front{transform:translateX(calc(-1*var(--reveal,96px)))}
   .swipe .front .tool{margin-bottom:0}
@@ -378,7 +381,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='61';
+var APP_VERSION='62';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -675,7 +678,7 @@ function openMatch(id){
      Le classement joueur par joueur reste à un doigt, dans l'onglet 🏅. */
   var m=D.matches.filter(function(x){return x.id===id;})[0];
   S.tab=(m && m.rounds && m.rounds.length>=1) ? 'hist' : 'play';
-  S.histMode='rank';
+  S.histMode='grid';
   window.scrollTo(0,0); render();
 }
 function openSheet(){S.sheet=true;render();}
@@ -837,7 +840,7 @@ function tabPlay(m){
       (S.dateOpen
         ? '<input type="date" style="flex:1" value="'+S.date+'" onchange="S.date=this.value;S.dateOpen=false;render()">'
         : '<button class="chip" style="flex:1;text-align:left" onclick="S.dateOpen=true;render()">📅 '+(S.date===today()?'Aujourd\'hui':fr(S.date))+'</button>')+
-      [1,5,10].map(function(v){return '<button class="chip'+(step===v?' on':'')+'" aria-label="Pas de '+v+' point'+(v>1?'s':'')+'" onclick="S.step='+v+';render()">±'+v+'</button>';}).join('')+
+      [1,5,10].map(function(v){return '<button class="chip'+(step===v?' on':'')+'" style="flex:0 0 54px;text-align:center;padding-left:0;padding-right:0" aria-label="Pas de '+v+' point'+(v>1?'s':'')+'" onclick="S.step='+v+';render()">±'+v+'</button>';}).join('')+
     '</div>';
   m.players.forEach(function(p){
     var on=w.indexOf(p.id)>=0;
@@ -938,7 +941,7 @@ function histGrid(m){
     '</div>';
 }
 function resSelector(mode,nb){
-  var modes=[['rank','🏅','Par joueur'],['grid','▦','Grille'],['graph','📈','Courbe'],['list','☰','Liste']];
+  var modes=[['grid','▦','Grille'],['rank','🏅','Par joueur'],['graph','📈','Courbe'],['list','☰','Liste']];
   if(nb!==undefined && nb<3) modes=modes.filter(function(o){return o[0]!=='graph';});
   return '<div class="row" style="gap:6px;margin-bottom:10px">'+modes.map(function(o){
     return '<button class="chip'+(mode===o[0]?' on':'')+'" style="flex:1;text-align:center;padding:9px 4px" onclick="setResMode(\''+o[0]+'\')">'+o[1]+'<br><span style="font-size:10.5px;font-weight:600">'+o[2]+'</span></button>';
@@ -971,7 +974,7 @@ function resPeriod(m){
    pour que la période s'applique partout de la même façon. */
 function tabRes(m){
   var nb=m.rounds.filter(keeper()).length;
-  var mode=S.histMode||'rank';
+  var mode=S.histMode||'grid';
   if(mode==='graph' && nb<3) mode=S.histMode='grid';
   var head=resSelector(mode,m.rounds.length)+resPeriod(m)+resChamps(m);
   if(!nb && m.rounds.length) return head+'<div class="card" style="text-align:center;background:var(--am-l);border-color:#fde68a"><b>Aucune manche sur cette période</b><p class="mini" style="color:#b45309">Cette partie contient '+pl(m.rounds.length,'manche')+', hors du filtre.</p><button class="sm g" onclick="S.period=\'all\';render()">Voir tout</button></div>';
@@ -1264,8 +1267,8 @@ function renderQuizz(hd,app,banner){
       '<p class="mini" style="margin-top:8px">Il te faut son app et un compte — les versions gratuites suffisent. Rien n\'est payant ni envoyé par En Jeux.</p></div>';
     var stl=MICRO_STYLES.filter(function(x){return x.id===(D.microStyle||'classique');})[0];
     h+='<div class="card"><h2><span class="stepn">7</span>Consigne libre <span style="font-weight:400;font-size:12px;color:#a8a29e">(facultatif)</span></h2>'+
-      '<p class="mini" style="margin:0 0 8px">Sur l\'animateur, sur les questions, ou les deux.</p>'+
-      '<input placeholder="ex. « parle avec emphase », « évite le sport », « des questions sur la Bretagne »" value="'+(D.microCustom||'').replace(/"/g,'&quot;')+'" onchange="D.microCustom=this.value;persist();render()"></div>';
+      '<p class="mini" style="margin:0 0 8px">Un ton, un thème, une règle, un sujet à éviter — tout ce que tu veux ajouter.</p>'+
+      '<input placeholder="ex. « beaucoup de questions sur la Bretagne », « pas de sport », « tutoie-nous »" value="'+(D.microCustom||'').replace(/"/g,'&quot;')+'" onchange="D.microCustom=this.value;persist();render()"></div>';
     var thm=MICRO_THEMES.filter(function(x){return x.id===(D.microTheme||'libre');})[0];
     var ctxLbl=microCtxStyles().map(function(x){return x.label;}).join(' · ');
     h+='<div class="card" style="background:var(--bg)"><h2 style="font-size:14px;margin-bottom:8px">📋 Ce que tu as choisi</h2>'+
@@ -1404,7 +1407,7 @@ function briefText(){
        '\nÉquipe 2 : '+teams.b.join(', ')+'.'+
        '\nInterroge toujours un joueur précis, en alternant systématiquement entre les deux équipes et en tournant à l\'intérieur de chaque équipe : currentPlayerIndex reste mécanique. Les points vont à l\'équipe du joueur interrogé. Annonce le score par équipe. Les coéquipiers n\'ont pas le droit de souffler : si quelqu\'un répond à la place du joueur interrogé, la question est perdue pour son équipe et le fait est brûlé. Pour une question avec vol, seule l\'équipe adverse peut tenter après « Vol ouvert ».';
   }
-  if(D.microCustom && D.microCustom.trim()) t+='\n\nCONSIGNE LIBRE DES JOUEURS (elle peut porter sur le ton de l\'animateur, sur le contenu des questions, ou sur les deux ; applique-la dans les deux registres si c\'est ambigu, mais elle ne modifie aucune règle du moteur) : '+D.microCustom.trim();
+  if(D.microCustom && D.microCustom.trim()) t+='\n\nCONSIGNE LIBRE DES JOUEURS — À RESPECTER TOUT AU LONG DE LA PARTIE. Elle peut porter sur n\'importe quel aspect du jeu : le ton de l\'animateur, le contenu ou le thème des questions, un sujet à privilégier ou à éviter, une règle de rythme, une habitude de la famille. Si elle est ambiguë, applique-la à la fois au ton ET aux questions. Elle ne supprime aucune règle du moteur, mais elle prime sur tes préférences par défaut : '+D.microCustom.trim();
   var recent=D.journal.slice(0,120);
   if(recent.length){
     t+='\n\n=== FAITS DÉJÀ CONSOMMÉS LORS DES PARTIES PRÉCÉDENTES ===\nCharge-les dans askedFacts[] (section I). Ils sont indisponibles, même reformulés :\n\n'+
@@ -1596,19 +1599,54 @@ function delJ(id){D.journal=D.journal.filter(function(e){return e.id!==id;});per
 function copyJournal(){copy(D.journal.map(function(e){return e.text;}).join('\n'),'Journal copié');}
 
 /* ---- LE MICRO : enregistrement des résultats + palmarès ---- */
+/* Symétrie avec Tic-Tac : le Mur enregistre tout seul, la seule question
+   restante est « on le compte aussi dans La Coupe ? ». */
+function microOfferCoupe(){
+  var last=D.micro&&D.micro[0]; if(!last||!last.players||!last.players.length) return;
+  var live=D.matches.filter(function(m){return m.status!=='done';});
+  var el=document.createElement('div'); el.className='sheet'; el.id='mcsh';
+  el.onclick=function(){ try{el.remove();}catch(e){} };
+  el.innerHTML='<div class="in" onclick="event.stopPropagation()"><div class="grab"></div>'+
+    '<h2 style="margin:2px 0 4px">➕ Compter dans La Coupe ?</h2>'+
+    '<p class="mini" style="margin:0 0 10px">Les scores du quiz deviennent une manche. La partie reste au Mur des champions dans tous les cas.</p>'+
+    (live.length? live.map(function(m){
+      return '<button class="sm" style="width:100%;margin-bottom:7px;background:var(--card);text-align:left" onclick="microToCoupe(\''+m.id+'\')">▶︎ '+esc(m.name)+' — '+pl(m.rounds.length,'manche')+'</button>';
+    }).join('') : '<p class="mini" style="margin-bottom:10px">Aucune partie en cours.</p>')+
+    '<button class="btn" onclick="microToCoupe(\'\')">+ Nouvelle partie « Le Micro »</button>'+
+    '<button class="btn grey" style="margin-top:8px" onclick="document.getElementById(\'mcsh\').remove()">Non merci</button></div>';
+  document.body.appendChild(el);
+}
+function microToCoupe(id){
+  var sh=document.getElementById('mcsh'); if(sh) sh.remove();
+  var last=D.micro&&D.micro[0]; if(!last) return;
+  var m=D.matches.filter(function(x){return x.id===id;})[0];
+  if(!m){
+    m={id:uid(),name:'Le Micro',date:today(),status:'live',winRule:'high',target:null,players:[],rounds:[]};
+    D.matches.unshift(m);
+  }
+  var scores={};
+  last.players.forEach(function(p){
+    var ex=m.players.filter(function(q){return q.name===p.name;})[0];
+    if(!ex){ ex={id:uid(),name:p.name}; m.players.push(ex); }
+    scores[ex.id]=p.pts!==undefined?p.pts:(p.score||0);
+  });
+  m.rounds.unshift({id:uid(),date:last.date||today(),scores:scores});
+  persist(); toast('Partie ajoutée à « '+m.name+' » 🏆');
+  S.matchId=m.id; S.tab='rank'; S.histMode='grid'; go('match');
+}
 function microOpen(){ S.microSheet=true; render(); }
 function microClose(){ S.microSheet=false; render(); }
 function microDrawSheet(){
   var el=document.createElement('div'); el.className='sheet'; el.id='msh';
   el.innerHTML='<div class="in" onclick="event.stopPropagation()"><div class="grab"></div>'+
-    '<h2 style="margin:0 0 4px;font-size:19px">Résultat d\'une partie de quiz</h2>'+
+    '<h2 style="margin:0 0 4px;font-size:19px">Résultat de la partie</h2>'+
     '<p class="mini" style="margin:0 0 12px">Recopie le classement final annoncé par l\'animateur. Le 1er de la liste est le vainqueur.</p>'+
     '<label class="lb">Date</label><input type="date" id="mqd" value="'+today()+'">'+
     '<label class="lb" style="margin-top:12px">Classement final</label>'+
     '<p class="mini" style="margin:0 0 6px">Les joueurs sont déjà là : ajoute juste le score après chaque prénom. Je trie tout seul.</p>'+
     '<textarea id="mqr" rows="5" placeholder="Mattéo 15&#10;Patrick 12&#10;Mélanie 9">'+esc(microTeam().map(function(n){return n+' ';}).join('\n'))+'</textarea>'+
     '<div class="row" style="margin-top:14px"><button class="btn grey" onclick="microClose()">Annuler</button>'+
-    '<button class="btn" onclick="microSave()">Enregistrer au palmarès</button></div></div>';
+    '<button class="btn" onclick="microSave()">Enregistrer</button></div></div>';
   el.onclick=microClose; document.body.appendChild(el);
 }
 function microSave(){
@@ -1626,7 +1664,8 @@ function microSave(){
   var haveScores=players.some(function(p){return p.score!==null;});
   if(haveScores) players.sort(function(a,b){return (b.score===null?-1:b.score)-(a.score===null?-1:a.score);});
   D.micro.unshift({id:uid(), date:date, players:players});
-  reviewMoment(); persist(); S.microSheet=false; S.qtab='pal'; toast('Résultat enregistré 🏆'); render();
+  reviewMoment(); persist(); S.microSheet=false; toast('Résultat enregistré 🏆'); render();
+  try{ microOfferCoupe(); }catch(e){}
 }
 function microDel(id){ D.micro=D.micro.filter(function(g){return g.id!==id;}); persist(); render(); }
 function microAgg(){
@@ -2403,16 +2442,19 @@ function chFinishNow(){
   var best=alive.slice().sort(function(a,b){ return b.good-a.good || b.left-a.left; })[0];
   CH.winner = best ? best.name : ((CH.players[0]&&CH.players[0].name)||null);
   D.live=null; persist();
+  /* Le Mur des champions recense tout ce qui se joue dans l'app :
+     aucune décision à prendre, aucun bouton. */
+  try{ chSaveDuel(true); }catch(e){}
   if(CH.winner){ fanfare(); speak(CH.winner+' remporte la manche'); }
   render();
 }
-function chSaveDuel(){ reviewMoment(); D.live=null;
+function chSaveDuel(silent){ reviewMoment(); D.live=null;
   if(!CH||CH.saved) return;
   var w = CH.winner!==null ? CH.winner : (chAlive()[0]&&chAlive()[0].name);
   D.tictac.unshift({ id:uid(), date:today(),
     players: CH.players.map(function(p){return {name:p.name, good:p.good, bad:(p.bad||0)};}),
     winner: w||null });
-  CH.saved=true; persist(); toast('Manche enregistrée 🏆'); render();
+  CH.saved=true; persist(); if(!silent) toast('Manche enregistrée 🏆'); render();
 }
 /* Passerelle Tic-Tac -> La Coupe : les ✓ deviennent les points d'une manche.
    Pas de rubrique en plus : on réutilise les parties existantes. */
@@ -2422,9 +2464,8 @@ function chToCoupe(){
   var el=document.createElement('div'); el.className='sheet'; el.id='tcsh';
   el.onclick=function(){ try{el.remove();}catch(e){} };
   el.innerHTML='<div class="in" onclick="event.stopPropagation()"><div class="grab"></div>'+
-    '<h2 style="margin:2px 0 4px">🏆 Enregistrer la manche</h2>'+
-    '<button class="sm g" style="width:100%;margin-bottom:10px" onclick="chSaveOnly()">🏅 Au Mur des champions seulement</button>'+
-    '<label class="lb">Ou compter dans une partie de La Coupe</label>'+
+    '<h2 style="margin:2px 0 4px">➕ Compter dans La Coupe</h2>'+
+    '<p class="mini" style="margin:0 0 10px">Les ✓ deviennent les points d\'une manche. La manche reste au Mur des champions dans tous les cas.</p>'+
     (live.length? live.map(function(m){
       return '<button class="sm" style="width:100%;margin-bottom:7px;background:var(--card);text-align:left" onclick="chToCoupeGo(\''+m.id+'\')">▶︎ '+esc(m.name)+' — '+pl(m.rounds.length,'manche')+'</button>';
     }).join('') : '<p class="mini" style="margin-bottom:10px">Aucune partie en cours.</p>')+
@@ -2636,10 +2677,18 @@ function chPassGood(){
 }
 /* …et l'échec le laisse en difficulté sur son propre temps */
 function chKeepWrong(){
+  try{ var _p=CH.players[CH.active]; if(_p) _p.bad=(_p.bad||0)+1; }catch(e){}
   if(CH.winner) return;
   sub(140,.2,.45);
   hit(196,{dur:.26,vol:.3,bend:.62,wave:'triangle',cut:1200,rev:.25});
   chRun();
+}
+function chSkip(){
+  if(!CH||CH.winner) return;
+  chStopTick(); CH.running=false;
+  perc({dur:.08,f1:500,f2:300,vol:.14,filter:'lowpass'});
+  chAdvance(false);
+  if(!CH.winner){ setTimeout(function(){ swoosh(); },140); chRun(); } else render();
 }
 function chWrong(){
   chStopTick(); CH.running=false;
@@ -2684,10 +2733,8 @@ function chGame(){
           return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0"><span style="display:flex;align-items:center;gap:6px">'+av(pl.name,'sm')+esc(pl.name)+'</span><b style="color:#059669">✓ '+pl.good+'</b></div>';
         }).join('')+
       '</div></div>'+
-      (CH.saved
-        ? '<p class="mini" style="text-align:center;color:#059669;margin-top:12px">✓ Enregistrée au Mur des champions</p>'+
-          '<button class="sm" style="width:100%;margin-top:8px;background:var(--card)" onclick="chToCoupe()">➕ Compter aussi dans une partie de La Coupe</button>'
-        : '<button class="btn tictac" style="margin-top:12px" onclick="chSaveDuel()">🏆 Enregistrer la manche</button>')+
+      '<p class="mini" style="text-align:center;color:#059669;margin-top:12px">✓ Ajoutée au 🏅 Mur des champions</p>'+
+      '<button class="sm" style="width:100%;margin-top:8px;background:var(--card)" onclick="chToCoupe()">➕ Compter aussi dans une partie de La Coupe</button>'+
       '<button class="btn" style="margin-top:8px" onclick="chStart()">Rejouer</button>'+
       '<button class="btn grey" style="margin-top:8px" onclick="chReset()">Modifier les réglages</button>';
   }
@@ -2741,20 +2788,18 @@ function chGame(){
 
   // boutons animateur : 2 actions seulement (benchmark pendule d'échecs / party games)
   var pass=(chSettings().pass||'wrong');
+  /* Deux boutons de score + une sortie neutre : un joueur qui passe son tour
+     ne doit pas être compté comme s'étant trompé. */
+  var subLbl = pass==='good' ? 'au suivant' : (pass==='both' ? 'au suivant' : 'il garde la main');
+  var subLblBad = pass==='good' ? 'il continue' : 'au suivant';
   if(pass==='good'){
-    // la bonne réponse fait tourner : c'est elle qui passe la main
-    h+='<button class="btn" style="margin-top:10px" onclick="chPassGood()">✓ Réussi — au suivant</button>'+
-       '<button class="btn red" style="margin-top:8px" onclick="chKeepWrong()">✗ Raté — il continue</button>'+
-       '';
-  } else if(pass==='both'){
-    h+='<button class="btn" style="margin-top:10px" onclick="chGood()" aria-label="Bonne réponse">✓ Bon — il garde la main</button>'+
-       '<button class="btn red" style="margin-top:8px" onclick="chWrong()" aria-label="Passer au joueur suivant">⏭ Passer au suivant</button>'+
-       '';
+    h+='<button class="btn" style="margin-top:10px" onclick="chPassGood()">✓ Bonne réponse <span style="font-weight:500;opacity:.85">— '+subLbl+'</span></button>'+
+       '<button class="btn red" style="margin-top:8px" onclick="chKeepWrong()">✗ Mauvaise réponse <span style="font-weight:500;opacity:.85">— '+subLblBad+'</span></button>';
   } else {
-    h+='<button class="btn" style="margin-top:10px" onclick="chGood()">✓ Bonne réponse — garde la main</button>'+
-       '<button class="btn red" style="margin-top:8px" onclick="chWrong()">⏭ Au suivant</button>'+
-       '';
+    h+='<button class="btn" style="margin-top:10px" onclick="chGood()">✓ Bonne réponse <span style="font-weight:500;opacity:.85">— '+subLbl+'</span></button>'+
+       '<button class="btn red" style="margin-top:8px" onclick="chWrong()">✗ Mauvaise réponse <span style="font-weight:500;opacity:.85">— '+subLblBad+'</span></button>';
   }
+  h+='<button class="sm" style="width:100%;margin-top:8px;background:var(--card)" onclick="chSkip()">⏭ Passer sans compter</button>';
 
 
   // barre de comparaison des bonnes réponses
