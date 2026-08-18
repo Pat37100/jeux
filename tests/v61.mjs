@@ -30,8 +30,8 @@ ok('les fautes sont enregistrées au Mur', (w.D.tictac[0].players[0].bad||0)>=0 
 
 L('[3] Tic-Tac : un seul geste pour enregistrer');
 w.render();
-ok('enregistrement automatique au Mur (v62)', app().includes('Ajoutée au 🏅 Mur des champions'));
-ok('La Coupe devient secondaire et optionnelle', app().includes('Compter aussi dans une partie de La Coupe'));
+ok('fin de partie : enregistrement automatique (Coupe + Mur)', app().includes('Enregistrée dans 🏆 La Coupe'));
+ok('La Coupe est alimentée automatiquement (v78)', w.D.matches.length>=1);
 ok('plus de choix confus : le Mur est implicite', !app().includes('Au Mur des champions seulement'));
 
 L('[4] Libellés simplifiés');
