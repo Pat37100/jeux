@@ -60,7 +60,7 @@ w.chFinishNow(); w.render();
 ok('fin de partie intacte', A(w).includes('🥇'));
 ok('Mur alimenté', w.D.tictac.length===1);
 const w2=boot();
-ok('onglets unifiés intacts', (()=>{w2.go('chrono');w2.render();return w2.document.getElementById('nav').textContent.includes('Résultats');})());
+ok('Tic-Tac : écran unique (v78)', (()=>{w2.go('chrono');w2.render();return w2.document.getElementById('nav').innerHTML==='';})());
 ok('moteur Micro intact', w2.briefText().includes('A3. CONTRAT DE VOIX'));
 ok('poids raisonnable', html.length<300000);
 L(F? '\n*** '+F+' ECHEC(S) ***' : '\nTOUT PASSE ('+F+' échec)');
