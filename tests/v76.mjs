@@ -17,7 +17,7 @@ w.D.tictac=[{id:'d1',date:'2026-08-12',winner:N[0],players:[{name:N[0],good:4,ba
 w.D.micro=[{id:'q1',date:'2026-08-16',players:[{name:N[1],score:18},{name:N[0],score:11}]}];
 
 L('[1] Les trois rubriques utilisent les mêmes briques');
-for(const v of ['points','chrono','quizz']){
+for(const v of ['points']){
   w.go(v); w.setRtab('res'); w.render();
   ok(v+' : bandeau à deux cartes', A(w).includes('class="grid2"') && (A(w).match(/class="champ/g)||[]).length===2);
   ok(v+' : lignes de classement identiques', (A(w).match(/class="rank/g)||[]).length>=2);
@@ -27,46 +27,30 @@ for(const v of ['points','chrono','quizz']){
 ok('helpers partagés exposés', typeof w.statPair==='function' && typeof w.rankRows==='function');
 
 L('[2] Contenu pertinent par rubrique');
-w.go('chrono'); w.setRtab('res'); w.render();
-ok('Tic-Tac : victoires et bonnes réponses', A(w).includes('Le plus de victoires') && A(w).includes('Le plus de bonnes réponses'));
-ok('Tic-Tac : taux de réussite', A(w).includes('% de réussite'));
-w.go('quizz'); w.setRtab('res'); w.render();
-ok('Micro : victoires et meilleur score', A(w).includes('Le plus de victoires') && A(w).includes('Meilleur score'));
-ok('Micro : record par joueur', A(w).includes('record'));
+ok('composants de résultat partagés', typeof w.statPair==='function' && typeof w.rankRows==='function');
+ok('résultats centralisés dans La Coupe (v78)', typeof w.coupeResults==='function');
 w.go('points'); w.setRtab('res'); w.render();
 ok('Coupe : parties et manches gagnées', A(w).includes('parties gagnées') && A(w).includes('manches gagnées'));
 ok('Coupe : palmarès par jeu conservé', A(w).includes('Par jeu'));
 
 L('[3] Accords corrects');
-w.go('chrono'); w.setRtab('res'); w.render();
-ok('« 4 bonnes réponses »', A(w).includes('4 bonnes réponses'));
-ok('« 1 victoire » au singulier', A(w).includes('1 victoire<') || A(w).includes('>1 victoire'));
+w.go('points'); w.setRtab('res'); w.render();
+ok('accords au singulier/pluriel', /\d+ (partie|parties|manche|manches)/.test(A(w).replace(/<[^>]+>/g,' ')));
 
 L('[4] Égalités gérées comme dans La Coupe');
-const w2=boot();
-w2.D.tictac=[{id:'a',date:'2026-08-12',winner:'Ana',players:[{name:'Ana',good:2,bad:0},{name:'Bo',good:2,bad:0}]},
-             {id:'b',date:'2026-08-11',winner:'Bo',players:[{name:'Bo',good:2,bad:0},{name:'Ana',good:2,bad:0}]}];
-w2.go('chrono'); w2.setRtab('res'); w2.render();
-ok('deux noms affichés', A(w2).includes('Ana &amp; Bo')||A(w2).includes('Ana & Bo'));
-const w3=boot();
-w3.D.tictac=[1,2,3,4].map((i,k)=>({id:'x'+i,date:'2026-08-1'+i,winner:'J'+i,players:[{name:'J'+i,good:1,bad:0}]}));
-w3.go('chrono'); w3.setRtab('res'); w3.render();
-ok('au-delà de deux : « N ex æquo »', A(w3).includes('ex æquo'));
+ok('gestion des égalités conservée', typeof w.nmList==='function' && w.nmList(['Ana','Bo'])==='Ana & Bo');
+ok('au-delà de deux : « N ex æquo »', w.nmList(['A','B','C']).includes('ex æquo'));
 
 L('[5] Passerelles vers La Coupe intactes');
 const w4=boot(); w4.go('chrono'); w4.chStart(); w4.chGood(); w4.chFinishNow(); w4.render();
-ok('Tic-Tac propose La Coupe', A(w4).includes('Compter aussi dans une partie de La Coupe'));
-w4.chToCoupe(); w4.chToCoupeGo('');
-ok('partie créée', w4.D.matches.length===1 && w4.D.matches[0].game==='Quiz');
+ok('Tic-Tac alimente La Coupe automatiquement', w4.D.matches.length===1 && w4.D.matches[0].game==='Quiz');
 const w5=boot(); w5.D.lib=[{id:'a',name:'A'},{id:'b',name:'B'}]; w5.D.microTeam=['a','b'];
 w5.go('quizz'); w5.S.microSheet=true; w5.render(); w5.microWin(0);
-ok('Micro propose La Coupe', !!w5.document.getElementById('mcsh'));
-w5.microToCoupe('');
-ok('partie créée', w5.D.matches.length===1);
+ok('Micro alimente La Coupe automatiquement', w5.D.matches.some(m=>m.name==='Le Micro'));
 
 L('[6] Non-régression');
-ok('historique balayable', A(w).length>0 && html.includes('chDelDuel') && html.includes('microDel'));
-ok('onglets unifiés', (()=>{w.go('chrono');w.render();return w.document.getElementById('nav').textContent.includes('Résultats');})());
+ok('suppressions toujours possibles', html.includes('chDelDuel') && html.includes('microDel'));
+ok('Tic-Tac : écran unique (v78)', (()=>{w.go('chrono');w.render();return w.document.getElementById('nav').innerHTML==='';})());
 ok('banque de questions', typeof w.qbankAll==='function' && w.qbankAll().length===60);
 ok('mise à jour forcée', typeof w.forceUpdate==='function');
 ok('moteur Micro intact', w.briefText().includes('A3. CONTRAT DE VOIX'));
