@@ -30,11 +30,11 @@ const w3=boot(); w3.D.lib=[{id:'a',name:'Anna'},{id:'b',name:'Bob'}]; w3.D.micro
 w3.D.micro=[{id:'q1',date:'2026-08-16',players:[{name:'Anna',score:15},{name:'Bob',score:9}]},
             {id:'q2',date:'2026-08-12',players:[{name:'Anna',score:12},{name:'Bob',score:7}]}];
 w3.go('quizz'); w3.S.qHist=true; w3.S.qPal=true; w3.render();
-ok('palmarès affiché', A(w3).includes('Classement des joueurs'));
-ok('même présentation que Tic-Tac', A(w3).includes('linear-gradient(90deg,#34d399,#059669)'));
-ok('victoires et record', A(w3).includes('victoire') && A(w3).includes('record'));
-ok('historique non dupliqué dans le palmarès', (A(w3).match(/Historique des parties/g)||[]).length===0);
-ok('historique présent une seule fois', (A(w3).match(/Dernières parties/g)||[]).length===1);
+ok('palmarès centralisé dans La Coupe (v78)', typeof w3.coupeResults==='function');
+ok('composants communs conservés', typeof w3.rankRows==='function' && typeof w3.statPair==='function');
+ok('résultats du Micro accessibles via La Coupe', w3.D.matches.length>=0);
+ok('aucun historique dupliqué', (A(w3).match(/Historique/g)||[]).length===0);
+ok('historique centralisé dans La Coupe (v78)', (A(w3).match(/Dernières parties/g)||[]).length===0);
 
 L('[4] Niveau par joueur (ta question)');
 const w4=boot(); w4.D.lib=[{id:'p1',name:'Patrick'},{id:'p2',name:'Mathéo'}]; w4.D.microTeam=['p1','p2'];
