@@ -53,25 +53,22 @@ ok('manche au Mur sans aucun clic', w4.D.tictac.length===1);
 ok('marquée comme enregistrée', w4.CH.saved===true);
 w4.render();
 const a4=()=>w4.document.getElementById('app').innerHTML;
-ok('constat affiché', a4().includes('Ajoutée au 🏅 Mur des champions'));
+ok('constat affiché', a4().includes('Enregistrée dans 🏆 La Coupe'));
 ok('plus de bouton « Enregistrer la manche »', !a4().includes('🏆 Enregistrer la manche'));
-ok('seule option restante : La Coupe', a4().includes('Compter aussi dans une partie de La Coupe'));
-w4.chToCoupe();
-const body4=w4.document.body.innerHTML;
-ok('la feuille ne parle plus que de La Coupe', body4.includes('Compter dans La Coupe') && !body4.includes('Au Mur des champions seulement'));
-ok('rappel que le Mur garde tout', body4.includes('reste au Mur des champions'));
+ok('aucune option à choisir : tout est automatique (v78)', !a4().includes('Compter aussi'));
+ok('La Coupe alimentée sans feuille (v78)', w4.D.matches.length>=1 && w4.D.matches[0].name==='Tic-Tac');
+ok('le Mur garde tout', w4.D.tictac.length>=1);
 
 L('[6] Micro : même logique, et passerelle vers La Coupe');
 const w5=boot();
 w5.D.lib=[{id:'a',name:'Patrick'},{id:'b',name:'Mélanie'}]; w5.D.microTeam=['a','b'];
-w5.go('quizz'); w5.microOpen();
+w5.go('quizz'); w5.S.microSheet=true; w5.S.microDetail=true; w5.render();
 w5.document.getElementById('mqr').value='Patrick 15\nMélanie 9';
 w5.microSave();
 ok('résultat au Mur automatiquement', w5.D.micro.length===1);
-ok('proposition La Coupe affichée', w5.document.getElementById('mcsh')!==null);
+ok('enregistrement automatique dans La Coupe (v78)', w5.D.matches.some(m=>m.name==='Le Micro'));
 ok('cohérent avec Tic-Tac', w5.document.body.innerHTML.includes('Compter dans La Coupe ?'));
-w5.microToCoupe('');
-ok('partie créée dans La Coupe', w5.D.matches.length===1 && w5.D.matches[0].name==='Le Micro');
+ok('partie « Le Micro » créée', w5.D.matches.filter(m=>m.name==='Le Micro').length===1);
 ok('scores repris', Object.values(w5.D.matches[0].rounds[0].scores).sort().join(',')==='15,9'.split(',').sort().join(','));
 ok('le Mur conserve aussi le résultat', w5.D.micro.length===1);
 
@@ -90,9 +87,9 @@ w6.render();
 ok('la consigne apparaît dans le récap', w6.document.getElementById('app').innerHTML.includes('Bretagne'));
 
 L('[8] Non-régression du prompt initial');
-for(const k of ['PRIORITÉS',"T'ARRÊTES DE PARLER",'Mélanie +2 → 8','Vol ouvert','PERSONNE NE TROUVE',
+for(const k of ['INVARIANTS',"T'ARRÊTES DE PARLER",'Mélanie +2 → 8','Vol ouvert','PERSONNE NE TROUVE',
                 'QUESTIONS INTERDITES','POINT DE CALIBRAGE','MECANIQUES=','GRAINE_DE_PARTIE','A0. LECTURE',
-                'TOUR DÉFI','ESTIMATION','QUITTE OU DOUBLE','QUESTION EN OR','±0,5'])
+                'TOUR DÉFI','ESTIMATION','QUITTE OU DOUBLE','QUESTION EN OR','jamais plus de ±1'])
   ok('conservé : '+k, t.includes(k));
 ok('12 thèmes', w6.MICRO_THEMES.length===12);
 ok('7 étapes', (a6().match(/class="stepn"/g)||[]).length===7);
