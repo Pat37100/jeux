@@ -29,7 +29,7 @@ L('[3] Passerelle Tic-Tac → La Coupe');
 ok('chToCoupe exposé', typeof w.chToCoupe==='function');
 w.CH.players.forEach((p,i)=>{p.good=3+i;});
 w.chFinishNow(); w.render();
-ok('fin de manche : enregistrement automatique au Mur (v62)', app().includes('Ajoutée au 🏅 Mur des champions'));
+ok('fin de partie : enregistrement automatique (Coupe + Mur)', app().includes('Enregistrée dans 🏆 La Coupe'));
 w.chToCoupe();
 ok('feuille de choix ouverte', !!w.document.getElementById('tcsh'));
 ok('option nouvelle partie', body().includes('Nouvelle partie'));
