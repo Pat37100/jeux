@@ -34,7 +34,7 @@ ok('résultat enregistré', w2.D.micro.length===1);
 ok('le bon vainqueur en tête', w2.D.micro[0].players[0].name==='Bob');
 ok('les autres joueurs conservés', w2.D.micro[0].players.length===3);
 ok('feuille refermée', w2.document.querySelectorAll('#msh').length===0);
-ok('proposition Coupe enchaînée', w2.document.getElementById('mcsh')!==null);
+ok('enregistrement automatique dans La Coupe (v78)', w2.D.matches.some(m=>m.name==='Le Micro'));
 
 L('[3] Micro en équipes : un appui par équipe');
 const w3=boot(); w3.D.lib=[{id:'a',name:'Anna'},{id:'b',name:'Bob'}];
@@ -72,7 +72,7 @@ ok('avertissement sur la comparaison', A(w5).includes('ne se comparent pas'));
 ok('Uno a son classement', A(w5).includes('Uno'));
 ok('Tic-Tac a le sien', A(w5).includes('Tic-Tac'));
 ok('victoires / parties affichées', /\d+\s*\/\s*\d+/.test(A(w5).replace(/<[^>]+>/g,' ')));
-ok('total global relativisé', A(w5).includes('Toutes disciplines confondues') && A(w5).includes('avec le sourire'));
+ok('total global disponible via le mode Général (v78)', (w5.S.champMode='tout', w5.render(), A(w5).includes('Toutes disciplines confondues')));
 ok('champByGame exposé', typeof w5.champByGame==='function');
 const g=w5.champByGame();
 ok('un bloc par discipline', g.length===2);
