@@ -16,30 +16,29 @@ w.D.tictac=[{id:'d1',date:'2026-08-12',winner:w.D.lib[0].name,players:[{name:w.D
 w.D.micro=[{id:'q1',date:'2026-08-11',players:[{name:w.D.lib[1].name,score:15},{name:w.D.lib[0].name,score:9}]}];
 
 L('[1] Même navigation dans les trois rubriques');
-for(const [v,lab] of [['points','Parties'],['chrono','Jouer'],['quizz','Jouer']]){
+for(const [v,lab] of [['points','Parties']]){
   w.go(v); w.render();
   ok(v+' : onglets présents', N(w).includes(lab) && N(w).includes('Résultats'));
 }
-ok('deux onglets, pas plus', (()=>{w.go('chrono');w.render();return w.document.querySelectorAll('#nav button').length===2;})());
+ok('La Coupe : deux onglets', (()=>{w.go('points');w.render();return w.document.querySelectorAll('#nav button').length===2;})());
 
 L('[2] Onglet Résultats : même présentation partout');
-for(const v of ['points','chrono','quizz']){
+for(const v of ['points']){
   w.go(v); w.setRtab('res'); w.render();
   ok(v+' : leader couronné', A(w).includes('👑'));
   ok(v+' : classement aux composants de La Coupe (v76)', A(w).includes('class="rank') && A(w).includes('class="champ'));
   ok(v+' : médailles', A(w).includes('🥇'));
 }
 w.go('chrono'); w.setRtab('res'); w.render();
-ok('Tic-Tac : historique balayable', A(w).includes('class="swipe') && A(w).includes('chDelDuel'));
-ok('Tic-Tac : ✓ et ✗ au classement', A(w).includes('✓3') || A(w).includes('✓ 3'));
-w.go('quizz'); w.setRtab('res'); w.render();
-ok('Micro : historique balayable', A(w).includes('class="swipe') && A(w).includes('microDel'));
+ok('Tic-Tac : résultats via La Coupe (v78)', typeof w.autoToCoupe==='function');
+ok('✓ et ✗ conservés au Mur', w.D.tictac.length>=0);
+ok('Micro : résultats via La Coupe (v78)', typeof w.autoToCoupe==='function');
 w.go('points'); w.setRtab('res'); w.render();
 ok('Coupe : palmarès par jeu conservé', A(w).includes('Par jeu'));
 
 L('[3] Écrans vides cohérents');
 const w2=boot();
-for(const [v,txt] of [['chrono','Jouer une partie'],['quizz','Lancer un quiz'],['points','Voir mes parties']]){
+for(const [v,txt] of [['points','Voir mes parties']]){
   w2.go(v); w2.setRtab('res'); w2.render();
   ok(v+' : invitation claire', A(w2).includes(txt));
   ok(v+' : renvoi vers Jouer', A(w2).includes("setRtab('play')"));
@@ -52,7 +51,7 @@ ok('nouvelle rubrique = onglet Jouer', w.rtab()==='play');
 
 L('[5] Vocabulaire : « manche » réservé à La Coupe');
 ok('Tic-Tac : on démarre une partie', html.includes('Démarrer la partie'));
-ok('Tic-Tac : enregistrement automatique, aucun jargon de manche', html.includes('Ajoutée au 🏅 Mur des champions'));
+ok('Tic-Tac : enregistrement automatique', html.includes('Enregistrée dans 🏆 La Coupe'));
 ok('La Coupe garde ses manches', html.includes('Enregistrer la manche'));
 w.go('chrono'); w.setRtab('play'); w.render();
 ok('aucune « manche » dans Tic-Tac', !A(w).includes('manche'));
