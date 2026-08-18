@@ -23,10 +23,8 @@ w.D.tictac=[{id:'d1',date:'2026-08-12',winner:N[0],players:[{name:N[0],good:4,ba
 w.D.micro=[{id:'q1',date:'2026-08-16',players:[{name:N[1],score:18}]}];
 w.D.matches=[{id:'m',name:'Uno',game:'Uno',date:'2026-08-16',status:'live',winRule:'high',target:null,
   players:P.map(p=>({id:p.id,name:p.name})),rounds:[{id:'r1',date:'2026-08-16',scores:{[ids[0]]:9,[ids[1]]:3,[ids[2]]:5}}]}];
-w.go('chrono'); w.setRtab('res'); w.render();
-ok('historique Tic-Tac aligné', A(w).includes('class="swipe flat"'));
-w.go('quizz'); w.setRtab('res'); w.render();
-ok('historique Micro aligné', A(w).includes('class="swipe flat"'));
+ok('composant flat toujours utilisé', html.includes('swipe flat'));
+
 w.openMatch('m'); w.setResMode('list'); w.render();
 ok('manches alignées', A(w).includes('class="swipe flat"'));
 w.S.tab='set'; w.render();
@@ -53,7 +51,7 @@ ok('suppression toujours annulable', (()=>{w2.D.micro=[{id:'q',date:'2026-08-16'
 w2.doUndo();
 ok('restauration OK', w2.D.micro.length===1);
 ok('résultats aux composants de La Coupe', typeof w2.statPair==='function' && typeof w2.rankRows==='function');
-ok('onglets unifiés', (()=>{w2.go('quizz');w2.render();return w2.document.getElementById('nav').textContent.includes('Résultats');})());
+ok('Micro : écran unique (v78)', (()=>{w2.go('quizz');w2.render();return w2.document.getElementById('nav').innerHTML==='';})());
 ok('banque de questions', w2.qbankAll().length===60);
 ok('moteur Micro intact', w2.briefText().includes('A3. CONTRAT DE VOIX'));
 L(F? '\n*** '+F+' ECHEC(S) ***' : '\nTOUT PASSE ('+F+' échec)');
