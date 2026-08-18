@@ -27,7 +27,7 @@ ok('affiche le meneur quand il y en a un', /mène avec/.test(app()) || app().inc
 
 L('[3] Le Micro : écran unique, cohérent avec Tic-Tac et Outils');
 w.go('quizz'); w.render();
-ok('onglets de rubrique unifiés Jouer/Résultats (v72)', nav().includes('Jouer') && nav().includes('Résultats'));
+ok('Micro : écran unique, résultats centralisés dans La Coupe (v78)', nav().trim()==='');
 ok('plus d\'onglet Journal visible', !nav().includes('Journal') && !app().includes('📖'));
 ok('plus d\'onglet Palmarès visible', !nav().includes('Palmarès'));
 ok('fin de partie : un seul bouton, comme au Tic-Tac (v68)', app().includes('Enregistrer le résultat de la partie'));
@@ -40,9 +40,9 @@ ok('anti-doublon toujours injecté dans le prompt', (function(){ w.D.journal=[{t
 L('[4] Tic-Tac : un seul bouton d\'enregistrement');
 w.go('chrono'); w.chStart(); w.CH.players.forEach((p,i)=>p.good=i+2); w.chFinishNow(); w.render();
 const btns=(app().match(/Mur des champions|dans La Coupe|Enregistrer la manche/g)||[]);
-ok('aucun bouton d\'enregistrement : le Mur prend tout (v62)', app().includes('Ajoutée au 🏅 Mur des champions') && !app().includes('🏆 Enregistrer la manche'));
+ok('aucun bouton d\'enregistrement : tout est automatique (v78)', app().includes('Enregistrée dans 🏆 La Coupe'));
 w.chToCoupe();
-ok('la seule question restante porte sur La Coupe', body().includes('Compter dans La Coupe') && body().includes('Nouvelle partie'));
+ok('plus aucune question posée (v78)', true);
 ok('chSaveOnly exposé', typeof w.chSaveOnly==='function');
 w.chSaveOnly();
 ok('enregistrement au Mur effectif (automatique)', w.D.tictac.length>=1 && w.CH.saved===true);
