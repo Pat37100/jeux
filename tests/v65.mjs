@@ -74,12 +74,12 @@ w4.go('chrono'); w4.chStart(); w4.chGood(); w4.chFinishNow();
 ok('Tic-Tac : aucun clic nécessaire', w4.D.tictac.length===1);
 w4.render();
 ok('aucune question sur le Mur', !w4.document.getElementById('app').innerHTML.includes('Mur des champions seulement'));
-ok('la seule question porte sur La Coupe', w4.document.getElementById('app').innerHTML.includes('Compter aussi dans une partie de La Coupe'));
+ok('enregistrement automatique dans La Coupe (v78)', w4.D.matches.length>=1);
 const w5=boot();
 w5.D.lib=[{id:'a',name:'A'},{id:'b',name:'B'}]; w5.D.microTeam=['a','b'];
 w5.go('quizz'); w5.S.microSheet=true; w5.S.microDetail=true; w5.render(); w5.document.getElementById('mqr').value='A 10\nB 5'; w5.microSave();
 ok('Micro : enregistré sans décision', w5.D.micro.length===1);
-ok('Micro : question = La Coupe uniquement', w5.document.body.innerHTML.includes('Compter dans La Coupe ?'));
+ok('Micro : enregistré automatiquement dans La Coupe (v78)', w5.D.matches.some(m=>m.name==='Le Micro'));
 const w6=boot(); const jd=w6.D.lib.slice(0,2).map(p=>p.id);
 w6.D.matches=[{id:'x',name:'Uno',game:'Uno',date:'2026-08-16',status:'done',winRule:'high',target:null,champion:jd[0],
   players:w6.D.lib.slice(0,2).map(p=>({id:p.id,name:p.name})),rounds:[{id:'r',date:'2026-08-16',scores:{[jd[0]]:9,[jd[1]]:2}}]}];
