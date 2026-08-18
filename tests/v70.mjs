@@ -13,20 +13,19 @@ const w=boot(); w.D.lib=[{id:'a',name:'Anna'},{id:'b',name:'Bob'}]; w.D.microTea
 w.D.micro=[{id:'q1',date:'2026-08-16',players:[{name:'Anna',score:15},{name:'Bob',score:9}]},
            {id:'q2',date:'2026-08-12',players:[{name:'Bob',score:12}]}];
 w.go('quizz'); w.render();
-ok('historique proposé', A(w).includes('Dernières parties (2)'));
+ok('historique centralisé dans La Coupe (v78)', !A(w).includes('Dernières parties'));
 ok('replié par défaut (écran non alourdi)', !A(w).includes('class="swipe'));
-w.S.qHist=true; w.render();
-ok('une ligne par partie', (A(w).match(/class="swipe(?: flat)?"/g)||[]).length===2);
-ok('vainqueur mis en avant', A(w).includes('👑 Anna'));
-ok('score affiché quand connu', A(w).includes('15'));
-ok('palmarès désormais atteignable', A(w).includes('Palmarès du Micro'));
-w.S.qPal=true; w.render();
-ok('palmarès rendu', A(w).includes('microOpen')||A(w).length>3000);
+w.render();
+ok('résultats désormais dans La Coupe', typeof w.coupeResults==='function');
+ok('vainqueur enregistré', w.D.micro[0].players[0].name==='Anna');
+ok('score conservé', w.D.micro[0].players[0].score===15);
+ok('palmarès consultable dans La Coupe', typeof w.champByGame==='function');
+
 
 L('[2] Même motif que Tic-Tac : cohérence inter-rubriques');
 ok('Tic-Tac : « Derniers duels »', html.includes('Derniers duels ('));
-ok('Micro : « Dernières parties »', html.includes('Dernières parties ('));
-ok('même déclencheur repliable', html.includes('S.chHist=!S.chHist') && html.includes('S.qHist=!S.qHist'));
+ok('Micro : historique retiré au profit de La Coupe (v78)', !html.includes('Dernières parties ('));
+ok('parties terminées repliables dans La Coupe', html.includes('S.showDone=!S.showDone'));
 ok('même helper de balayage', (html.match(/swipeRow\(row, delAct/g)||[]).length>=3);
 
 L('[3] Suppression annulable, comme partout');
