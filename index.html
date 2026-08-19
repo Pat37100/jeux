@@ -387,7 +387,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='89';
+var APP_VERSION='90';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -2299,6 +2299,15 @@ function renderChampions(hd,app,banner){
       : '💥 <b>'+esc(vis[1].name)+'</b> n\'est qu\'à '+pl(gap,'couronne')+' de <b>'+esc(vis[0].name)+'</b> — ça se joue à rien !';
     if(gap<=3) h+='<div class="card" style="background:var(--am-l);border-color:var(--am)"><p style="margin:0;font-size:13.5px;color:#92400e;line-height:1.5">'+rival+'</p></div>';
   }
+  h+='<div style="display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;-webkit-overflow-scrolling:touch">'+
+    [['mois','📅 Ce mois'],['annee','🗓 Cette année'],['tout','☰ Tout']].map(function(o){
+      return '<button class="chip'+(champPeriod()===o[0]?' on':'')+'" style="white-space:nowrap" onclick="S.champPeriod=\''+o[0]+'\';S.detail=null;render()">'+o[1]+'</button>';
+    }).join('')+'</div>'+
+    '<div class="row" style="gap:6px;margin-bottom:10px">'+
+    [['couronnes','👑 Couronnes'],['taux','📊 Taux de victoire']].map(function(o){
+      return '<button class="chip'+((S.champSort||'couronnes')===o[0]?' on':'')+'" style="flex:1;text-align:center" onclick="S.champSort=\''+o[0]+'\';S.detail=null;render()">'+o[1]+'</button>';
+    }).join('')+'</div>'+
+    (S.champSort==='taux'?'<p class="mini" style="margin:-4px 0 10px">Taux = couronnes ÷ parties jouées. En dessous de '+CHAMP_MIN+' parties, il est affiché mais ne sert pas au classement.</p>':'');
   var cm=S.champMode||'jeu';
   h+='<div class="row" style="gap:6px;margin-bottom:12px">'+
     [['jeu','▦','Par jeu'],['global','🏆','Général'],['tout','☰','Tout']].map(function(o){
@@ -2307,21 +2316,37 @@ function renderChampions(hd,app,banner){
   if(cm!=='global') h+=champGameBlocks();
   if(cm!=='jeu') h+='<div class="card"><h2>Toutes disciplines confondues</h2>'+
      '<p class="mini" style="margin:0 0 8px">Vue d\'ensemble, à prendre avec le sourire : les jeux n\'ont pas la même durée.</p>';
-  list.forEach(function(p,i){
+  var shown=list.filter(function(p){return !p.hidden;});
+  var hiddenList=list.filter(function(p){return p.hidden;});
+  shown.forEach(function(p,i){
     var open=S.detail==='champ'+fp(p.name);
+    var rateTxt = p.rate===null ? '—' : p.rate+' %';
     h+='<div class="rank'+(i===0?' first lead':'')+'" style="cursor:pointer" onclick="S.detail=S.detail===\'champ'+fp(p.name)+'\'?null:\'champ'+fp(p.name)+'\';render()"><div class="pos">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1))+'</div>'+
       av(p.name,'sm')+'<div class="nm" style="margin-left:8px"><b>'+esc(p.name)+'</b>'+
       '<small>'+(p.coupes?'🏆'+p.coupes+' ':'')+(p.quizWins?'🎙️'+p.quizWins+' ':'')+(p.duelWins?'⏱️'+p.duelWins+' ':'')+(!p.crowns?'pas encore de couronne':'· voir le détail ›')+'</small></div>'+
-      '<div class="pts"><b>'+p.crowns+'</b><small>👑</small></div></div>';
+      (S.champSort==='taux'
+        ? '<div class="pts"><b>'+rateTxt+'</b><small>'+(p.parties<CHAMP_MIN?'trop peu':'de victoires')+'</small></div></div>'
+        : '<div class="pts"><b>'+p.crowns+'</b><small>👑</small></div></div>');
     if(open){
       h+='<div style="background:var(--bg);border-radius:12px;padding:10px 12px;margin:-2px 0 6px;font-size:13px">'+
         '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>🏆 La Coupe</span><b>'+pl(p.coupes,'titre')+' · '+pl(p.coupeManches,'manche gagnée')+'</b></div>'+
         '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>🎙️ Le Micro</span><b>'+p.quizWins+' / '+pl(p.quizGames,'partie')+'</b></div>'+
         '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>⏱️ Tic-Tac</span><b>'+p.duelWins+' / '+pl(p.duels,'duel')+'</b></div>'+
+        '<div style="display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid var(--line);margin-top:4px"><span>📊 Taux de victoire</span><b>'+rateTxt+' <span style="font-weight:500;color:#a8a29e;font-size:11.5px">sur '+pl(p.parties,'partie')+'</span></b></div>'+
+        '<button class="sm" style="width:100%;margin-top:8px" onclick="event.stopPropagation();champToggleHide(\''+esc(p.name).replace(/'/g,"\\'")+'\')">🙈 Masquer du mur</button>'+
       '</div>';
     }
   });
   h+='</div>';
+  if(hiddenList.length){
+    h+='<button class="sm" style="width:100%;margin-top:10px;background:var(--card);text-align:left" onclick="S.champShowHid=!S.champShowHid;render()">'+
+       (S.champShowHid?'▾':'›')+' Joueurs masqués ('+hiddenList.length+')</button>';
+    if(S.champShowHid) h+='<div class="card" style="margin-top:8px">'+hiddenList.map(function(q){
+      return '<div class="row" style="background:var(--bg);border-radius:10px;padding:8px 10px;margin-bottom:6px">'+
+        av(q.name,'sm')+'<span style="flex:1;font-weight:600;margin-left:8px">'+esc(q.name)+'</span>'+
+        '<button class="sm g" onclick="champToggleHide(\''+esc(q.name).replace(/'/g,"\\'")+'\')">Réafficher</button></div>';
+    }).join('')+'<p class="mini" style="margin:0">Masquer ne supprime rien : les parties gardent leur historique.</p></div>';
+  }
   h+='<p class="mini" style="text-align:center">Une couronne = un titre à La Coupe, une partie du Micro gagnée, ou un duel Tic-Tac remporté.</p>';
   h+='<button class="btn dark" style="margin-top:10px" onclick="champShare()">📤 Partager le mur</button>';
   app.innerHTML=h;
