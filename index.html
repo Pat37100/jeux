@@ -387,7 +387,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='85';
+var APP_VERSION='86';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -1677,25 +1677,33 @@ function buzzTest(){ hit(PENTA[2],{dur:.18,vol:.3,fm:.5,fmRatio:3.01,cut:6000,re
 /* Objectif figé à 10 points : un réglage de moins pour les joueurs, et surtout
    un nombre que le modèle n'a plus à retenir. Même logique que le barème à 1 point. */
 var MICRO_BUT=10;
-var MICRO_THEMES=[
-  {id:'8090',    label:'📼 Années 80-90', txt:"Concentre la partie sur les années 1980 et 1990 : musique, cinéma, séries, publicités, jeux, objets, événements et personnalités de ces deux décennies. Garde un peu de variété de domaines à l'intérieur de ce thème."},
-  {id:'ecran',   label:'🎬 Cinéma & séries', txt:"Concentre la partie sur le cinéma, les séries, l'animation et leurs coulisses : films, réalisateurs, acteurs, répliques, bandes originales, récompenses, sagas. Varie les époques et les genres."},
-  {id:'musique', label:'🎵 Musique', txt:"Concentre la partie sur la musique : artistes, groupes, albums, paroles, instruments, genres, festivals, chanson française et internationale. Comme le jeu est purement oral, ne demande jamais d'identifier un extrait sonore : formule des questions de connaissance."},
-  {id:'sport',   label:'⚽ Sport', txt:"Concentre la partie sur le sport : disciplines, règles, compétitions, records, athlètes, Jeux olympiques, Coupes du monde, histoire du sport. Varie les disciplines au-delà du football."},
-  {id:'nature',  label:'🔬 Sciences & nature', txt:"Concentre la partie sur les sciences et la nature : physique, chimie, biologie, corps humain, astronomie, animaux, plantes, climat, inventions et découvertes."},
-  {id:'histoire',label:'🏛️ Histoire & géo', txt:"Concentre la partie sur l'histoire et la géographie : époques, personnages, dates marquantes, pays, capitales, fleuves, drapeaux, frontières, patrimoine."},
-  {id:'ados',    label:'🎮 Spécial ados', txt:"Concentre la partie sur la culture des adolescents d'aujourd'hui : jeux vidéo, musique actuelle, séries et films récents, réseaux sociaux, sport, sciences accessibles, culture internet. Reste factuel et évite tout ce qui daterait de plus de vingt ans."},
-  {id:'voyage',  label:'✈️ Voyage & monde', txt:"Thème dominant : voyages, pays, capitales, drapeaux, langues, monuments, cuisines du monde, coutumes, géographie humaine. Varie les continents, ne reste pas sur l'Europe."},
-  {id:'animaux', label:'🐾 Nature & animaux', txt:"Thème dominant : animaux, plantes, océans, montagnes, climats, espèces rares, comportements, records du vivant. Privilégie le concret et l'étonnant plutôt que la taxonomie."},
-  {id:'web',     label:'💻 Jeux vidéo & web', txt:"Thème dominant : jeux vidéo, consoles, internet, réseaux sociaux, mèmes, informatique, créateurs de contenu, culture numérique. Mélange les époques, de l'arcade à aujourd'hui."},
-  {id:'fete',    label:'🎄 Spécial fêtes', txt:"Concentre la partie sur les fêtes et traditions : Noël, Nouvel An, Pâques, Halloween, anniversaires, coutumes françaises et du monde, gastronomie de fête, films et musiques associés."}
+/* UN SEUL référentiel de sujets pour toute l'app : Le Micro le passe à l'IA,
+   le Tic-Tac s'en sert pour filtrer sa banque. Pas deux listes parallèles.
+   « bank » indique quelles catégories de QBANK ce sujet couvre : un sujet sans
+   question en banque n'est simplement pas proposé au Tic-Tac. */
+var THEMES=[
+  {id:'histoire',label:'🏛️ Histoire & géo', bank:['Histoire','Géographie'], txt:"Concentre la partie sur l'histoire et la géographie : époques, personnages, dates marquantes, pays, capitales, fleuves, drapeaux, frontières, patrimoine."},
+  {id:'sciences',label:'🔬 Sciences',        bank:['Sciences'], txt:"Concentre la partie sur les sciences : physique, chimie, biologie, corps humain, astronomie, inventions et découvertes."},
+  {id:'animaux', label:'🐾 Nature & animaux',bank:['Nature'], txt:"Concentre la partie sur la nature : animaux, plantes, océans, montagnes, climats, espèces rares, records du vivant. Privilégie le concret et l'étonnant plutôt que la taxonomie."},
+  {id:'musique', label:'🎵 Musique',         bank:['Musique'], txt:"Concentre la partie sur la musique : artistes, groupes, albums, instruments, genres, festivals, chanson française et internationale. Comme le jeu est oral, ne demande jamais d'identifier un extrait sonore."},
+  {id:'sport',   label:'⚽ Sport',            bank:['Sport'], txt:"Concentre la partie sur le sport : disciplines, règles, compétitions, records, athlètes, Jeux olympiques, Coupes du monde. Varie les disciplines au-delà du football."},
+  {id:'cuisine', label:'🍽️ Cuisine',        bank:['Gastronomie'], txt:"Concentre la partie sur la cuisine et la gastronomie : produits, plats, techniques, spécialités régionales et du monde, histoire des recettes."},
+  {id:'logique', label:'🧩 Logique',         bank:['Logique'], txt:"Concentre la partie sur la logique et les énigmes : déduction, analogies, calcul mental simple, raisonnement spatial, problèmes courts. Tout doit se résoudre sans papier."},
+  {id:'ecran',   label:'🎬 Cinéma & séries', bank:[], txt:"Concentre la partie sur le cinéma, les séries, l'animation et leurs coulisses : films, réalisateurs, acteurs, répliques, bandes originales, récompenses, sagas. Varie les époques et les genres."},
+  {id:'8090',    label:'📼 Années 80-90',    bank:[], txt:"Concentre la partie sur les années 1980 et 1990 : musique, cinéma, séries, publicités, jeux, objets, événements et personnalités de ces deux décennies."},
+  {id:'web',     label:'💻 Jeux vidéo & web',bank:[], txt:"Concentre la partie sur les jeux vidéo, internet, les réseaux sociaux, l'informatique et la culture numérique. Mélange les époques, de l'arcade à aujourd'hui."},
+  {id:'ados',    label:'🎧 Spécial ados',    bank:[], txt:"Concentre la partie sur la culture des adolescents d'aujourd'hui : jeux vidéo, musique actuelle, séries et films récents, sport, culture internet. Reste factuel et évite ce qui daterait de plus de vingt ans."},
+  {id:'voyage',  label:'✈️ Voyage & monde',  bank:['Géographie'], txt:"Concentre la partie sur les voyages et le monde : pays, capitales, drapeaux, langues, monuments, cuisines du monde, coutumes. Varie les continents, ne reste pas sur l'Europe."},
+  {id:'fete',    label:'🎄 Spécial fêtes',   bank:[], txt:"Concentre la partie sur les fêtes et traditions : Noël, Nouvel An, Pâques, Halloween, coutumes françaises et du monde, gastronomie de fête, films et musiques associés."}
 ];
+function themeById(id){ return THEMES.filter(function(t){return t.id===id;})[0]; }
+
 /* Thèmes multi-sélection. Un thème choisi n'est pas une préférence : le prompt
    en fait une contrainte stricte, parce qu'un « thème dominant » était
    systématiquement dilué au bout de quelques questions. */
 function microThemes(){
   if(!D.microThemes){ D.microThemes = (D.microTheme && D.microTheme!=='libre') ? [D.microTheme] : []; }
-  return D.microThemes.filter(function(id){ return MICRO_THEMES.some(function(t){return t.id===id;}); });
+  return D.microThemes.filter(function(id){ return THEMES.some(function(t){return t.id===id;}); });
 }
 function toggleMicroTheme(id){
   var c=microThemes(), i=c.indexOf(id);
@@ -1703,7 +1711,7 @@ function toggleMicroTheme(id){
   D.microThemes=c; persist(); render();
 }
 function clearMicroThemes(){ D.microThemes=[]; persist(); render(); }
-function microThemeObjs(){ var c=microThemes(); return MICRO_THEMES.filter(function(t){return c.indexOf(t.id)>=0;}); }
+function microThemeObjs(){ var c=microThemes(); return THEMES.filter(function(t){return c.indexOf(t.id)>=0;}); }
 function setMicroGoal(n){ D.microGoal=n; persist(); render(); }
 function setMicroTeams(on){
   if(!on){ D.microTeams=null; persist(); render(); return; }
@@ -1799,31 +1807,23 @@ function microSimpleUI(){
       MICRO_LVL.map(function(L){ return '<div style="font-size:12px;padding:2px 0"><b>'+L.label+'</b> — '+esc(L.txt)+'</div>'; }).join('')+
     '</div></div>';
 
-  h+='<div class="card"><h2><span class="stepn">2</span>La partie</h2>'+
-    '<div style="display:flex;flex-direction:column;gap:5px;font-size:13px">'+
-    '<div>🎙️ <b>Une animatrice</b> — voix de femme, français le plus clair possible, drôle et taquine.</div>'+
-    '<div>🎯 <b>Premier à '+MICRO_BUT+' points</b> — 1 point par bonne réponse.</div>'+
-    '<div>🔄 <b>Chacun son tour</b>, dans l\'ordre ci-dessus, sans exception.</div>'+
-    '</div>'+
-    '<p class="mini" style="margin:8px 0 0">Rien à régler ici : ce sont exactement les points sur lesquels l\'IA dérivait en vocal. Les figer, c\'est ce qui la tient.</p></div>';
-
   var th=microThemeObjs();
-  h+='<div class="card"><h2><span class="stepn">3</span>Sujets <span style="font-weight:400;font-size:12px;color:#a8a29e">('+(th.length?th.length+' choisi'+(th.length>1?'s':''):'tous')+')</span></h2>'+
+  h+='<div class="card"><h2><span class="stepn">2</span>Sujets <span style="font-weight:400;font-size:12px;color:#a8a29e">('+(th.length?th.length+' choisi'+(th.length>1?'s':''):'tous')+')</span></h2>'+
     '<div class="chips">'+
       '<button class="chip'+(th.length?'':' on')+'" onclick="clearMicroThemes()">🌍 Tous sujets</button>'+
-      MICRO_THEMES.map(function(t){
+      THEMES.map(function(t){
         return '<button class="chip'+(microThemes().indexOf(t.id)>=0?' on':'')+'" onclick="toggleMicroTheme(\''+t.id+'\')">'+t.label+'</button>';
       }).join('')+'</div>'+
     '<p class="mini" style="margin:8px 0 0">'+(th.length
       ? 'Toutes les questions porteront sur ces sujets, sans exception — c\'est écrit comme une règle stricte dans le texte généré.'
       : 'Aucun sujet imposé : l\'animateur change de domaine à chaque question.')+'</p></div>';
 
-  h+='<div class="card"><h2><span class="stepn">4</span>Ton assistant IA</h2>'+
+  h+='<div class="card"><h2><span class="stepn">3</span>Ton assistant IA</h2>'+
     '<div class="chips">'+AI_APPS.map(function(a){
       return '<button class="chip'+((D.aiApp||'claude')===a.id?' on':'')+'" onclick="setAiApp(\''+a.id+'\')">'+a.label+'</button>';
     }).join('')+'</div></div>';
 
-  h+='<div class="card"><h2><span class="stepn">5</span>Consigne libre <span style="font-weight:400;font-size:12px;color:#a8a29e">(facultatif)</span></h2>'+
+  h+='<div class="card"><h2><span class="stepn">4</span>Consigne libre <span style="font-weight:400;font-size:12px;color:#a8a29e">(facultatif)</span></h2>'+
     '<input placeholder="ex. « des questions sur la Bretagne », « pas de sport »" value="'+(D.microCustom||'').replace(/"/g,'&quot;')+'" onchange="D.microCustom=this.value;persist();render()"></div>';
 
   var noms=ids.map(function(id){ return (D.lib.filter(function(p){return p.id===id;})[0]||{}).name; }).filter(Boolean);
@@ -1862,20 +1862,27 @@ function briefSimple(){
   var t='🎙️ QUIZ ORAL — colle ce texte dans ton assistant, puis passe en mode vocal.\n\n';
   t+='Tu animes un quiz oral en français. Tu parles un français clair et naturel, facile à comprendre à l\'oral, sans accent imité ni imitation de personne réelle. Tu as de l\'humour, tu taquines volontiers les joueurs et tu ne détestes pas te vanter de tes questions. Ton humour ne fausse jamais l\'arbitrage.\n\n';
 
+  t+='MÉMO — relis ces cinq lignes AVANT CHAQUE PRISE DE PAROLE. Si tu n\'en appliques qu\'une partie, la partie se casse.\n';
+  t+='M1. À qui le tour ? Je nomme ce joueur dans ma question.\n';
+  t+='M2. Ai-je bien entendu ? Sinon je demande la réponse officielle, je n\'arbitre pas.\n';
+  t+='M3. Je dis le score à voix haute : variation et nouveau total.\n';
+  t+='M4. Je termine par une question. Jamais par un blanc.\n';
+  t+='M5. Ce fait n\'a jamais été posé, et il est au niveau de CE joueur.\n\n';
   t+='JOUEURS, dans cet ordre de passage :\n';
   joueurs.forEach(function(j){ t+='- '+j.nom+' — niveau '+j.lvl.label+'\n'; });
   t+='\nBUT : le premier à '+but+' points. 1 point par bonne réponse, rien d\'autre. Aucun barème double, aucun bonus, aucun point retiré.\n\n';
 
   t+='AVANT DE COMMENCER\nTa toute première phrase est uniquement : « Le mode vocal est activé ? » Puis tu t\'arrêtes et tu attends. Tu ne poses aucune question tant que la réponse n\'est pas oui. Quand c\'est oui : tu te présentes en une phrase, dans ton personnage, puis tu poses immédiatement la première question à '+premier+'.\n\n';
 
-  t+='LES 7 RÈGLES\n';
+  t+='LES 8 RÈGLES\n';
   t+='1. TOUR DE RÔLE STRICT. '+premier+', puis '+suivant+', puis le suivant, et on recommence dans l\'ordre ci-dessus. Tu nommes le joueur dans chaque question — c\'est ce prénom prononcé qui te dit où tu en es. Jamais « c\'est à qui ? », jamais deux questions de suite au même joueur, jamais un joueur sauté.\n';
   t+='2. UNE SEULE QUESTION OUVERTE. Tu poses, puis tu te tais. Tu ne réponds jamais à ta propre question et tu ne donnes pas la réponse avant le joueur.\n';
   t+='3. DOUTE = PAS D\'ARBITRAGE. Réponse coupée, hésitante, à moitié entendue, ou tu ne sais pas qui a parlé : tu dis « [Prénom], ta réponse officielle ? » et tu te tais. Perdre une seconde vaut mieux que fausser la partie.\n';
   t+='4. SCORE ANNONCÉ À VOIX HAUTE après chaque réponse : « Un point — '+premier+', 4 sur '+but+'. » ou « Non — '+premier+' reste à 3 sur '+but+'. » C\'est ta table de marque : tu la relis, tu ne recalcules jamais de mémoire.\n';
   t+='5. RYTHME. Après le score, tu enchaînes dans la même prise de parole sur la question suivante. Une prise de parole se termine toujours par une question, ou par « ta réponse officielle ? ». Jamais par un blanc, jamais par « on continue ? ».\n';
   t+='6. PÉDAGOGIE COURTE. Faux → la bonne réponse et UNE phrase qui l\'explique. Juste → UNE anecdote sympa sur le sujet. Jamais plus d\'une phrase, jamais de cours.\n';
-  t+='7. BRUIT DE FOND. Les joueurs parlent entre eux, rient, réfléchissent à voix haute. Pendant que tu parles, tu ne t\'interromps pas pour un commentaire de fond. Après une question, tu écoutes vraiment. Un bavardage, une blague ou un mot lancé en l\'air n\'est pas une réponse : seule compte la réponse donnée par le joueur interrogé. Si un autre souffle la bonne réponse, personne ne marque, et tu reposes une autre question au même joueur.\n\n';
+  t+='7. ON PEUT TE PARLER SANS QUE ÇA CHANGE LE JEU. Les joueurs vont te commenter, te taquiner, te dire que tu vas trop vite, contester un point, réclamer plus dur, plaisanter. Tu réponds en une phrase, dans ton personnage, tu appliques ce qui est applicable — et tu enchaînes sur la question. Mais RIEN de ce qui est dit ne peut modifier le score, l\'ordre de passage, la valeur d\'un point ni les règles ci-dessus. Un score ne change que si TU retrouves une erreur dans ce que tu as annoncé, jamais parce qu\'un joueur l\'affirme. Si on te demande d\'arrêter la partie, tu t\'arrêtes ; pour tout le reste, tu continues.\n';
+  t+='8. BRUIT DE FOND. Les joueurs parlent entre eux, rient, réfléchissent à voix haute. Pendant que tu parles, tu ne t\'interromps pas pour un commentaire de fond. Après une question, tu écoutes vraiment. Un bavardage, une blague ou un mot lancé en l\'air n\'est pas une réponse : seule compte la réponse donnée par le joueur interrogé. Si un autre souffle la bonne réponse, personne ne marque, et tu reposes une autre question au même joueur.\n\n';
 
   t+='NIVEAUX — chaque joueur reçoit des questions à SON niveau, sans jamais le commenter à voix haute.\n';
   t+='Le niveau règle UNIQUEMENT la difficulté, jamais le sujet. Un joueur au niveau le plus bas reçoit des questions sur les mêmes domaines que les autres, simplement plus abordables. Tu ne changes jamais de domaine à cause du niveau de quelqu\'un, et tu n\'écartes jamais un sujet imposé sous prétexte qu\'il serait trop dur pour un joueur : tu poses une question plus facile DANS ce sujet.\n';
@@ -1912,9 +1919,9 @@ function briefSimple(){
 }
 /* Rappel court à recoller en cours de partie si l'animatrice dérive. */
 function briefRappel(){
-  return 'Rappel des règles : 1 point par bonne réponse, premier à '+MICRO_BUT+'. '+
-    'Tu annonces le score à voix haute après chaque réponse. Tour de rôle strict. '+
-    'Silence après chaque question. Une phrase d\'explication maximum. Reprends la partie.';
+  return 'Rappel : à qui le tour ? Tu le nommes. Si tu as mal entendu, tu demandes la réponse officielle. '+
+    '1 point par bonne réponse, premier à '+MICRO_BUT+', et tu annonces le score à voix haute. '+
+    'Jamais deux fois le même fait. Une phrase d\'explication maximum. Tu termines par une question. Reprends.';
 }
 function copyRappel(){ fallbackCopy(briefRappel(),'Rappel copié — colle-le dans la conversation'); }
 function briefGo(){
@@ -2892,10 +2899,31 @@ function qbankThemes(){
    NIVEAU pris sur la même échelle. La banque n'ayant que 5 crans, le palier
    choisi vise n, et on s'élargit progressivement plutôt que de ne rien sortir. */
 var CH_LVL_N={p:1,a:2,h:3,b:4,g:5};
+/* Les sujets du Tic-Tac sont ceux du référentiel THEMES, restreints à ceux qui
+   ont réellement des questions en banque. Mêmes libellés qu'au Micro. */
+function chThemeList(){
+  var dispo={}; qbankAll().forEach(function(q){ dispo[q.t]=1; });
+  return THEMES.filter(function(t){ return t.bank.some(function(b){return dispo[b];}); });
+}
+function chBankCats(){
+  var ids=chThemes(), out={};
+  if(!ids.length) return null;                       // null = tous les sujets
+  ids.forEach(function(id){ var t=themeById(id); if(t) t.bank.forEach(function(b){ out[b]=1; }); });
+  return out;
+}
+/* Anti-doublon persistant : une question posée ne revient pas, même dans une
+   manche suivante ou après fermeture de l'app. Réinitialisé seulement quand la
+   banque est épuisée pour la sélection en cours. */
+function qSeen(){ if(!D.qSeen) D.qSeen=[]; return D.qSeen; }
+function qMarkSeen(q){
+  var s=qSeen(); if(s.indexOf(q)<0) s.push(q);
+  if(s.length>400) s.splice(0, s.length-400);
+  D.qSeen=s; persist();
+}
 function chThemes(){
   var s=chSettings();
-  if(!s.qThemes){ s.qThemes = (s.qTheme && s.qTheme!=='*') ? [s.qTheme] : []; }
-  return s.qThemes;
+  if(!s.qThemes) s.qThemes=[];                       // les anciens réglages par catégorie sont abandonnés proprement
+  return s.qThemes.filter(function(id){ return !!themeById(id); });
 }
 function chToggleTheme(t){
   var c=chThemes(), i=c.indexOf(t);
@@ -2907,27 +2935,33 @@ function chOwnQuestions(){ chSettings().qTheme=null; chSettings().qThemes=[]; pe
 function chLvl(){ return chSettings().qLvl||'h'; }
 function chSetLvl(k){ chSettings().qLvl=k; persist(); if(CH) qbankNext(); else render(); }
 function qbankMatch(tol){
-  var s=chSettings(), th=chThemes(), target=CH_LVL_N[chLvl()]||3;
+  var cats=chBankCats(), target=CH_LVL_N[chLvl()]||3;
   return qbankAll().filter(function(x){
-    return (!th.length || th.indexOf(x.t)>=0) && Math.abs((x.n||3)-target)<=tol;
+    return (!cats || cats[x.t]) && Math.abs((x.n||3)-target)<=tol;
   });
 }
 function qbankCount(){ return qbankMatch(0).length; }
 function qbankPick(){
-  var used=(CH&&CH.qUsed)||[];
+  var seen=qSeen(), used=(CH&&CH.qUsed)||[];
+  /* 1) jamais reposée, ni dans cette manche ni dans les précédentes */
   for(var tol=0; tol<=4; tol++){
-    var pool=qbankMatch(tol).filter(function(x){ return used.indexOf(x.q)<0; });
+    var pool=qbankMatch(tol).filter(function(x){ return seen.indexOf(x.q)<0 && used.indexOf(x.q)<0; });
     if(pool.length) return pool[Math.floor(Math.random()*pool.length)];
   }
-  if(CH) CH.qUsed=[];                      // banque épuisée : on repart d'un tour propre
-  var all=qbankMatch(4);
-  return all.length ? all[Math.floor(Math.random()*all.length)] : null;
+  /* 2) tout le stock de cette sélection a été vu : on repart à zéro pour elle
+        seulement, en évitant au moins de répéter dans la manche en cours */
+  var stock=qbankMatch(4);
+  D.qSeen=seen.filter(function(q){ return !stock.some(function(x){return x.q===q;}); }); persist();
+  var pool2=stock.filter(function(x){ return used.indexOf(x.q)<0; });
+  if(pool2.length) return pool2[Math.floor(Math.random()*pool2.length)];
+  if(CH) CH.qUsed=[];
+  return stock.length ? stock[Math.floor(Math.random()*stock.length)] : null;
 }
 function qbankNext(){
   if(!CH) return;
   var q=qbankPick();
   CH.q=q; CH.qShow=false;
-  if(q) CH.qUsed=(CH.qUsed||[]).concat([q.q]);
+  if(q){ CH.qUsed=(CH.qUsed||[]).concat([q.q]); qMarkSeen(q.q); }
   chPersist(); render();
 }
 function qbankReveal(){ if(CH){ CH.qShow=true; chPersist(); render(); } }
@@ -3067,8 +3101,8 @@ function chConfig(){
        '<p class="mini" style="margin:0 0 6px">Sujets</p>'+
        '<div class="chips" style="margin-bottom:10px">'+
          '<button class="chip'+(qTh.length?'':' on')+'" onclick="chAllThemes()">🌍 Tous sujets</button>'+
-         qbankThemes().map(function(x){
-           return '<button class="chip'+(qTh.indexOf(x.t)>=0?' on':'')+'" onclick="chToggleTheme(\''+x.t+'\')">'+esc(x.t)+'</button>';
+         chThemeList().map(function(t){
+           return '<button class="chip'+(qTh.indexOf(t.id)>=0?' on':'')+'" onclick="chToggleTheme(\''+t.id+'\')">'+t.label+'</button>';
          }).join('')+'</div>'+
        '<p class="mini" style="margin:0 0 6px">Niveau des questions</p>'+
        '<div class="chips">'+MICRO_LVL.map(function(L){
@@ -3289,7 +3323,7 @@ function chGame(){
   var p=CH.players[CH.active];
   var qBlock='';
   if(chSettings().qTheme && CH.winner===null){
-    if(!CH.q){ var q0=qbankPick(); if(q0){ CH.q=q0; CH.qUsed=(CH.qUsed||[]).concat([q0.q]); } }
+    if(!CH.q){ var q0=qbankPick(); if(q0){ CH.q=q0; CH.qUsed=(CH.qUsed||[]).concat([q0.q]); qMarkSeen(q0.q); } }
     if(CH.q){
       qBlock='<div class="card" style="border-color:var(--am);background:var(--am-l)">'+
         '<p class="mini" style="margin:0 0 6px;color:#92400e">'+esc(CH.q.t)+' · niveau '+CH.q.n+'</p>'+
