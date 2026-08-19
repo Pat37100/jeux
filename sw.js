@@ -1,7 +1,7 @@
 /* Cache simple : l'appli se charge même sans réseau (voiture, montagne).
    Stratégie « réseau d'abord, cache en secours » pour recevoir les mises à jour
    sans jamais bloquer l'ouverture hors ligne. */
-var CACHE = 'jeux-famille-v91';
+var CACHE = 'jeux-famille-v92';
 var FILES = ['./', './index.html', './manifest.webmanifest',
              './icon-180.png', './icon-512.png', './icon-1024.png'];
 
@@ -31,8 +31,12 @@ self.addEventListener('fetch', function (e) {
   var go = isDoc ? fetch(e.request, { cache: 'no-store' }) : fetch(e.request);
   e.respondWith(
     go.then(function (res) {
-      var copy = res.clone();
-      caches.open(CACHE).then(function (c) { c.put(e.request, copy); }).catch(function () {});
+      /* On ne met en cache que les URL nues : les requêtes avec paramètres
+         (?r=… du rechargement franc) créeraient une entrée par visite. */
+      if (url.indexOf('?') < 0) {
+        var copy = res.clone();
+        caches.open(CACHE).then(function (c) { c.put(e.request, copy); }).catch(function () {});
+      }
       return res;
     }).catch(function () {
       return caches.match(e.request).then(function (hit) { return hit || caches.match('./index.html'); });
