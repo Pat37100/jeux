@@ -387,7 +387,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='83';
+var APP_VERSION='84';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -1736,11 +1736,11 @@ function microTeam(){
    Noms volontairement drôles : c'est l'animatrice qui les prononce en jeu.
    j/n/c sont les anciennes cles (v80 et avant) : elles restent lues. */
 var MICRO_LVL=[
-  {k:'p',label:'🐣 Poussin',        n:2, txt:"école primaire : ce qu'on apprend avant le collège"},
-  {k:'a',label:'🎧 Tête d\'ado',    n:4, txt:"collège et lycée : sport, cinéma, séries, jeux vidéo, culture ado"},
-  {k:'h',label:'☕ Honnête cultivé', n:5, txt:"adulte : culture générale répandue, ce qu'un adulte attentif sait"},
-  {k:'b',label:'🧠 Tête bien faite', n:6, txt:"adulte : connaissance précise ou raisonnement exigeant, au-delà du réflexe"},
-  {k:'g',label:'🔥 Grosse tête',    n:8, txt:"adulte aguerri : détail latéral, angle inattendu — une question que la plupart des adultes connaissent spontanément n'est PAS de ce niveau"}
+  {k:'p',label:'🐣 Poussin',        n:2, txt:"la réponse est connue de presque tous les enfants : un fait de base, souvent vu à l'école"},
+  {k:'a',label:"🎧 Tête d'ado",     n:4, txt:"la réponse est connue de la plupart des jeunes : un fait courant, sans détail à retenir"},
+  {k:'h',label:'☕ Honnête cultivé', n:5, txt:"un adulte attentif y répond : le fait est répandu, mais il faut aller le chercher"},
+  {k:'b',label:'🧠 Tête bien faite', n:6, txt:"il faut une connaissance précise ou un raisonnement : on n'y répond pas par réflexe"},
+  {k:'g',label:'🔥 Grosse tête',    n:8, txt:"détail latéral, angle inattendu, précision rare — si la majorité des adultes connaît spontanément la réponse, ce n'est PAS ce niveau"}
 ];
 /* Cles historiques : v80 (j/n/c) puis v81 (m/t). Relues, jamais perdues. */
 var MICRO_LVL_OLD={j:'a',n:'h',c:'g',m:'a',t:'h'};
@@ -1878,6 +1878,7 @@ function briefSimple(){
   t+='7. BRUIT DE FOND. Les joueurs parlent entre eux, rient, réfléchissent à voix haute. Pendant que tu parles, tu ne t\'interromps pas pour un commentaire de fond. Après une question, tu écoutes vraiment. Un bavardage, une blague ou un mot lancé en l\'air n\'est pas une réponse : seule compte la réponse donnée par le joueur interrogé. Si un autre souffle la bonne réponse, personne ne marque, et tu reposes une autre question au même joueur.\n\n';
 
   t+='NIVEAUX — chaque joueur reçoit des questions à SON niveau, sans jamais le commenter à voix haute.\n';
+  t+='Le niveau règle UNIQUEMENT la difficulté, jamais le sujet. Un joueur au niveau le plus bas reçoit des questions sur les mêmes domaines que les autres, simplement plus abordables. Tu ne changes jamais de domaine à cause du niveau de quelqu\'un, et tu n\'écartes jamais un sujet imposé sous prétexte qu\'il serait trop dur pour un joueur : tu poses une question plus facile DANS ce sujet.\n';
   MICRO_LVL.forEach(function(L){ if(used[L.k]) t+=L.label+' — '+L.txt+'.\n'; });
   t+='À l\'intérieur du niveau d\'un joueur, alterne les crans : une qui passe crème, une qui pique, une qui fait mal. Ne reste jamais deux fois de suite sur le même cran.\n\n';
 
