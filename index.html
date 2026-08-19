@@ -391,7 +391,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='93';
+var APP_VERSION='94';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -2304,8 +2304,7 @@ function champByGame(){
 function champGameBlocks(){
   var g=champByGame(); if(!g.length) return '';
   var med=['🥇','🥈','🥉'];
-  return '<div class="card"><h2>Par jeu</h2>'+
-    '<p class="mini" style="margin:0 0 10px">Une victoire au Uno et une manche de Tic-Tac ne se comparent pas : chaque jeu a son classement.</p>'+
+  return '<div class="card" style="margin-top:8px"><p class="mini" style="margin:0 0 10px">Une victoire au Uno et une manche de Tic-Tac ne se comparent pas : chaque jeu a son classement.</p>'+
     g.map(function(b){
       return '<div style="margin-bottom:12px">'+
         '<p style="margin:0 0 5px;font-weight:800;font-size:13.5px">'+esc(b.game)+'</p>'+
@@ -2345,40 +2344,50 @@ function renderChampions(hd,app,banner){
     [['mois','📅 Ce mois'],['annee','🗓 Cette année'],['tout','☰ Tout']].map(function(o){
       return '<button class="chip'+(champPeriod()===o[0]?' on':'')+'" style="white-space:nowrap" onclick="S.champPeriod=\''+o[0]+'\';S.detail=null;render()">'+o[1]+'</button>';
     }).join('')+'</div>'+
-    '<div class="row" style="gap:6px;margin-bottom:10px">'+
-    [['couronnes','👑 Couronnes'],['taux','📊 Taux de victoire']].map(function(o){
-      return '<button class="chip'+((S.champSort||'couronnes')===o[0]?' on':'')+'" style="flex:1;text-align:center" onclick="S.champSort=\''+o[0]+'\';S.detail=null;render()">'+o[1]+'</button>';
-    }).join('')+'</div>'+
-    (S.champSort==='taux'?'<p class="mini" style="margin:-4px 0 10px">Taux = couronnes ÷ parties jouées. En dessous de '+CHAMP_MIN+' parties, il est affiché mais ne sert pas au classement.</p>':'');
-  var cm=S.champMode||'jeu';
-  h+='<div class="row" style="gap:6px;margin-bottom:12px">'+
-    [['jeu','▦','Par jeu'],['global','🏆','Général'],['tout','☰','Tout']].map(function(o){
-      return '<button class="chip'+(cm===o[0]?' on':'')+'" style="flex:1;text-align:center;padding:9px 4px" onclick="S.champMode=\''+o[0]+'\';window.scrollTo(0,0);render()">'+o[1]+'<br><span style="font-size:11px;font-weight:600">'+o[2]+'</span></button>';
-    }).join('')+'</div>';
-  if(cm!=='global') h+=champGameBlocks();
-  if(cm!=='jeu') h+='<div class="card"><h2>Toutes disciplines confondues</h2>'+
-     '<p class="mini" style="margin:0 0 8px">Vue d\'ensemble, à prendre avec le sourire : les jeux n\'ont pas la même durée.</p>';
+    '';
+  /* Avant : trois rangées de chips (période, tri, mode) puis DEUX listes des
+     mêmes joueurs — par jeu et en général. On tient tout en un seul tableau :
+     couronnes, parties et taux côte à côte, tri par en-tête, jeu par jeu replié. */
   var shown=list.filter(function(p){return !p.hidden;});
   var hiddenList=list.filter(function(p){return p.hidden;});
+  var tri=S.champSort||'couronnes';
+  var col=function(k,lb,w){
+    return '<span onclick="S.champSort=\''+k+'\';S.detail=null;render()" style="width:'+w+';text-align:right;font-size:11px;font-weight:800;cursor:pointer;'+
+      (tri===k?'color:var(--okx)':'color:var(--mut)')+'">'+lb+(tri===k?' ▾':'')+'</span>';
+  };
+  var faibles=false;
+  h+='<div class="card">'+
+     '<div style="display:flex;align-items:center;gap:7px;padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:2px">'+
+       '<span style="width:18px"></span>'+
+       '<span style="flex:1;font-size:11px;font-weight:800;color:var(--mut)">JOUEUR</span>'+
+       col('couronnes','👑','40px')+
+       '<span style="width:44px;text-align:right;font-size:11px;font-weight:800;color:var(--mut)">JOUÉES</span>'+
+       col('taux','TAUX','46px')+
+     '</div>';
   shown.forEach(function(p,i){
     var open=S.detail==='champ'+fp(p.name);
     var rateTxt = p.rate===null ? '—' : p.rate+' %';
-    h+='<div class="rank'+(i===0?' first lead':'')+'" style="cursor:pointer" onclick="S.detail=S.detail===\'champ'+fp(p.name)+'\'?null:\'champ'+fp(p.name)+'\';render()"><div class="pos">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1))+'</div>'+
-      av(p.name,'sm')+'<div class="nm" style="margin-left:8px"><b>'+esc(p.name)+'</b>'+
-      '<small>'+(p.coupes?'🏆'+p.coupes+' ':'')+(p.quizWins?'🎙️'+p.quizWins+' ':'')+(p.duelWins?'⏱️'+p.duelWins+' ':'')+(!p.crowns?'pas encore de couronne':'· voir le détail ›')+'</small></div>'+
-      (S.champSort==='taux'
-        ? '<div class="pts"><b>'+rateTxt+'</b><small>'+(p.parties<CHAMP_MIN?'trop peu':'de victoires')+'</small></div></div>'
-        : '<div class="pts"><b>'+p.crowns+'</b><small>👑</small></div></div>');
+    var faible = p.parties<CHAMP_MIN && p.rate!==null; if(faible) faibles=true;
+    h+='<div onclick="S.detail=S.detail===\'champ'+fp(p.name)+'\'?null:\'champ'+fp(p.name)+'\';render()" '+
+       'style="display:flex;align-items:center;gap:7px;padding:8px 0;cursor:pointer;border-bottom:1px solid var(--line)">'+
+      '<span style="width:18px;font-size:13px">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1))+'</span>'+
+      av(p.name,'sm')+
+      '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:13.5px">'+esc(p.name)+'</span>'+
+      '<b style="width:40px;text-align:right;font-size:15px">'+p.crowns+'</b>'+
+      '<span style="width:44px;text-align:right;font-size:13px;color:var(--mut)">'+p.parties+'</span>'+
+      '<span style="width:46px;text-align:right;font-size:13px;font-weight:700'+(faible?';color:var(--mut)':'')+'">'+rateTxt+(faible?'*':'')+'</span>'+
+      '</div>';
     if(open){
-      h+='<div style="background:var(--bg);border-radius:12px;padding:10px 12px;margin:-2px 0 6px;font-size:13px">'+
+      h+='<div style="background:var(--bg);border-radius:12px;padding:10px 12px;margin:6px 0;font-size:13px">'+
         '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>🏆 La Coupe</span><b>'+pl(p.coupes,'titre')+' · '+pl(p.coupeManches,'manche gagnée')+'</b></div>'+
         '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>🎙️ Le Micro</span><b>'+p.quizWins+' / '+pl(p.quizGames,'partie')+'</b></div>'+
         '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>⏱️ Tic-Tac</span><b>'+p.duelWins+' / '+pl(p.duels,'duel')+'</b></div>'+
-        '<div style="display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid var(--line);margin-top:4px"><span>📊 Taux de victoire</span><b>'+rateTxt+' <span style="font-weight:500;color:var(--mut);font-size:11.5px">sur '+pl(p.parties,'partie')+'</span></b></div>'+
         '<button class="sm" style="width:100%;margin-top:8px" onclick="event.stopPropagation();champToggleHide(\''+esc(p.name).replace(/'/g,"\\'")+'\')">🙈 Masquer du mur</button>'+
       '</div>';
     }
   });
+  h+='<p class="mini" style="margin:8px 0 0">Touche 👑 ou TAUX pour changer le classement, un prénom pour le détail.'+
+     (faibles?' <b>*</b> moins de '+CHAMP_MIN+' parties : taux indicatif, hors classement.':'')+'</p>';
   h+='</div>';
   if(hiddenList.length){
     h+='<button class="sm" style="width:100%;margin-top:10px;background:var(--card);text-align:left" onclick="S.champShowHid=!S.champShowHid;render()">'+
@@ -2389,7 +2398,10 @@ function renderChampions(hd,app,banner){
         '<button class="sm g" onclick="champToggleHide(\''+esc(q.name).replace(/'/g,"\\'")+'\')">Réafficher</button></div>';
     }).join('')+'<p class="mini" style="margin:0">Masquer ne supprime rien : les parties gardent leur historique.</p></div>';
   }
-  h+='<p class="mini" style="text-align:center">Une couronne = un titre à La Coupe, une partie du Micro gagnée, ou un duel Tic-Tac remporté.</p>';
+  h+='<button class="sm" style="width:100%;margin-top:10px;background:var(--card);text-align:left" onclick="S.champByGame=!S.champByGame;render()">'+
+     (S.champByGame?'▾':'›')+' Classement jeu par jeu</button>';
+  if(S.champByGame) h+=champGameBlocks();
+  h+='<p class="mini" style="text-align:center;margin-top:10px">👑 = un titre à La Coupe, une partie du Micro gagnée, ou un duel Tic-Tac remporté.</p>';
   h+='<button class="btn dark" style="margin-top:10px" onclick="champShare()">📤 Partager le mur</button>';
   app.innerHTML=h;
 }
