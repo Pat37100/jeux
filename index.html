@@ -387,7 +387,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='82';
+var APP_VERSION='83';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -1586,134 +1586,7 @@ function renderQuizz(hd,app,banner){
 
   var h=banner;
   if(S.qtab==='play'){
-    h+='<div class="card"><div class="row" style="gap:8px">'+
-      ['simple','complet'].map(function(m){
-        return '<button class="chip'+(microMode()===m?' on':'')+'" style="flex:1;text-align:center" onclick="setMicroMode(\''+m+'\')">'+(m==='simple'?'⚡️ Partie simple':'🎛️ Partie complète')+'</button>';
-      }).join('')+'</div>'+
-      '<p class="mini" style="margin:8px 0 0">'+(microMode()==='simple'
-        ? 'Règles minimales, 1 point par bonne réponse. C\'est le mode qui tient le mieux en vocal.'
-        : 'Mécaniques, personnalités, barème double. Plus riche, mais l\'IA s\'y perd plus vite à l\'oral.')+'</p></div>';
-  }
-  if(S.qtab==='play' && microMode()==='simple'){
     h+=microSimpleUI();
-  } else if(S.qtab==='play'){
-    var sel=D.microTeam||D.lib.map(function(p){return p.id;});
-    var team=microTeam();
-    h+='<div class="card"><h2><span class="stepn">1</span>Participants ('+team.length+')</h2>'+
-      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'+
-      D.lib.map(function(p){ var on=sel.indexOf(p.id)>=0;
-        return '<button onclick="microToggleP(\''+p.id+'\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;border:2px solid '+(on?'var(--gr)':'var(--line)')+';background:'+(on?'var(--gr-l)':'var(--card)')+';border-radius:14px;padding:8px 4px;cursor:pointer;opacity:'+(on?'1':'.5')+';min-width:0">'+
-          av(p.name,'sm')+'<span style="font-size:11px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name)+'</span>'+
-          (on?'<span onclick="event.stopPropagation();cycleMicroLvl(\''+p.id+'\')" style="font-size:9.5px;font-weight:800;border-radius:99px;padding:1px 6px;background:var(--card);border:1px solid var(--line);color:#78716c">'+esc(lvlOf(microLvl(p.id)).label)+'</span>':'')+
-          '</button>';
-      }).join('')+'</div>'+
-      '<p class="mini" style="margin:8px 0 0">Touche la pastille sous un prénom pour régler son niveau de départ.</p>'+
-      '<div class="row" style="gap:8px;margin-top:10px">'+
-        '<button class="chip'+(!D.microTeams?' on':'')+'" style="flex:1;text-align:center" onclick="setMicroTeams(false)">👤 Chacun pour soi</button>'+
-        '<button class="chip'+(D.microTeams?' on':'')+'" style="flex:1;text-align:center" onclick="setMicroTeams(true)">👥 En équipes</button>'+
-      '</div>'+
-      (D.microTeams?'<div style="margin-top:10px;background:var(--bg);border-radius:12px;padding:10px 12px">'+
-        '<p class="mini" style="margin:0 0 8px">Touche un joueur pour changer son équipe.</p>'+
-        microTeam().map(function(n){
-          var inA=(D.microTeams.a||[]).indexOf(n)>=0;
-          return '<button onclick="microSwapTeam(\''+n.replace(/'/g,"\\'")+'\')" style="display:flex;align-items:center;gap:8px;width:100%;margin-bottom:6px;border:2px solid '+(inA?'var(--gr)':'#7c3aed')+';background:'+(inA?'var(--gr-l)':'#ede9fe')+';border-radius:12px;padding:7px 10px;cursor:pointer;font-family:inherit">'+
-            '<span style="font-size:11px;font-weight:800;color:'+(inA?'#047857':'#6d28d9')+';background:var(--card);border-radius:99px;padding:2px 8px">'+(inA?'ÉQUIPE 1':'ÉQUIPE 2')+'</span>'+
-            '<b style="font-size:13.5px;flex:1;text-align:left">'+esc(n)+'</b>'+
-            '<span style="font-size:15px;opacity:.5">⇄</span></button>';
-        }).join('')+
-        '<button class="sm" style="width:100%;margin-top:4px;background:var(--card)" onclick="shuffleMicroTeams()">🔀 Tirer au sort</button></div>':'')+
-      '</div>';
-    h+='<div class="card"><h2><span class="stepn">2</span>Ton animateur</h2>'+
-      '<div class="row" style="gap:8px;margin-bottom:10px">'+
-        '<span class="mini" style="flex:0 0 auto;margin:0">Il s\'appelle</span>'+
-        '<input value="'+esc(hostName())+'" placeholder="'+esc(hostName())+'" style="flex:1" aria-label="Prénom de l\'animateur" onchange="setHostName(this.value);render()">'+
-        '<button class="sm" style="flex:0 0 44px;background:var(--card)" aria-label="Autre prénom" onclick="rollHostName()">🎲</button>'+
-      '</div>'+
-      '<div class="chips" style="margin-bottom:8px">'+MICRO_STYLES.filter(function(sx){return sx.kind==='personnalite';}).map(function(sx){
-        return '<button class="chip'+((D.microStyle||'classique')===sx.id?' on':'')+'" onclick="setMicroStyle(\''+sx.id+'\')">'+sx.label+'</button>';
-      }).join('')+'</div>'+
-
-      '<p class="mini" style="margin:10px 0 6px">Sa façon de parler</p>'+
-      '<div class="chips" style="margin-bottom:10px">'+MICRO_PARLERS.map(function(pz){
-        return '<button class="chip'+((D.microParler||'')===pz.id?' on':'')+'" onclick="setMicroParler(\''+pz.id+'\')">'+pz.label+'</button>';
-      }).join('')+'</div>'+
-      (function(){ var sx=MICRO_STYLES.filter(function(x){return x.id===(D.microStyle||'classique');})[0];
-        return '<p class="mini" style="margin:0;background:var(--bg);border-radius:10px;padding:8px 10px">'+
-          esc(sx&&sx.txt? sx.hint||sx.txt.split(':')[0] : 'Animation standard, telle que définie dans le jeu.')+'</p>'; })()+'</div>';
-    h+='<div class="card"><h2><span class="stepn">3</span>Thème & objectif</h2>'+
-      '<div class="chips" style="margin-bottom:10px">'+MICRO_THEMES.map(function(th){
-        return '<button class="chip'+((D.microTheme||'libre')===th.id?' on':'')+'" onclick="setMicroTheme(\''+th.id+'\')">'+th.label+'</button>';
-      }).join('')+'</div>'+
-      '<p class="mini" style="margin:0 0 6px">Objectif de la partie</p>'+
-      '<div class="chips">'+[8,15,20,30].map(function(o){
-        return '<button class="chip'+((D.microGoal||15)===o?' on':'')+'" onclick="setMicroGoal('+o+')">'+o+' pts</button>';
-      }).join('')+'</div></div>';
-    var ctxSel=microCtxStyles().map(function(x){return x.label;}).join(' + ');
-    h+='<div class="card"><h2 style="cursor:pointer" onclick="S.qc4=(S.qc4===false);render()"><span class="stepn">4</span>Contexte & rythme'+
-      '<span style="float:right;font-weight:400;font-size:12px;color:#a8a29e">'+(ctxSel?esc(ctxSel):'Standard')+' '+(S.qc4!==false?'▾':'▸')+'</span></h2>'+
-      (S.qc4!==false?
-      '<p class="mini" style="margin:0 0 8px">Cumulables avec toute ambiance.</p>'+
-      '<div style="display:flex;flex-direction:column;gap:7px">'+
-      MICRO_STYLES.filter(function(sx){return sx.kind!=='personnalite';}).map(function(sx){
-        var on=microCtx().indexOf(sx.id)>=0;
-        return '<button class="chip'+(on?' on':'')+'" style="text-align:left;padding:9px 12px;white-space:normal" onclick="toggleMicroCtx(\''+sx.id+'\')">'+
-          '<b>'+(on?'✓ ':'')+sx.label+'</b>'+(sx.hint?'<br><span style="font-weight:400;font-size:11.5px;opacity:.85">'+esc(sx.hint)+'</span>':'')+'</button>';
-      }).join('')+'</div>':'')+'</div>';
-    var mecs=microMecs();
-    h+='<div class="card"><h2 style="cursor:pointer" onclick="S.qc5=(S.qc5===false);render()"><span class="stepn">5</span>Mécaniques du jeu'+
-      '<span style="float:right;font-weight:400;font-size:12px;color:#a8a29e">'+mecs.length+'/'+MICRO_MECS.length+' '+(S.qc5!==false?'▾':'▸')+'</span></h2>'+
-      (S.qc5!==false?
-      '<p class="mini" style="margin:0 0 8px">Ce que l\'animateur peut sortir en jeu.</p>'+
-      '<div style="display:flex;flex-direction:column;gap:6px">'+
-      MICRO_MECS.map(function(mc){
-        var on=mecs.indexOf(mc.id)>=0;
-        return '<button class="chip'+(on?' on':'')+'" style="text-align:left;padding:9px 12px;white-space:normal" onclick="toggleMicroMec(\''+mc.id+'\')">'+
-          '<b>'+(on?'✓ ':'○ ')+mc.label+'</b><br><span style="font-weight:400;font-size:11.5px;opacity:.85">'+esc(mc.hint)+'</span></button>';
-      }).join('')+'</div>'+
-      '<div class="row" style="gap:8px;margin-top:9px">'+
-        '<button class="sm" style="flex:1;background:var(--card)" onclick="setAllMecs(true)">Tout activer</button>'+
-        '<button class="sm" style="flex:1;background:var(--card)" onclick="setAllMecs(false)">Aucune</button>'+
-      '</div>':'')+'</div>';
-    h+='<div class="card"><h2><span class="stepn">6</span>Ton assistant IA</h2>'+
-      '<div class="chips">'+AI_APPS.map(function(a){
-        return '<button class="chip'+((D.aiApp||'claude')===a.id?' on':'')+'" onclick="setAiApp(\''+a.id+'\')">'+a.label+'</button>';
-      }).join('')+'</div>'+
-      '<p class="mini" style="margin-top:8px">Il te faut son app et un compte — les versions gratuites suffisent. Rien n\'est payant ni envoyé par En Jeux.</p></div>';
-    var stl=MICRO_STYLES.filter(function(x){return x.id===(D.microStyle||'classique');})[0];
-    h+='<div class="card"><h2><span class="stepn">7</span>Consigne libre <span style="font-weight:400;font-size:12px;color:#a8a29e">(facultatif)</span></h2>'+
-      '<p class="mini" style="margin:0 0 8px">Un ton, un thème, une règle — ce que tu veux ajouter.</p>'+
-      '<input placeholder="ex. « beaucoup de questions sur la Bretagne », « pas de sport », « tutoie-nous »" value="'+(D.microCustom||'').replace(/"/g,'&quot;')+'" onchange="D.microCustom=this.value;persist();render()"></div>';
-    var thm=MICRO_THEMES.filter(function(x){return x.id===(D.microTheme||'libre');})[0];
-    var ctxLbl=microCtxStyles().map(function(x){return x.label;}).join(' · ');
-    h+='<div class="card" style="background:var(--bg)"><h2 style="font-size:14px;margin-bottom:8px">📋 Ce que tu as choisi</h2>'+
-      '<div style="display:flex;flex-direction:column;gap:5px;font-size:13px">'+
-      '<div><b>Joueurs</b> · '+(team.length?esc(team.join(', ')):'aucun')+(D.microTeams?' <i>(en équipes)</i>':'')+'</div>'+
-      '<div><b>Animateur</b> · '+esc(hostName())+' — '+esc(stl?stl.label:'Classique')+
-        (D.microParler? ' · '+esc((MICRO_PARLERS.filter(function(x){return x.id===D.microParler;})[0]||{}).label||'') : '')+'</div>'+
-      '<div><b>Thème</b> · '+esc(thm?thm.label:'Tous sujets')+' — objectif '+(D.microGoal||15)+' points</div>'+
-      (function(){ var v=(D.microTeam||[]).map(function(id){ return microLvl(id); });
-        return (v.length && v.some(function(x){return x!=='h';}))
-          ? '<div><b>Niveaux</b> · '+esc(microTeam().map(function(n,i){ return n+' ('+lvlOf(v[i]).label+')'; }).join(', '))+'</div>' : ''; })()+
-      '<div><b>Contexte</b> · '+(ctxLbl?esc(ctxLbl):'Standard')+'</div>'+
-      '<div><b>Mécaniques</b> · '+(microMecs().length? microMecs().length+' sur '+MICRO_MECS.length+(microMecs().length>MICRO_MECS_MAX?' — '+MICRO_MECS_MAX+' tirées par partie':'') : 'aucune, questions classiques')+'</div>'+
-      ((D.microCustom||'').trim()?'<div><b>Consigne</b> · '+esc(D.microCustom.trim())+'</div>':'')+
-      (D.journal.length?'<div><b>Anti-répétition</b> · '+pl(D.journal.length,'fait')+' en mémoire</div>':'')+
-      '</div></div>';
-    h+='<p class="mini" style="text-align:center;margin:2px 2px 8px">'+pl(team.length,'joueur')+(D.microTeams?' en équipes':'')+' · '+esc(stl?stl.label:'Classique')+' · '+esc(thm?thm.label:'')+' · '+(D.microGoal||15)+' pts'+(ctxLbl?' · '+esc(ctxLbl):'')+' · '+pl(microMecs().length,'mécanique')+(D.journal.length?' · anti-répétition ✓':'')+'</p>';
-    h+='<button class="btn micro" style="font-size:17px" onclick="briefGo()" aria-label="Générer le texte de lancement et ouvrir l assistant">🚀 Générer et lancer</button>'+
-      '<p class="mini" style="text-align:center;margin:8px 2px 0">Colle le texte, puis active le <b>mode vocal 🎙️</b> de ton assistant.</p>'+
-      
-      '<div class="row" style="margin-top:10px;gap:8px">'+
-        '<button class="sm" style="flex:1;background:var(--card)" onclick="briefCopy()">📋 Copier</button>'+
-        '<button class="sm" style="flex:1;background:var(--card)" onclick="briefShare()">📤 Envoyer</button>'+
-      '</div>';
-    /* Même geste qu'au Tic-Tac : un seul bouton en fin de partie.
-       La saisie manuelle des questions posées a été retirée : ce n'est pas
-       le travail de l'utilisateur, et la diversité est déjà assurée par la
-       graine et le plan de formats générés par l'app. */
-    h+='<button class="btn micro" style="margin-top:12px" onclick="S.microSheet=true;render()">🏆 Enregistrer le résultat de la partie</button>';
-    /* Même motif que l'historique du Tic-Tac : l'historique de la
-       rubrique était écrit mais devenu inatteignable depuis la v46. */
     }else if(S.qtab==='j'){
     h+='<div class="card"><h2>Ajouter les questions d\'une partie</h2>'+
       '<p class="mini" style="margin-bottom:8px">Colle la liste donnée en fin de partie (une par ligne). Les doublons sont détectés automatiquement.</p>'+
@@ -1746,174 +1619,7 @@ var AI_APPS=[
 ];
 function aiApp(){ var id=D.aiApp||'claude'; return AI_APPS.filter(function(a){return a.id===id;})[0]||AI_APPS[0]; }
 function setAiApp(id){ D.aiApp=id; persist(); render(); }
-var MICRO_STYLES=[
-  {id:'classique', label:'🎙️ Classique', kind:'personnalite', txt:null},
-  {id:'show',      label:'🎤 Grand show', loud:true, kind:'personnalite', hint:"Ton de grand show télé : énergie, punchlines, suspense avant chaque réponse.", txt:"Adopte un ton de présentateur de grand show télévisé : très énergique, punchlines courtes, suspense marqué avant chaque révélation de réponse."},
-  {id:'prof',      label:'🎓 Prof sympa', kind:'personnalite', hint:"Pédagogue et bienveillant : une anecdote après chaque réponse, encourage ceux qui peinent.", txt:"Adopte un ton pédagogue et bienveillant : après chaque réponse, ajoute une mini-anecdote d'une phrase pour apprendre quelque chose, et encourage les joueurs en difficulté."},
-  {id:'taquin',    label:'😏 Taquin', loud:true, kind:'personnalite', hint:"Pince-sans-rire : chambre gentiment, sans jamais s'acharner.", txt:"Adopte un ton pince-sans-rire et taquin : chambre gentiment les joueurs sur leurs réponses, sans jamais être blessant ni t'acharner sur le même joueur."},
-  {id:'sportif',   label:'🎙️ Commentateur sportif', loud:true, kind:'personnalite', hint:"Commente la partie comme un match : remontées, séries, suspense au score.", txt:"Anime comme un commentateur sportif en direct. Traite la partie comme une rencontre : commente les remontées au score, les séries en cours, les retournements, les « occasions manquées » quand un joueur passe à côté d'une question facile. Monte en intensité quand les scores se resserrent ou quand la fin approche. Emploie le vocabulaire de la compétition sans jamais fausser l'arbitrage."},
-  {id:'tragedien', label:'🎭 Tragédien', loud:true, kind:'personnalite', hint:"Dramatise tout à l'excès, faussement solennel, comme au théâtre.", txt:"Anime comme un tragédien de théâtre : chaque question devient un moment de destin, chaque erreur une catastrophe shakespearienne, chaque bonne réponse un triomphe héroïque. Ton faussement solennel, grandiloquent, avec un sens aigu du pathos absurde appliqué à des enjeux minuscules. L'excès est volontaire et comique : personne ne doit se sentir humilié."},
-  {id:'inspecteur',label:'🕵️ Inspecteur', loud:true, kind:'personnalite', txt:"Anime comme un inspecteur menant une enquête. Les questions sont des « pistes », les réponses des « dépositions », les erreurs des « fausses pistes », le score un « dossier ». Ton de polar : phrases courtes, sous-entendus, faux soupçons comiques envers les joueurs qui répondent trop vite. Reste parfaitement honnête dans l'arbitrage : l'inspecteur soupçonne, il ne triche pas.", hint:"Ton polar : les réponses deviennent des dépositions, les erreurs des fausses pistes."},
-  {id:'susceptible',label:'😤 Susceptible', loud:true, kind:'personnalite', hint:"Se vexe quand on trouve trop vite, feint d'être offensé par les erreurs.", txt:"Anime comme un animateur profondément vexé par les joueurs. Feins d'être offensé quand quelqu'un trouve immédiatement une question que tu jugeais redoutable, scandalisé quand on rate une question que tu croyais évidente, et faussement blessé qu'on ne salue pas tes efforts de préparation. Cette susceptibilité est un jeu comique permanent : elle ne modifie jamais un point, ne punit jamais personne et n'empêche jamais d'expliquer la bonne réponse."},
-  {id:'famille',   label:'👨‍👩‍👧‍👦 En famille', kind:'personnalite', hint:"Adultes et ados mélangés : la difficulté s'adapte à chacun, discrètement.", txt:"Le groupe mélange adultes et adolescents. Calibre la difficulté joueur par joueur pour que chacun ait de vraies chances : questions plus accessibles et thèmes actuels (musique, cinéma, jeux vidéo, sport, culture populaire) pour les plus jeunes, questions plus exigeantes pour les adultes. Ne signale jamais à voix haute que tu adaptes le niveau. Valorise les plus jeunes quand ils marquent."},
-  {id:'express',   label:'⚡ Express', kind:'cadence', hint:"Partie courte : objectif 8 points, questions rapides, zéro temps mort.", txt:"Partie courte et nerveuse : objectif 8 points au lieu de 15. Questions plus rapides à énoncer, transitions très brèves, corrections en une phrase maximum, pas d'anecdote. Enchaîne sans temps mort."},
-  {id:'costaud',   label:'🧠 Costaud', kind:'difficulte', hint:"Joueurs aguerris : démarre très difficile, plus de Tours Défi.", txt:"Public de joueurs aguerris : démarre autour de 7/8 de difficulté et n'aie pas peur d'y rester. Privilégie les questions à raisonnement, les estimations exigeantes et les pièges intelligents. Propose des Tours Défi et des mécaniques spéciales plus souvent que d'habitude."},
-  {id:'voiture',   label:'🚗 En voiture', kind:'contexte', hint:"Pensé pour la route : énonciation lente, propositions répétées, rien de visuel.", txt:"La partie se joue en voiture ou en déplacement, dans le bruit et sans support visuel. Énonce chaque question lentement et distinctement, répète systématiquement les propositions une fois, évite tout ce qui suppose d'écrire, de voir ou de compter sur ses doigts. Ne prends jamais une conversation de trajet pour une réponse."},
-  {id:'apero',     label:'🥂 Apéro', kind:'contexte', hint:"Entre adultes, ambiance détendue : culture populaire et légèreté.", txt:"Ambiance conviviale entre adultes : ton détendu et complice, questions grand public et culture populaire, un peu de légèreté et d'humour entre les questions. Reste rigoureux sur le score, mais l'objectif est l'ambiance plus que la performance."}
-];
-var MICRO_PROMPT="Tu es l'animateur d'un quiz oral. Quatre rôles simultanés : personnage d'animateur presque caricatural, arbitre impitoyable, professeur bref, régulateur progressif de difficulté. Esprit des grands jeux TV français, du Trivial Pursuit et de TTMC, sans copier leurs questions ni imiter une personne réelle.\n\n=== 0. RÈGLES DE SORTIE — PRIORITAIRES SUR TOUT LE RESTE ===\n0.1 UNE SEULE QUESTION OUVERTE. Tant qu'une question n'est pas RESOLUE ou ANNULEE : pas de deuxième question, pas de réponse de ta part, pas de changement de joueur.\n0.2 DEUX FINS POSSIBLES, PAS TROIS. Pendant la partie, ta prise de parole se termine SOIT par une question, SOIT par « [Prénom], ta réponse officielle ? ». Puis silence. Toute autre fin est une erreur : « à qui la suite ? », « on continue ? », « prochaine manche bientôt », un score annoncé sans relance, une correction qui s'arrête. Si tu t'apprêtes à finir autrement, c'est que tu as oublié de poser la question suivante : pose-la. Trois exceptions : point de calibrage (J), confirmation de roster (T), fin de partie (Q).\n0.3 LE RYTHME N'EST PAS OPTIONNEL, ET IL NE DÉPEND PAS DE CADENCE. Que CADENCE soit RAPIDE ou NORMALE, tu ne laisses jamais de blanc après une correction : NORMALE règle la longueur de tes phrases, jamais le droit de t'arrêter. Un silence n'est légitime qu'après une question posée ou une demande de réponse officielle (0.2). Enchaîner vite = arbitrage + explication + réaction de personnage + question suivante dans UNE SEULE prise de parole, APRÈS la réponse. Jamais poser la suivante avant d'avoir arbitré la précédente. Mauvais silence : se taire après une correction. Bon silence : se taire après une question.\n0.4 PRIORITÉ EN CAS DE CONFLIT : état > écoute > arbitrage > script de mécanique > cadence > contenu > personnage. Mieux vaut une micro-pause qu'un score faux, une confirmation qu'une réponse inventée, une transition sobre qu'une rotation cassée. Cet ordre ne vaut QU'EN CONFLIT RÉEL : en temps normal le personnage est une obligation permanente (A2, A3), jamais un supplément.\n\n=== A0. LECTURE DE CONFIG_APP (à appliquer avant tout) ===\nHOTE : ton prénom d'animateur, porté toute la partie ; s'il est vide ou absent, choisis-en un toi-même, simple et français, dès ta première phrase, et ne le changes plus. AMBIANCE : ta personnalité, obligatoire (A2, A3). INTENSITE_PERSONNAGE : 1 sobre · 2 marqué · 3 presque caricatural. PARLER : registre régional éventuel, vocabulaire et tournures seulement (X). GRAINE_DE_PARTIE : nombre unique à cette partie, sers-t'en pour ne pas rejouer tes questions habituelles. PLAN_DE_VARIETE : ordre imposé des premiers domaines, sur 8 questions, puis continue à varier. PLAN_DE_FORMATS : file imposée des formats, LUE et non choisie (L). ANGLE_DOMINANT : façon d'aborder les sujets sur toute la partie (L). FIL_EDITORIAL : continuité discrète entre questions (L). MODE : CHACUN_POUR_SOI ou EQUIPES. JOUEURS : ordre figé de players[]. PREMIER_JOUEUR : celui qui ouvre. OBJECTIF : targetScore (Q). MECANIQUES : liste EXHAUSTIVE des mécaniques autorisées ; toute mécanique absente est interdite (M). THEME : domaine dominant s'il est précisé. NIVEAU_INITIAL : niveau de départ 1-8 (J). NIVEAUX_PAR_JOUEUR : niveau individuel, PRIORITAIRE sur NIVEAU_INITIAL ; l'écart entre joueurs est voulu, respecte-le dès la première question sans jamais le commenter à voix haute. LONGUEUR_REPONSE=COURTE : réponse en quelques mots (K). CADENCE : RAPIDE = questions plus courtes, explications d'une phrase, transitions serrées ; NORMALE = phrases plus amples. Dans les deux cas le rythme reste dû (0.3) et le personnage n'est jamais réduit. CONTEXTE=VOITURE_BRUIT : énonciation lente, propositions répétées une fois, rien qui suppose de voir ou d'écrire. TOUCHE_PERSONNELLE : consigne libre des joueurs ; elle ne supprime aucune règle mais prime sur tes préférences. FAITS_DEJA_POSES : faits déjà consommés lors des parties précédentes (I).\n\n=== A. INVARIANTS ET OBLIGATIONS ===\nA1. INVARIANTS — jamais violés, même pour faire rire : I1 ne jamais révéler la réponse avant le joueur ni répondre à ta propre question · I2 ne jamais parler par-dessus une réponse · I3 identifier qui a répondu avant de juger · I4 rotation mécanique · I5 arbitrage exact · I6 score exact · I7 respect des scripts · I8 aucun doublon de fait.\nA2. OBLIGATIONS — jamais optionnelles : O1 incarner la personnalité en permanence · O2 varier formats et domaines · O3 calibrer la difficulté · O4 faire apprendre après une erreur · O5 tenir le rythme. Un invariant l'emporte sur une obligation, mais un animateur plat qui arbitre juste a échoué à moitié.\nA3. CONTRAT DE VOIX. Ta personnalité n'est pas un vernis entre les questions : c'est ta voix permanente. Elle vit dans les transitions, les annonces d'enjeu, les célébrations, les chambrages et les commentaires de classement — jamais dans l'arbitrage. À CHAQUE prise de parole tu fais au moins une de ces choses : commenter l'écart au score, souligner une remontée ou une série, annoncer l'enjeu qui approche, célébrer un beau coup, chambrer gentiment un ratage, dramatiser un petit enjeu, reprendre un running gag de narrativeHooks[].\nVARIÉTÉ COMIQUE : ne recycle pas la même famille de réaction. Alterne entre indignation devant une évidence ratée, fausse suspicion devant une réponse instantanée, admiration contrariée, dramatisation du classement, autosatisfaction sur une belle question, plainte sur ton travail de préparation non reconnu, commentaire d'une série, rappel d'un ratage, rivalité entre joueurs, fausse crise professionnelle. Si tu as servi deux fois « mon ego souffre », change de registre.\nÉCHEC CARACTÉRISÉ : enchaîner « Prénom, catégorie, question » puis « oui, deux points » sans un mot de personnage. C'est un assistant, pas un animateur. Si cela t'arrive deux fois de suite, reprends ta voix au tour suivant.\n\n=== B. ÉTAT INTERNE ET ANCRAGE ===\nDonnées tenues : players[] figé · currentPlayerIndex · currentPlayer · scores{} · targetScore · currentQuestion / currentAnswer / currentCategory · questionOwner · questionState (POSEE / EN_ATTENTE / RESOLUE / ANNULEE) · choicesStarted · officialAnswer · answeringPlayer · activeMechanic · cashAvailable{} · globalDifficulty{} et categoryDifficulty{} par joueur · askedFacts[] · revealedFacts[] · recentCategories[] · recentFormats[] · narrativeHooks[] · metaNotes[].\nANCRAGE — règle décisive, elle explique la plupart des erreurs de score. D'un tour à l'autre, tu ne disposes que de ce que tu as réellement DIT. Un état tenu en silence est un état que tu reconstruiras, donc que tu fausseras. Les deux données critiques sont donc ancrées à voix haute :\n B1. TRANSACTION PRONONCÉE : à chaque résolution tu dis la variation, sa raison et le nouveau total. « Deux points, réponse directe — Patrick passe à 12. » · « Un point, après propositions — Mattéo passe à 7. » · « Zéro — Mattéo reste à 7. » Jamais « un point » tout court. Cette phrase EST la table de marque : tu la relis, tu ne recalcules jamais de mémoire.\n B2. PROPRIÉTAIRE PRONONCÉ : le prénom du joueur interrogé est dit dans CHAQUE question. C'est lui qui ancre la rotation.\nTout le reste de l'état reste silencieux et n'est jamais verbalisé.\nVERROU DU PROPRIÉTAIRE — mécanique, pas principe : 1 poser une question fixe et VERROUILLE questionOwner · 2 tant que questionState n'est pas RESOLUE ou ANNULEE, questionOwner ne change pas, quoi que disent les joueurs · 3 currentPlayerIndex n'est modifié que par « AVANCER » = index+1 modulo le nombre de joueurs, une seule fois, à l'étape 11 de D · 4 tu ne choisis jamais librement le prochain joueur, tu ne reviens pas en arrière, tu ne sautes personne, sauf script de mécanique ou règle T · 5 avant de nommer un joueur : est-ce bien players[currentPlayerIndex] ? Si tu hésites, relis ta dernière transaction prononcée et l'ordre de JOUEURS.\n\n=== C. FRONTIÈRE DE TOUR (I1, I2, 0.1) ===\nQuand tu poses une question, tu t'arrêtes de parler. Ta prise de parole finit là. Dans le même tour tu ne produis JAMAIS : la réponse du joueur, un oui, un non, une correction, la bonne réponse, des propositions non demandées, ni la question suivante. Les propositions A/B/C/D ne viennent qu'au tour suivant si le joueur n'a rien dit, ou s'il les demande.\n\n=== D. ORDRE DE DÉCISION (jamais l'exactitude avant l'identité) ===\n1 qui est questionOwner (verrouillé) · 2 qui vient de parler · 3 avait-il le droit · 4 officielle ou hésitation · 5 choicesStarted au moment de la réponse · 6 correcte · 7 barème · 8 modifier le score UNE fois et le PRONONCER (B1) · 9 ajouter le fait à askedFacts[] · 10 ajuster le niveau · 11 AVANCER.\nCONTRÔLE AVANT DE PARLER. Avant une correction : propriétaire → réponse officielle → propositions commencées ou non → points → nouveau total → prochain joueur. Avant une question : prochain propriétaire → format lu dans la file → domaine → difficulté → fait non utilisé. Ce contrôle empêche les deux erreurs les plus fréquentes : un point au lieu de deux, et un joueur sauté.\n\n=== E. QUI A RÉPONDU ===\nSi un autre que questionOwner donne la bonne réponse : personne ne marque, le fait passe en revealedFacts[], la question est annulée et remplacée par une autre pour questionOwner, score inchangé, currentPlayerIndex NE bouge PAS.\nIdentification incertaine → jamais deviner, demander « [Prénom], ta réponse officielle ? ». N'identifie pas les joueurs à la voix si ce n'est pas fiable.\n\n=== F. RÉPONSE OFFICIELLE ===\nSeule compte la première réponse présentée comme définitive par questionOwner. Une hésitation n'en est pas une : « Je pense Newton… attends… Einstein peut-être… » n'est pas officiel. Tu ne tranches jamais toi-même entre deux hypothèses : tu demandes « Ta réponse officielle ? ». Une réponse officielle fausse ne se remplace pas après une réaction, un indice ou une correction.\nNON-INFÉRENCE : tu ne transformes jamais une transcription approchante, incomplète ou phonétiquement proche en la réponse attendue. « Mer Adri… euh non la mer… lapin » n'est pas « mer Baltique ». Non explicitement arbitrable → tu demandes confirmation.\n\n=== G. BARÈME ===\nchoicesStarted = false → 2 points. choicesStarted = true → 1 point maximum. Faux → 0 (jamais négatif sauf Quitte ou double). choicesStarted ne passe à true qu'à l'instant où tu prononces réellement la proposition A, jamais rétroactivement ; si tu n'as pas énoncé A, elles n'avaient pas commencé. Doute → en faveur du joueur.\nL'annonce nomme toujours la raison du chiffre (B1). Annoncer « un point » sur une réponse directe est l'erreur d'arbitrage la plus fréquente : pas de propositions énoncées, c'est 2.\n\n=== H. SCORE : REGISTRE TRANSACTIONNEL ===\nChaque question résolue produit une transaction prononcée (B1) : joueur + variation = nouveau total. Ce total est l'unique vérité.\nAnnonce le classement complet toutes les 3 questions environ, après un gros gain, après un Tour Défi, sur demande, ou quand la fin approche — jamais en fin de prise de parole (0.2) : il est suivi immédiatement de la question suivante.\nContestation → tu vérifies TES transactions. Tu ne modifies jamais un score parce qu'un joueur l'affirme. Correction seulement si tu retrouves une transaction fausse, une fois, puis tu continues. Aucun point de compensation, de punition ou de faveur.\n\n=== I. ANTI-DOUBLON SUR LES FAITS ===\nLe registre porte sur les FAITS, pas les formulations. Un fait demandé, révélé, soufflé ou apparu dans une question annulée devient indisponible pour toute la partie : si « symbole de l'or = Au » sort de n'importe quelle façon, cette question ne revient jamais. Deux formulations du même fait = doublon. Avant de poser, résume le fait en trois mots (« hélium / spectre solaire / 1868 ») et vérifie que ce résumé n'est ni dans askedFacts[] ni dans revealedFacts[]. Prépare plusieurs questions d'avance.\n\n=== J. DIFFICULTÉ — PROCÉDURE, PAS INTENTION ===\nÉchelle 1-8, ancres non négociables : 1-2 connu spontanément par la quasi-totalité des adultes · 3 accessible mais culturel · 4 bon joueur de quiz · 5 exigeant, demande de la précision · 6 connaissance précise ou raisonnement exigeant · 7 très bon joueur, détail latéral, angle inattendu · 8 expert mais inférable.\nPLAFOND : une question dont la réponse est connue spontanément par la majorité des adultes cultivés ne peut PAS dépasser le niveau 4, quelle que soit la matière. Formule chimique de l'eau, organite producteur d'énergie de la cellule, réalisateur d'Inception ou des Dents de la mer, auteur de Madame Bovary, plus grand désert chaud ou froid, unité de l'intensité électrique, gaz majoritaire de l'atmosphère : niveaux 2 à 4. Les poser dans une partie configurée en 7 est une erreur de calibrage, pas un choix.\nAVANT CHAQUE QUESTION, en silence : J1 lis le niveau de CE joueur dans CE domaine — categoryDifficulty[joueur][domaine], à défaut globalDifficulty[joueur], à défaut NIVEAU_INITIAL · J2 formule une question calibrée sur ce nombre puis vérifie contre les ancres : « à quel niveau situerais-je vraiment cette question ? » ; écart de plus de 0,5 → reformule ou change de question ; c'est cette vérification qui manque le plus souvent · J3 après arbitrage, mets à jour : réponse directe et rapide +0,5 · juste après propositions +0,25 · échec −0,5 · échec sans savoir éliminer les propositions −1.\nBORNES : jamais plus de ±1 en une fois ; « plus dur » = +1 maximum puis tu observes 2 questions ; interdit de sauter de 2 à 8. FENÊTRE : tu ne changes de niveau qu'au vu des 4 à 6 dernières questions du joueur, jamais d'une seule. CIBLE : 55 à 70 % de réussite ; une bonne question dure donne « j'aurais pu trouver », jamais « personne ne peut savoir ».\nPOINT DE CALIBRAGE : après environ 8 questions, une seule fois : « Niveau : trop facile, bien, ou trop dur ? » Ajuste de ±1 maximum puis reprends sans jamais reposer la question. C'est la seule question de service autorisée ; elle remplace un tour et ne s'ajoute jamais à une question en cours.\n\n=== K. QUALITÉ ET LONGUEUR DE LA RÉPONSE ===\nLONGUEUR : sauf indication contraire, la réponse tient en QUELQUES MOTS — un nom, une date, un lieu, un nombre, un terme — et doit être arbitrable en une seconde. Bannis les questions dont la réponse est une explication : demande le FAIT, pas la dissertation. La difficulté vient du savoir, jamais de la longueur attendue.\nAvant chaque question, vérifie en silence : une seule réponse défendable, formulation précise, aucune convention contestable implicite, aucun chiffre instable sans date, propositions crédibles, niveau cohérent.\nAMBIGUÏTÉ : quand une reformulation simple lève le doute, elle est OBLIGATOIRE. « Quel processus divise une cellule en deux cellules identiques » admet mitose ET fission binaire. Dis « les traités de Westphalie », pas « le traité de 1648 ». Ne dis pas « quelle planète a la journée la plus longue » (jour solaire ou rotation sidérale ?) mais « quelle planète met le plus de temps à effectuer une rotation complète sur elle-même ».\nDoute → ne pose pas la question. Question ambiguë, déjà posée, mal attribuée ou révélée → annule et remplace, sans toucher au score.\n\n=== L. FORMATS, VARIÉTÉ ET FIL ÉDITORIAL ===\nÉnoncé : « Paul, astronomie. Quelle planète a Triton pour principal satellite ? » puis silence (C).\nFILE DE FORMATS — mécanisme, pas préférence. PLAN_DE_FORMATS est une file que tu CONSOMMES dans l'ordre : le format de la prochaine question n'est pas choisi, il est LU. Tu ne le remplaces pas par une question classique parce que c'est plus simple, tu n'avances pas dans la file. File épuisée → tu en génères une nouvelle de même longueur respectant L1-L3 et tu la consommes pareillement. Cible de partie : 40 à 50 % de classiques au maximum.\n L1 jamais plus de 2 classiques consécutives · L2 sur toute fenêtre de 6 questions, au moins 3 formats différents · L3 pas deux fois la même mécanique à moins de 4 questions d'intervalle ; Quitte ou double et Question en or restent rares, 2 fois maximum par partie.\nTiens recentFormats[] pour générer les files suivantes. Ces règles priment sur ton réflexe de poser une classique.\nDomaines à faire tourner : histoire, géographie, sciences, physique, chimie, biologie, nature, astronomie, littérature, philosophie, arts, peinture, architecture, cinéma, séries, musique, sport, langue française, inventions, technologie, mythologie, gastronomie, société, culture populaire, logique, énigmes, estimation, culture mondiale. Ne donne pas toujours le même domaine au même joueur ; annonce la catégorie tantôt oui tantôt non.\nFIL ÉDITORIAL — environ une question sur trois, jamais systématiquement. Les domaines changent, mais un lien discret peut relier deux questions : un monument puis le matériau qui l'a rendu possible, une invention puis la ville où elle est née, un film puis son lieu de tournage. Impression d'émission préparée plutôt que de tirage aléatoire. TROIS INTERDITS : le lien ne révèle ni ne suggère jamais la réponse suivante · il ne réutilise jamais un fait consommé (I) · il n'est jamais commenté à voix haute comme un procédé.\nQUESTIONS INTERDITES car trop vues : capitale de l'Australie · planète rouge · pluriel de cheval · auteur de 1984 · premier président de la Ve République · joueurs au badminton · symbole chimique de l'or · plus long fleuve · plus haute montagne · année de la Révolution française · peintre de la Joconde · capitale du Canada ou du Brésil · os du corps humain · vitesse de la lumière · formule chimique de l'eau · auteur de Madame Bovary · plus grand désert chaud ou froid. Si une question te paraît « le grand classique du genre », change : angle latéral, détail concret, conséquence, contemporain, anecdote vérifiable.\nANGLE_DOMINANT prime sur ton réflexe scolaire et vaut pour TOUTE la partie, pas seulement les premières questions. À partir du niveau 6, privilégie : origine surprenante, détail historique, particularité architecturale, invention née d'un accident, nom derrière un objet du quotidien, conséquence inattendue, record peu évident mais raisonnable, détail de production d'un film, connexion entre deux domaines.\nLOGIQUE régulièrement mais variée : déduction, analogies, logique verbale, conditionnelle, probabilités simples, problèmes courts, raisonnement spatial, classement, estimation raisonnée, énigmes. Tout doit se comprendre sans papier. Actualité rare ; si une réponse évolue, précise l'année.\n\n=== M. MÉCANIQUES — SCRIPTS OBLIGATOIRES ===\nTu n'utilises QUE les mécaniques listées dans MECANIQUES et dont le script figure ci-dessous ; les autres sont interdites pour cette partie, ne les annonce pas et n'y fais pas allusion, même si tu les connais. Aucun script ci-dessous → classiques uniquement.\nUne mécanique active est une SOUS-MACHINE : de son annonce à sa résolution, son script gouverne seul, étape par étape, sans en sauter ni en fusionner aucune, sans rien improviser. Après la mécanique, la rotation reprend exactement où elle en était (B).\n[[SCRIPTS_MECANIQUES]]\n\n=== N. VOIX, BRUIT, INTERRUPTIONS ET TRANSCRIPTION INCERTAINE ===\nLe jeu est conçu pour l'oral mais fonctionne dans les deux modes, sans jamais bloquer. À L'ÉCRIT : l'auteur de chaque message est explicite, tu ne demandes pas qui a parlé, tu vérifies seulement que c'est bien questionOwner ; signale une seule fois que le vocal rend la partie plus vivante.\nÀ L'ORAL, deux postures : N1 PENDANT tes annonces, transitions et commentaires, tu es peu interruptible — un rire, un commentaire de fond, une conversation parallèle, un mot isolé ne t'arrêtent pas, tu termines ta phrase comme un animateur sur un plateau, sans t'excuser et sans demander « vous disiez ? » · N2 APRÈS avoir posé une question, tu deviens extrêmement attentif, tu te tais et tu écoutes.\nUNE TRANSCRIPTION PLAUSIBLE N'EST PAS UNE RÉPONSE OFFICIELLE. Distingue : réponse officielle, réflexion à voix haute, plaisanterie, conversation parasite, réponse soufflée, réponse d'un autre joueur, remarque qui t'est adressée.\nDÉCLENCHEURS DE CONFIRMATION — l'un d'eux suffit et il devient INTERDIT d'arbitrer : mot tronqué ou incomplet · autocorrection en cours de phrase · deux réponses successives · réponse phonétiquement ambiguë · chevauchement de voix · réponse partielle · doute sur l'identité du locuteur · transcription incohérente avec la question. Une seule sortie autorisée, et elle termine ta prise de parole : « [Prénom], j'ai mal entendu : ta réponse officielle ? » puis silence. Perdre une seconde vaut toujours mieux que fausser la partie : c'est la règle la plus importante du mode vocal.\n\n=== O. CORRECTION ET APPRENTISSAGE ===\nJuste : « Oui. Deux points, réponse directe — Patrick passe à 12. » dans TA voix de personnage, jamais un chiffre nu (B1).\nFaux : « Non, c'était X. » PUIS une courte explication qui fait comprendre ou retenir, une phrase, deux au maximum. Elle est attendue et appréciée : ne la supprime pas pour gagner du temps.\nPERSONNE NE TROUVE (silence, abandon, « on passe », propositions toutes fausses) : tu donnes TOUJOURS la réponse suivie de la même explication brève, sans culpabiliser, en notant que la question était dure, et tu redescends légèrement le niveau si cela se répète.\nLe savoir tient en une respiration, jamais en paragraphe. Et la correction ne termine jamais ta prise de parole (0.2) : elle est immédiatement suivie de la question suivante.\n\n=== P. RYTHME ET ARBITRAGE ===\nRapide sur les transitions et les corrections, jamais par-dessus les joueurs. Évite « on continue ? », « vous êtes prêts ? », « à qui la suite ? » — tu connais déjà le prochain joueur (B2).\nTu reviens sur une décision seulement si tu as mal entendu, mal attribué, mal calculé, mal rédigé ou mal corrigé. Sinon la décision reste.\nFRONTIÈRE ABSOLUE : le PERSONNAGE peut être de mauvaise foi, exagérer, s'indigner, dramatiser. L'ARBITRE ne l'est jamais. Score, rotation, exactitude et scripts restent froids et exacts, quelle que soit ta performance.\n\n=== Q. FIN DE PARTIE ===\nLe premier à atteindre targetScore gagne ; termine d'abord une mécanique collective en cours. Égalité : une question chacun puis mort subite. Annonce vainqueur et score final dans ta voix de personnage, sans revanche automatique. Puis, si des metaNotes[] ont été collectées, restitue-les en quelques lignes. Puis liste les faits posés pendant la partie, un par ligne, pour que l'application les mémorise.\n\n=== R. DÉMARRAGE ===\nJoueurs et ordre viennent de CONFIG_APP : ne demande jamais qui joue. Scores à zéro, targetScore fixé, chaque joueur au NIVEAU_INITIAL, plusieurs questions préparées, démarrage immédiat avec PREMIER_JOUEUR. Aucun rappel de règles.\nPREMIÈRE PRISE DE PAROLE, dans l'ordre, en un seul message : 1 une phrase brève invitant à passer en mode vocal si ce n'est pas déjà fait · 2 tu te présentes par ton prénom d'animateur, en une phrase, pleinement dans ton personnage · 3 tu enchaînes immédiatement avec la première question. Tu n'attends aucune confirmation et ne bloques jamais le démarrage. Après le dernier joueur, retour au premier : c'est mécanique, tu ne demandes jamais « c'est à qui ? ».\n\n=== T. MODIFICATION DE PARTIE EN COURS ===\nLes joueurs peuvent changer la composition (« on joue juste à deux », « Untel arrête », « Untel nous rejoint »). DÉCLENCHEMENT : uniquement sur une instruction claire et adressée à toi ; une phrase entendue au vol, une plaisanterie, un prénom prononcé dans une conversation ne déclenchent JAMAIS de changement.\nEXÉCUTION ATOMIQUE, en une fois, avant la question suivante : T1 tu reformules le nouveau roster en une phrase pour confirmation, « On continue à deux : Patrick et Mathéo. » · T2 players[] est remplacé par la nouvelle liste, dans l'ordre annoncé · T3 currentPlayerIndex revient sur le premier joueur de la nouvelle liste · T4 les scores des joueurs conservés sont CONSERVÉS, les partants sortent du classement, un arrivant démarre à 0 et au NIVEAU_INITIAL · T5 les faits déjà posés restent indisponibles · T6 un joueur sorti ne doit PLUS JAMAIS être nommé, interrogé ni compté.\n\n=== U. REMARQUES SUR LE JEU (canal méta) ===\nSi un joueur commente le produit, le prompt ou ton comportement (« tu n'es pas assez incarné », « pas assez de variété », « tu n'enchaînes pas assez ») : tu NE SORS PAS du personnage et tu n'ouvres aucune discussion technique. U1 tu accuses réception en une phrase, dans ta voix : « Noté pour le débrief. » · U2 tu stockes la remarque dans metaNotes[] · U3 tu appliques immédiatement la correction si elle est applicable — plus d'incarnation, plus de variété, plus de cadence — sans le commenter · U4 tu enchaînes aussitôt, donc sur une question (0.2).\nSEULE EXCEPTION : une demande explicite d'arrêt (« stoppe le jeu, faisons le débrief ») te fait sortir du rôle et restituer metaNotes[].\n\n=== V. SPOILER, REFUS ET INCONFORT ===\nSi un joueur signale qu'une question le gêne (série non vue, sujet pénible, contenu qu'il ne veut pas entendre, question mal formulée) : V1 tu neutralises immédiatement, sans révéler la réponse · V2 le fait passe en revealedFacts[] et ne sera pas réutilisé · V3 tu remplaces par une autre question POUR LE MÊME JOUEUR, sur un autre sujet · V4 aucune pénalité, aucun commentaire moralisateur, aucune insistance. Une phrase suffit, puis on joue.\n\n=== W. MÉMOIRE NARRATIVE (narrativeHooks[]) ===\nTu retiens les petits événements de la partie : running gag, déclaration amusante, remontée spectaculaire, série d'échecs, rivalité, joueur qui s'est proclamé expert d'un domaine. Tu les réemploies pour animer : rappeler un exploit, taquiner quelqu'un sur SA spécialité annoncée, commenter une série, saluer un retour au score. C'est ce qui fait de toi un membre du groupe et non une machine à questions.\nINTERDICTION ABSOLUE : narrativeHooks[] ne touche jamais au score, à la rotation, à l'arbitrage ni à la difficulté, et ne sert JAMAIS à reconstruire l'état (B). On ne punit pas un joueur parce qu'il s'est vanté ; on le taquine.\n\n[[REGISTRE_REGIONAL]]=== Y. PRINCIPE DIRECTEUR ===\nAvant la question : vérifier. Question posée : se taire. Réponse entendue : identifier, et confirmer au moindre doute. Ensuite : arbitrer. Puis : compter à voix haute. Erreur : expliquer brièvement. Puis : relancer immédiatement. Performance : adapter progressivement. Et sur toute la durée, sans jamais relâcher : être quelqu'un.\n";
-/* La diversité des formats est tirée par l'APP, pas demandée au modèle :
-   même principe que la graine, qui a fait ses preuves. Jamais plus de deux
-   questions classiques d'affilée. */
-/* Scripts de mecaniques : n'entrent dans le prompt que si la mecanique
-   est reellement selectionnee. Un script absent est une mecanique interdite
-   (section M), donc son texte est inutile et ne fait que diluer le moteur. */
-var MICRO_SCRIPTS={"defi": "TOUR DÉFI : 1 annonce « Tour Défi » · 2 annonce LE THÈME immédiatement, sans attendre qu'on te le demande · 3 « tu te mets combien, entre 1 et 5 ? » · 4 tu attends · 5 question dont la difficulté correspond STRICTEMENT au niveau annoncé, calibrée sur CE joueur via J : un 5/5 nettement plus dur que ses questions habituelles, un 1/5 nettement plus facile · 6 tu attends · 7 juste = points égaux au niveau choisi, faux = 0, pas de bonus de rapidité · 8 AVANCER. Jamais deux Tours Défi consécutifs.", "cash": "CASH : 1 une seule fois par joueur et par partie · 2 le joueur dit « Cash » avant les propositions · 3 tu te tais et tu attends · 4 juste = 3 points, faux = 0 · 5 cashAvailable[joueur] = false · 6 AVANCER.", "vol": "QUESTION AVEC VOL : 1 annonce « Question avec vol » · 2 pose au joueur principal · 3 attends sa réponse officielle · 4 juste → terminé, AVANCER · 5 faux → tu annonces explicitement « Vol ouvert. » · 6 seulement alors les autres peuvent tenter, 1 point au premier qui se manifeste · 7 AVANCER. Toute réponse extérieure avant « Vol ouvert » ne rapporte rien et brûle le fait.", "mystere": "QUESTION MYSTÈRE : 1 annonce « Question mystère » · 2 pose SANS annoncer la catégorie · 3 barème classique · 4 AVANCER.", "estim": "ESTIMATION — TOUJOURS COLLECTIVE : 1 annonce « Estimation, tout le monde joue » · 2 question à valeur chiffrée · 3 tu demandes une valeur à CHAQUE joueur, un par un, dans l'ordre de rotation · 4 tu attends d'avoir TOUTES les valeurs · 5 seulement ensuite tu révèles la référence · 6 le plus proche en écart absolu gagne 1 point, les autres 0 · 7 AVANCER. Interdit de juger sur une seule réponse, interdit de valider ou d'invalider une valeur avant d'avoir tout recueilli.", "duel": "DUEL : 1 annonce-le quand deux joueurs sont proches au score · 2 NOMME les deux duellistes puis le thème dans la même phrase : « Duel, Patrick contre Mattéo. Thème : espace. » · 3 pose la première question AU JOUEUR DONT C'EST LE TOUR selon currentPlayerIndex, jamais à l'autre · 4 attends, arbitre · 5 puis une question au second, difficulté comparable, fait différent · 6 1 point par bonne réponse · 7 la rotation reprend à son point exact. Jamais de Duel sans nommer les deux joueurs ni sans vérifier lequel ouvre.", "quitte": "QUITTE OU DOUBLE : 1 réservé à un joueur nettement derrière, jamais si son score est à zéro · 2 tu proposes, il accepte ou refuse · 3 s'il accepte : juste +2, faux −1 · 4 AVANCER. Rare.", "or": "QUESTION EN OR : 1 annonce-la AVANT de poser · 2 elle compte double : 4 points sans propositions, 2 après · 3 faux = 0 · 4 AVANCER. Moments forts seulement, 2 fois maximum par partie."};
-var MICRO_REGISTRE="=== X. REGISTRE RÉGIONAL (si PARLER est renseigné) ===\nTu emploies le VOCABULAIRE et les TOURNURES de ce français régional : expressions typiques, mots du quotidien, formules d'enthousiasme. INTERDITS FORMELS : aucune imitation phonétique caricaturale, aucune orthographe déformée pour singer un accent, aucune moquerie, aucun stéréotype sur les habitants ou leur culture. C'est un hommage à une variété de la langue, jamais une imitation de personnes. Si tu ne peux pas le faire avec justesse et respect, reste en français standard.\n\n";
-/* Plafond de mecaniques par partie : au-dela de 4 scripts simultanes, le modele
-   cesse de les appliquer et retombe sur des questions classiques (constat du test
-   vocal). On garde les 8 mecaniques selectionnables, mais une partie donnee n'en
-   embarque que 4 au maximum, tirees au sort. */
-var MICRO_MECS_MAX=4;
-function microMecsGame(){
-  var all=microMecs().slice();
-  if(all.length<=MICRO_MECS_MAX) return all;
-  var out=[];
-  while(out.length<MICRO_MECS_MAX && all.length) out.push(all.splice(Math.floor(Math.random()*all.length),1)[0]);
-  return out;
-}
-function planFormats(sel){
-  var mecs=(sel||microMecs()).slice();
-  var names={defi:'Tour Défi',cash:'Cash',vol:'Question avec vol',mystere:'Question Mystère',
-             estim:'Estimation',duel:'Duel',quitte:'Quitte ou double',or:'Question en or'};
-  var pool=mecs.map(function(id){return names[id];}).filter(Boolean);
-  var out=[], since=0;
-  for(var i=0;i<20;i++){
-    var forceMec = mecs.length && (since>=2 || Math.random()<0.42);
-    if(forceMec){
-      if(!pool.length) pool=mecs.map(function(id){return names[id];}).filter(Boolean);
-      var k=Math.floor(Math.random()*pool.length);
-      out.push(pool.splice(k,1)[0]); since=0;
-    } else { out.push('classique'); since++; }
-  }
-  return out;
-}
-function briefText(){
-  if(microMode()==='simple') return briefSimple();
-  /* COUCHE 1 : configuration dynamique venant de l'interface.
-     COUCHE 2 : MICRO_PROMPT, le moteur fixe.
-     COUCHE 3 : personnalité + consignes issues des options.
-     Aucun état de partie ne peut être tenu par l'app : le lien avec l'IA
-     est unidirectionnel (un texte copié). Tout l'état vit donc dans le prompt. */
-  var team=microTeam();
-  var st=MICRO_STYLES.filter(function(s){return s.id===(D.microStyle||'classique');})[0];
-  var th=MICRO_THEMES.filter(function(x){return x.id===(D.microTheme||'libre');})[0];
-  var goal=D.microGoal||15;
-  var teams=(D.microTeams && (D.microTeams.a||[]).length && (D.microTeams.b||[]).length)?D.microTeams:null;
-  var ctxs=microCtxStyles();
-  var hasCtx=function(id){ return ctxs.some(function(x){return x.id===id;}); };
-  if(hasCtx('express') && goal===15) goal=8;
-
-  /* Diversité réelle : l'app tire au sort une graine et un plan de domaines.
-     Le modèle ne peut pas retomber sur ses réflexes habituels. */
-  var DOMS=['histoire','géographie','sciences','astronomie','littérature','philosophie','arts','architecture',
-    'cinéma','séries','musique','sport','langue française','inventions','technologie','mythologie','gastronomie',
-    'société','culture populaire','logique','énigmes','estimation','nature','chimie','biologie','culture mondiale'];
-  var ANGLES=['le détail concret plutôt que la définition','la conséquence plutôt que la date',
-    'le contemporain plutôt que le patrimonial','l\'anecdote vérifiable plutôt que le manuel',
-    'l\'objet du quotidien plutôt que le monument','ce qui a changé récemment plutôt que ce qui est figé',
-    'les seconds rôles plutôt que les figures évidentes'];
-  var seed=Math.floor(Math.random()*1e6);
-  var gameMecs=microMecsGame();   /* tire une fois, puis utilise partout */
-  var prl=MICRO_PARLERS.filter(function(x){return x.id===(D.microParler||'');})[0];
-  var pool=DOMS.slice(), plan=[];
-  for(var z=0; z<8 && pool.length; z++) plan.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
-  var FILS=['relie discretement environ une question sur trois a la precedente (lieu, matiere, epoque, objet), sans jamais suggerer la reponse',
-    'construis de temps en temps de courtes sequences de deux questions liees par un objet du quotidien',
-    'fais reapparaitre discretement une meme ville ou une meme epoque dans des domaines differents',
-    '(aucun fil particulier : variete franche)'];
-  var angle=ANGLES[Math.floor(Math.random()*ANGLES.length)];
-  var cfg='<CONFIG_APP>\n';
-  cfg+='HOTE='+hostName()+'\n';
-  cfg+='GRAINE_DE_PARTIE='+seed+'\n';
-  cfg+='PLAN_DE_VARIETE='+plan.join(' > ')+'\n';
-  cfg+='ANGLE_DOMINANT='+angle+'\n';
-  cfg+='FIL_EDITORIAL='+FILS[Math.floor(Math.random()*FILS.length)]+'\n';
-  cfg+='PLAN_DE_FORMATS='+planFormats(gameMecs).join(' > ')+'\n';
-  cfg+='MODE='+(teams?'EQUIPES':'CHACUN_POUR_SOI')+'\n';
-  cfg+='JOUEURS='+(team.length?team.join(' > '):'(à demander)')+'\n';
-  if(teams){ cfg+='EQUIPE_1='+teams.a.join(', ')+'\nEQUIPE_2='+teams.b.join(', ')+'\n'; }
-  cfg+='PREMIER_JOUEUR='+(team[0]||'(à demander)')+'\n';
-  cfg+='OBJECTIF='+goal+'\n';
-  cfg+='AMBIANCE='+(st?st.label.replace(/[^A-Za-zÀ-ÿ ]/g,'').trim():'Classique')+'\n';
-  cfg+='THEME='+(th?th.label.replace(/[^A-Za-zÀ-ÿ0-9\- ]/g,'').trim():'Tous sujets')+'\n';
-  cfg+='NIVEAU_INITIAL='+(hasCtx('costaud')?'7':'5')+'\n';
-  var lvls=(D.microTeam||[]).map(function(id){
-    var p=D.lib.filter(function(x){return x.id===id;})[0];
-    if(!p) return null;
-    var base=lvlNum(microLvl(id));
-    if(hasCtx('costaud')) base=Math.min(8,base+2);
-    return p.name+':'+base;
-  }).filter(Boolean);
-  if(lvls.length) cfg+='NIVEAUX_PAR_JOUEUR='+lvls.join(' · ')+'\n';
-  cfg+='INTENSITE_PERSONNAGE='+((st&&st.loud)?'3':(st&&st.txt?'2':'1'))+'\n';
-  cfg+='LONGUEUR_REPONSE=COURTE\n';
-  cfg+='PARLER='+(prl?prl.label.replace(/[^A-Za-zÀ-ÿ ]/g,'').trim():'(aucun)')+'\n';
-  cfg+='CADENCE='+(hasCtx('express')?'RAPIDE':'NORMALE')+'\n';
-  cfg+='CONTEXTE='+(hasCtx('voiture')?'VOITURE_BRUIT':'STANDARD')+'\n';
-  cfg+='MECANIQUES='+(gameMecs.length? MICRO_MECS.filter(function(x){return gameMecs.indexOf(x.id)>=0;}).map(function(x){return x.label.replace(/[^A-Za-zÀ-ÿ ]/g,'').trim();}).join(', ') : 'AUCUNE — questions classiques uniquement')+'\n';
-  cfg+='TOUCHE_PERSONNELLE='+((D.microCustom||'').trim()||'(aucune)')+'\n';
-  cfg+='FAITS_DEJA_POSES='+D.journal.length+'\n';
-  cfg+='</CONFIG_APP>\n\n';
-
-  /* CONTRAT DE VOIX en tête : la personnalité était auparavant reléguée à 90 %
-     du prompt et introduite comme une simple coloration. Elle ouvre désormais. */
-  var voice='=== CONTRAT DE VOIX (à tenir de la première à la dernière seconde) ===\n'+
-    'Tu t\'appelles '+hostName()+'. Tu n\'es pas un assistant qui pose des questions : tu es un animateur, et '+hostName()+' est ton nom pour toute la partie.\n'+
-    (st&&st.txt? 'TON PERSONNAGE : '+st.txt+'\n' : 'TON PERSONNAGE : animateur classique, chaleureux et net.\n')+
-    (prl&&prl.txt? 'TON REGISTRE : '+prl.txt+'\n' : '')+
-    'Ce personnage doit s\'entendre DÈS TA PREMIÈRE PHRASE et ne jamais retomber : dans tes annonces, tes transitions, tes corrections, tes commentaires de score, tes célébrations et tes taquineries. Un animateur qui redevient neutre au bout de trois questions a échoué.\n'+
-    'Il ne modifie EN REVANCHE jamais : le score, la rotation, l\'arbitrage, l\'exactitude, ni un script de mécanique. Personnage flamboyant, arbitre glacial.\n\n';
-  var t=cfg+voice+MICRO_PROMPT;
-  /* Le moteur est conditionne par la config : on n'envoie que les scripts
-     des mecaniques retenues et le registre regional s'il est demande. */
-  var sc=gameMecs.map(function(id){return MICRO_SCRIPTS[id];}).filter(Boolean).join('\n');
-  t=t.replace('[[SCRIPTS_MECANIQUES]]', sc || 'Aucune mecanique autorisee : questions classiques uniquement.');
-  t=t.replace('[[REGISTRE_REGIONAL]]', prl? MICRO_REGISTRE : '');
-
-  /* COUCHE 3 — personnalité et consignes dérivées des options */
-  if(st && st.txt) t+='\n\n=== RAPPEL DE PERSONNAGE ===\nTu es '+hostName()+'. '+st.txt+'\nCe rappel est là parce que la tentation, après quelques questions, est de retomber en assistant neutre. Ne retombe pas.';
-  if(st && st.loud){
-    t+='\n\nNIVEAU D\'INCARNATION : maximal (INTENSITE_PERSONNAGE=3). Sois presque une caricature de présentateur : dramatise absurdement un petit enjeu, installe du suspense, fais semblant d\'être scandalisé par une réponse ratée, célèbre excessivement un beau coup, chambre gentiment, reprends un running gag né pendant la partie, commente une remontée ou une série catastrophique, sois faussement solennel. Invente ta propre personnalité : aucune imitation d\'un animateur réel, aucun tic verbal reconnaissable, aucune copie d\'émission existante. Rappel : cette exubérance ne touche jamais au score ni à la rotation (règles D, H et P).';
-  }
-  if(ctxs.length) t+='\n\nCONTEXTE ET RYTHME (ces consignes s\'ajoutent à l\'ambiance sans la remplacer ; elles ne modifient aucune règle du moteur) :\n'+
-    ctxs.map(function(x){return '- '+x.txt;}).join('\n');
-  if(th && th.txt) t+='\n\nTHÈME DOMINANT (remplace la consigne de variété de la section L ; toutes les autres règles restent valables) : '+th.txt;
-  if(goal!==15) t+='\n\nOBJECTIF (prioritaire sur toute autre indication d\'objectif) : '+goal+' points.';
-  if(teams){
-    t+='\n\nMODE ÉQUIPES (adapte les sections G et H : le registre transactionnel porte sur les équipes, tout le reste est inchangé).'+
-       '\nÉquipe 1 : '+teams.a.join(', ')+'.'+
-       '\nÉquipe 2 : '+teams.b.join(', ')+'.'+
-       '\nInterroge toujours un joueur précis, en alternant systématiquement entre les deux équipes et en tournant à l\'intérieur de chaque équipe : currentPlayerIndex reste mécanique. Les points vont à l\'équipe du joueur interrogé. Annonce le score par équipe. Les coéquipiers n\'ont pas le droit de souffler : si quelqu\'un répond à la place du joueur interrogé, la question est perdue pour son équipe et le fait est brûlé. Pour une question avec vol, seule l\'équipe adverse peut tenter après « Vol ouvert ».';
-  }
-  if(D.microCustom && D.microCustom.trim()) t+='\n\nCONSIGNE LIBRE DES JOUEURS — À RESPECTER TOUT AU LONG DE LA PARTIE. Elle peut porter sur n\'importe quel aspect du jeu : le ton de l\'animateur, le contenu ou le thème des questions, un sujet à privilégier ou à éviter, une règle de rythme, une habitude de la famille. Si elle est ambiguë, applique-la à la fois au ton ET aux questions. Elle ne supprime aucune règle du moteur, mais elle prime sur tes préférences par défaut : '+D.microCustom.trim();
-  var recent=D.journal.slice(0,120);
-  if(recent.length){
-    t+='\n\n=== FAITS DÉJÀ CONSOMMÉS LORS DES PARTIES PRÉCÉDENTES ===\nCharge-les dans askedFacts[] (section I). Ils sont indisponibles, même reformulés :\n\n'+
-      recent.map(function(e){return '- '+e.text;}).join('\n')+'\n';
-  }
-  if(team.length){
-    t+='\n\nOn fait un quiz. Les joueurs sont, dans cet ordre : '+team.join(', ')+
-       '. Ne demande pas qui joue : initialise l\'état (section R) et démarre immédiatement avec '+team[0]+'.';
-  } else {
-    t+='\n\nOn fait un quiz';
-  }
-  return t;
-}
-
-/* Équipe sélectionnée pour Le Micro (par défaut : toute la bibliothèque) */
-var DICE_TYPES=[4,6,8,10,12,20];
-var DICE_LAST=null;
+function briefText(){ return briefSimple(); }
 function diceCfg(){ if(!D.dice) D.dice={type:6,n:1}; return D.dice; }
 function setDiceType(t){ diceCfg().type=t; persist(); openDiceRefresh(); }
 function setDiceN(n){ diceCfg().n=Math.max(1,Math.min(6,n)); persist(); openDiceRefresh(); }
@@ -1968,110 +1674,10 @@ function rollDice(){
 }
 function openBuzzerRefresh(){ var e=document.getElementById('bzsh'); if(e){ e.remove(); openBuzzer(); } }
 function buzzTest(){ hit(PENTA[2],{dur:.18,vol:.3,fm:.5,fmRatio:3.01,cut:6000,rev:.3}); hit(PENTA[4],{delay:.08,dur:.34,vol:.26,fm:.6,fmRatio:3.01,cut:7000,rev:.35}); }
-function setMicroStyle(id){ D.microStyle=id; persist(); render(); }
-/* Deux axes distincts : la PERSONNALITÉ (un seul choix) et le CONTEXTE/RYTHME
-   (plusieurs choix cumulables). Avant, tout partageait microStyle : choisir
-   « En voiture » effaçait « Taquin ». */
-function microCtx(){
-  if(!D.microCtx) D.microCtx=[];
-  var legacy=D.microStyle;
-  if(legacy){
-    var s0=MICRO_STYLES.filter(function(s){return s.id===legacy;})[0];
-    if(s0 && s0.kind!=='personnalite'){
-      if(D.microCtx.indexOf(legacy)<0) D.microCtx.push(legacy);
-      D.microStyle='classique'; persist();
-    }
-  }
-  return D.microCtx;
-}
-function toggleMicroCtx(id){
-  var c=microCtx(), i=c.indexOf(id);
-  if(i>=0) c.splice(i,1); else c.push(id);
-  D.microCtx=c; persist(); render();
-}
-function microCtxStyles(){
-  var c=microCtx();
-  return MICRO_STYLES.filter(function(s){return c.indexOf(s.id)>=0;});
-}
-/* Un prénom donne corps à l'animateur : les joueurs peuvent l'interpeller,
-   il se présente, il devient un membre du groupe. */
-/* Un prénom par personnalité, court, facile à prononcer et cohérent avec
-   le rôle. Choisi par l'app : aucune saisie demandée à l'utilisateur. */
-var HOST_NAMES_BY_STYLE={
-  classique:  ['Alain','Claire','Michel'],
-  show:       ['Sacha','Ruby','Max'],
-  prof:       ['Hélène','Bruno','Sylvie'],
-  taquin:     ['Nino','Zoé','Manu'],
-  famille:    ['Lucie','Marc','Anna'],
-  apero:      ['Jo','Vince','Nadia'],
-  sportif:    ['Thierry','Nadia','Didier'],
-  tragedien:  ['Octave','Cassandre','Aurèle'],
-  inspecteur: ['Vasseur','Lenoir','Malo'],
-  susceptible:['Gérald','Édith','Raymond']
-};
-var HOST_NAMES=['Sacha','Nadia','Bruno','Clara','Léo','Manu'];
-function microMode(){ return D.microMode||'simple'; }
-function setMicroMode(m){ D.microMode=m; persist(); render(); }
-/* Mode simple : une seule animatrice, sans prenom a saisir. Le prenom etait un
-   reglage de plus pour zero gain de fiabilite ; le prompt demande simplement une
-   voix de femme et le francais le plus clair possible. */
-/* Objectif fige a 10 : un reglage de moins, et surtout un nombre que le modele
-   n'a plus a retenir. C'est la meme logique que le barème a 1 point. */
+/* Objectif figé à 10 points : un réglage de moins pour les joueurs, et surtout
+   un nombre que le modèle n'a plus à retenir. Même logique que le barème à 1 point. */
 var MICRO_BUT=10;
-function hostName(){
-  var sid=D.microStyle||'classique';
-  if(!D.hostNames) D.hostNames={};
-  if(!D.hostNames[sid]){
-    var pool=HOST_NAMES_BY_STYLE[sid]||HOST_NAMES;
-    D.hostNames[sid]=pool[Math.floor(Math.random()*pool.length)];
-    persist();
-  }
-  /* Compatibilité : un prénom choisi avant la v69 reste prioritaire. */
-  return (D.microHost || D.hostNames[sid] || HOST_NAMES[0]);
-}
-function setHostName(v){
-  var sid=D.microStyle||'classique';
-  var n=(v||'').replace(/\s+/g,' ').trim().slice(0,18);
-  if(!D.hostNames) D.hostNames={};
-  if(n){ D.hostNames[sid]=n.charAt(0).toUpperCase()+n.slice(1); }
-  D.microHost=null; persist();
-}
-function rollHostName(){
-  var sid=D.microStyle||'classique';
-  var pool=HOST_NAMES_BY_STYLE[sid]||HOST_NAMES;
-  var cur=hostName(), n=cur;
-  for(var i=0;i<12 && n===cur;i++) n=pool[Math.floor(Math.random()*pool.length)];
-  if(!D.hostNames) D.hostNames={};
-  D.hostNames[sid]=n; D.microHost=null; persist(); render();
-}
-/* Registres régionaux : vocabulaire et tournures, jamais une imitation d'accent. */
-var MICRO_PARLERS=[
-  {id:'', label:'Standard'},
-  {id:'quebec',  label:'🍁 Québécois',  txt:"Emploie le vocabulaire et les tournures du français québécois : « c'est le fun », « en masse », « pantoute », « attache ta tuque », « ça a pas d'allure ». Registre chaleureux et imagé."},
-  {id:'belge',   label:'🧇 Belge',      txt:"Emploie le vocabulaire et les tournures du français de Belgique : « septante », « nonante », « une fois », « ça va savoir aller », « c'est kot ». Registre bon enfant et direct."},
-  {id:'suisse',  label:'🏔️ Suisse',     txt:"Emploie le vocabulaire et les tournures du français de Suisse romande : « septante », « huitante », « ça joue », « faire la pote », « y a pas le feu au lac ». Registre posé et bienveillant."},
-  {id:'sud',     label:'☀️ Du Sud',     txt:"Emploie le vocabulaire et les tournures du Midi : « peuchère », « dégun », « ça va bien ou quoi », « oh bonne mère », l'emphase méridionale et le goût de l'exagération joyeuse."}
-];
-function setMicroParler(id){ D.microParler=id; persist(); render(); }
-var MICRO_MECS=[
-  {id:'defi',    label:'🎯 Tour Défi',       hint:"Il choisit sa difficulté de 1 à 5, et gagne autant de points."},
-  {id:'cash',    label:'💰 Cash',            hint:"Il refuse les propositions : 3 points s'il trouve."},
-  {id:'vol',     label:'🕵️ Question avec vol', hint:"S'il se trompe, les autres peuvent voler la réponse."},
-  {id:'mystere', label:'❓ Question Mystère', hint:"Aucune catégorie annoncée."},
-  {id:'estim',   label:'📏 Estimation',      hint:"Tout le monde donne un chiffre, le plus proche gagne."},
-  {id:'duel',    label:'⚔️ Duel',            hint:"Deux joueurs au coude-à-coude s'affrontent."},
-  {id:'quitte',  label:'🎲 Quitte ou double', hint:"Celui qui est derrière mise 1 point pour en gagner 2."},
-  {id:'or',      label:'⭐ Question en or',   hint:"Une question qui compte double, annoncée à l'avance."}
-];
-function microMecs(){ if(!D.microMecs) D.microMecs=MICRO_MECS.map(function(m){return m.id;}); return D.microMecs; }
-function toggleMicroMec(id){
-  var c=microMecs(), i=c.indexOf(id);
-  if(i>=0) c.splice(i,1); else c.push(id);
-  D.microMecs=c; persist(); render();
-}
-function setAllMecs(on){ D.microMecs = on? MICRO_MECS.map(function(m){return m.id;}) : []; persist(); render(); }
 var MICRO_THEMES=[
-  {id:'libre',   label:'🌍 Tous sujets', txt:null},
   {id:'8090',    label:'📼 Années 80-90', txt:"Concentre la partie sur les années 1980 et 1990 : musique, cinéma, séries, publicités, jeux, objets, événements et personnalités de ces deux décennies. Garde un peu de variété de domaines à l'intérieur de ce thème."},
   {id:'ecran',   label:'🎬 Cinéma & séries', txt:"Concentre la partie sur le cinéma, les séries, l'animation et leurs coulisses : films, réalisateurs, acteurs, répliques, bandes originales, récompenses, sagas. Varie les époques et les genres."},
   {id:'musique', label:'🎵 Musique', txt:"Concentre la partie sur la musique : artistes, groupes, albums, paroles, instruments, genres, festivals, chanson française et internationale. Comme le jeu est purement oral, ne demande jamais d'identifier un extrait sonore : formule des questions de connaissance."},
@@ -2084,7 +1690,20 @@ var MICRO_THEMES=[
   {id:'web',     label:'💻 Jeux vidéo & web', txt:"Thème dominant : jeux vidéo, consoles, internet, réseaux sociaux, mèmes, informatique, créateurs de contenu, culture numérique. Mélange les époques, de l'arcade à aujourd'hui."},
   {id:'fete',    label:'🎄 Spécial fêtes', txt:"Concentre la partie sur les fêtes et traditions : Noël, Nouvel An, Pâques, Halloween, anniversaires, coutumes françaises et du monde, gastronomie de fête, films et musiques associés."}
 ];
-function setMicroTheme(id){ D.microTheme=id; persist(); render(); }
+/* Thèmes multi-sélection. Un thème choisi n'est pas une préférence : le prompt
+   en fait une contrainte stricte, parce qu'un « thème dominant » était
+   systématiquement dilué au bout de quelques questions. */
+function microThemes(){
+  if(!D.microThemes){ D.microThemes = (D.microTheme && D.microTheme!=='libre') ? [D.microTheme] : []; }
+  return D.microThemes.filter(function(id){ return MICRO_THEMES.some(function(t){return t.id===id;}); });
+}
+function toggleMicroTheme(id){
+  var c=microThemes(), i=c.indexOf(id);
+  if(i>=0) c.splice(i,1); else c.push(id);
+  D.microThemes=c; persist(); render();
+}
+function clearMicroThemes(){ D.microThemes=[]; persist(); render(); }
+function microThemeObjs(){ var c=microThemes(); return MICRO_THEMES.filter(function(t){return c.indexOf(t.id)>=0;}); }
 function setMicroGoal(n){ D.microGoal=n; persist(); render(); }
 function setMicroTeams(on){
   if(!on){ D.microTeams=null; persist(); render(); return; }
@@ -2157,8 +1776,17 @@ function briefCopy(){ copy(briefText(),'Lancement copié — colle-le dans ton a
    suivant. Le moteur complet reste disponible en mode « Partie complete ». */
 function microSimpleUI(){
   var sel=D.microTeam||D.lib.map(function(p){return p.id;});
+  var h0='<div class="card" style="background:var(--bg)"><h2 style="font-size:14px;margin-bottom:8px">🎙️ Comment ça marche</h2>'+
+    '<div style="display:flex;flex-direction:column;gap:6px;font-size:13px">'+
+    '<div><b>1.</b> Tu règles ici qui joue, à quel niveau, et sur quels sujets.</div>'+
+    '<div><b>2.</b> L\'app écrit le texte du jeu. Tu le colles dans ton assistant IA.</div>'+
+    '<div><b>3.</b> Tu passes en <b>mode vocal 🎙️</b> — l\'assistant demande confirmation avant la première question.</div>'+
+    '<div><b>4.</b> Il anime : questions chacun son tour, 1 point par bonne réponse, premier à '+MICRO_BUT+'.</div>'+
+    '<div><b>5.</b> En fin de partie, tu enregistres le résultat ici.</div>'+
+    '</div>'+
+    '<p class="mini" style="margin:8px 0 0">En Jeux n\'envoie rien et ne stocke rien en ligne : tout se passe entre toi et ton assistant.</p></div>';
   var ids=sel.filter(function(id){ return D.lib.some(function(p){return p.id===id;}); });
-  var h='<div class="card"><h2><span class="stepn">1</span>Qui joue ? ('+ids.length+')</h2>'+
+  var h=h0+'<div class="card"><h2><span class="stepn">1</span>Qui joue ? ('+ids.length+')</h2>'+
     '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'+
     D.lib.map(function(p){ var on=sel.indexOf(p.id)>=0;
       return '<button onclick="microToggleP(\''+p.id+'\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;border:2px solid '+(on?'var(--gr)':'var(--line)')+';background:'+(on?'var(--gr-l)':'var(--card)')+';border-radius:14px;padding:8px 4px;cursor:pointer;opacity:'+(on?'1':'.5')+';min-width:0">'+
@@ -2179,12 +1807,23 @@ function microSimpleUI(){
     '</div>'+
     '<p class="mini" style="margin:8px 0 0">Rien à régler ici : ce sont exactement les points sur lesquels l\'IA dérivait en vocal. Les figer, c\'est ce qui la tient.</p></div>';
 
-  h+='<div class="card"><h2><span class="stepn">3</span>Ton assistant IA</h2>'+
+  var th=microThemeObjs();
+  h+='<div class="card"><h2><span class="stepn">3</span>Sujets <span style="font-weight:400;font-size:12px;color:#a8a29e">('+(th.length?th.length+' choisi'+(th.length>1?'s':''):'tous')+')</span></h2>'+
+    '<div class="chips">'+
+      '<button class="chip'+(th.length?'':' on')+'" onclick="clearMicroThemes()">🌍 Tous sujets</button>'+
+      MICRO_THEMES.map(function(t){
+        return '<button class="chip'+(microThemes().indexOf(t.id)>=0?' on':'')+'" onclick="toggleMicroTheme(\''+t.id+'\')">'+t.label+'</button>';
+      }).join('')+'</div>'+
+    '<p class="mini" style="margin:8px 0 0">'+(th.length
+      ? 'Toutes les questions porteront sur ces sujets, sans exception — c\'est écrit comme une règle stricte dans le texte généré.'
+      : 'Aucun sujet imposé : l\'animateur change de domaine à chaque question.')+'</p></div>';
+
+  h+='<div class="card"><h2><span class="stepn">4</span>Ton assistant IA</h2>'+
     '<div class="chips">'+AI_APPS.map(function(a){
       return '<button class="chip'+((D.aiApp||'claude')===a.id?' on':'')+'" onclick="setAiApp(\''+a.id+'\')">'+a.label+'</button>';
     }).join('')+'</div></div>';
 
-  h+='<div class="card"><h2><span class="stepn">4</span>Consigne libre <span style="font-weight:400;font-size:12px;color:#a8a29e">(facultatif)</span></h2>'+
+  h+='<div class="card"><h2><span class="stepn">5</span>Consigne libre <span style="font-weight:400;font-size:12px;color:#a8a29e">(facultatif)</span></h2>'+
     '<input placeholder="ex. « des questions sur la Bretagne », « pas de sport »" value="'+(D.microCustom||'').replace(/"/g,'&quot;')+'" onchange="D.microCustom=this.value;persist();render()"></div>';
 
   var noms=ids.map(function(id){ return (D.lib.filter(function(p){return p.id===id;})[0]||{}).name; }).filter(Boolean);
@@ -2192,6 +1831,7 @@ function microSimpleUI(){
     '<div style="display:flex;flex-direction:column;gap:5px;font-size:13px">'+
     '<div><b>Joueurs</b> · '+(noms.length?esc(noms.join(', ')):'aucun')+'</div>'+
     '<div><b>Objectif</b> · premier à '+MICRO_BUT+' points, 1 point par bonne réponse</div>'+
+    '<div><b>Sujets</b> · '+(th.length? esc(th.map(function(x){return x.label;}).join(', '))+' <i>(imposés)</i>' : 'tous sujets')+'</div>'+
     (D.journal.length?'<div><b>Anti-répétition</b> · '+pl(D.journal.length,'question')+' en mémoire</div>':'')+
     ((D.microCustom||'').trim()?'<div><b>Consigne</b> · '+esc(D.microCustom.trim())+'</div>':'')+
     '</div></div>';
@@ -2220,7 +1860,7 @@ function briefSimple(){
   var used={}; joueurs.forEach(function(j){ used[j.lvl.k]=1; });
 
   var t='🎙️ QUIZ ORAL — colle ce texte dans ton assistant, puis passe en mode vocal.\n\n';
-  t+='Tu animes un quiz oral en français. Tu es une animatrice : voix de femme, le français le plus clair et le plus naturel possible, sans accent imité ni imitation de personne réelle. Tu es drôle, taquine, un peu vantarde. Choisis-toi un prénom simple et garde-le toute la partie. Ton humour ne fausse jamais l\'arbitrage.\n\n';
+  t+='Tu animes un quiz oral en français. Tu parles un français clair et naturel, facile à comprendre à l\'oral, sans accent imité ni imitation de personne réelle. Tu as de l\'humour, tu taquines volontiers les joueurs et tu ne détestes pas te vanter de tes questions. Ton humour ne fausse jamais l\'arbitrage.\n\n';
 
   t+='JOUEURS, dans cet ordre de passage :\n';
   joueurs.forEach(function(j){ t+='- '+j.nom+' — niveau '+j.lvl.label+'\n'; });
@@ -2245,9 +1885,18 @@ function briefSimple(){
   t+='· question directe · vrai ou faux · devinette en deux indices · estimation (un nombre : le point est accordé si le joueur tombe à 10 % près) · « qui suis-je ? » · question à trois propositions, uniquement si le joueur sèche vraiment.\n';
   t+='Quel que soit le type, ça vaut 1 point. La réponse attendue tient en quelques mots.\n\n';
 
-  t+='VARIÉTÉ DES SUJETS\nChange de domaine à chaque question : histoire, sciences, nature, cinéma, musique, sport, géographie, langue française, inventions, technologie, cuisine, logique, culture populaire. Évite les grands classiques (capitale de l\'Australie, formule de l\'eau, peintre de la Joconde, plus long fleuve).\n\n';
+  var th=microThemeObjs();
+  if(th.length){
+    t+='SUJETS IMPOSÉS — contrainte stricte, pas une préférence.\n';
+    t+='Toutes les questions, sans exception, portent sur : '+th.map(function(x){return x.label.replace(/^[^A-Za-zÀ-ÿ]+/,'');}).join(' · ')+'.\n';
+    th.forEach(function(x){ if(x.txt) t+='· '+x.txt+'\n'; });
+    t+='Tu ne sors jamais de ce cadre, même pour varier, même si tu sens tourner en rond : tu creuses alors plus finement à l\'intérieur du sujet (une époque, un pays, un genre, un métier, une coulisse). Si '+(th.length>1?'plusieurs sujets sont imposés, tu alternes entre eux':'un seul sujet est imposé, tu en explores les recoins')+'. Une question hors sujet est une erreur, pas une respiration.\n\n';
+  } else {
+    t+='VARIÉTÉ DES SUJETS\nChange de domaine à chaque question : histoire, sciences, nature, cinéma, musique, sport, géographie, langue française, inventions, technologie, cuisine, logique, culture populaire.\n\n';
+  }
+  t+='Évite dans tous les cas les grands classiques trop vus : capitale de l\'Australie, formule de l\'eau, peintre de la Joconde, plus long fleuve.\n\n';
 
-  t+='ANTI-RÉPÉTITION — c\'est un point sur lequel tu dérives, sois-y attentive.\nTu tiens la liste des faits que tu as posés depuis le début de la partie. Un fait posé, révélé ou soufflé ne revient JAMAIS, même reformulé autrement : « quel élément a été repéré dans le spectre solaire » et « quel élément doit son nom au Soleil » sont le même fait. Avant chaque question, résume-toi le fait en trois mots et vérifie qu\'il n\'est pas déjà sorti.\n';
+  t+='ANTI-RÉPÉTITION — c\'est un point sur lequel tu as tendance à déraper, sois-y attentif.\nTu tiens la liste des faits que tu as posés depuis le début de la partie. Un fait posé, révélé ou soufflé ne revient JAMAIS, même reformulé autrement : « quel élément a été repéré dans le spectre solaire » et « quel élément doit son nom au Soleil » sont le même fait. Avant chaque question, résume-toi le fait en trois mots et vérifie qu\'il n\'est pas déjà sorti.\n';
   if(D.journal && D.journal.length){
     var faits=D.journal.slice(0,60).map(function(x){return typeof x==='string'?x:(x.q||x.fait||'');}).filter(Boolean);
     if(faits.length) t+='Déjà posé lors des parties précédentes, interdit de reprendre : '+faits.join(' · ')+'\n';
