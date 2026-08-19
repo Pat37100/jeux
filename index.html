@@ -387,7 +387,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='81';
+var APP_VERSION='82';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -1692,7 +1692,7 @@ function renderQuizz(hd,app,banner){
         (D.microParler? ' · '+esc((MICRO_PARLERS.filter(function(x){return x.id===D.microParler;})[0]||{}).label||'') : '')+'</div>'+
       '<div><b>Thème</b> · '+esc(thm?thm.label:'Tous sujets')+' — objectif '+(D.microGoal||15)+' points</div>'+
       (function(){ var v=(D.microTeam||[]).map(function(id){ return microLvl(id); });
-        return (v.length && v.some(function(x){return x!=='t';}))
+        return (v.length && v.some(function(x){return x!=='h';}))
           ? '<div><b>Niveaux</b> · '+esc(microTeam().map(function(n,i){ return n+' ('+lvlOf(v[i]).label+')'; }).join(', '))+'</div>' : ''; })()+
       '<div><b>Contexte</b> · '+(ctxLbl?esc(ctxLbl):'Standard')+'</div>'+
       '<div><b>Mécaniques</b> · '+(microMecs().length? microMecs().length+' sur '+MICRO_MECS.length+(microMecs().length>MICRO_MECS_MAX?' — '+MICRO_MECS_MAX+' tirées par partie':'') : 'aucune, questions classiques')+'</div>'+
@@ -2010,22 +2010,14 @@ var HOST_NAMES_BY_STYLE={
   susceptible:['Gérald','Édith','Raymond']
 };
 var HOST_NAMES=['Sacha','Nadia','Bruno','Clara','Léo','Manu'];
-/* Mode simple : une seule animatrice, voix de femme, prénom qui sonne drôle. */
-var HOST_NAMES_F=['Ginette','Solange','Josiane','Mireille','Huguette','Nadia','Clara','Raymonde'];
 function microMode(){ return D.microMode||'simple'; }
 function setMicroMode(m){ D.microMode=m; persist(); render(); }
-function hostNameF(){
-  if(!D.hostF) { D.hostF=HOST_NAMES_F[Math.floor(Math.random()*HOST_NAMES_F.length)]; persist(); }
-  return D.hostF;
-}
-function setHostF(v){ var n=(v||'').trim(); if(n) D.hostF=n.charAt(0).toUpperCase()+n.slice(1); persist(); render(); }
-function rollHostF(){
-  var cur=D.hostF, n=cur;
-  while(n===cur && HOST_NAMES_F.length>1) n=HOST_NAMES_F[Math.floor(Math.random()*HOST_NAMES_F.length)];
-  D.hostF=n; persist(); render();
-}
-function microGoalS(){ return D.microGoalS||10; }
-function setMicroGoalS(v){ D.microGoalS=v; persist(); render(); }
+/* Mode simple : une seule animatrice, sans prenom a saisir. Le prenom etait un
+   reglage de plus pour zero gain de fiabilite ; le prompt demande simplement une
+   voix de femme et le francais le plus clair possible. */
+/* Objectif fige a 10 : un reglage de moins, et surtout un nombre que le modele
+   n'a plus a retenir. C'est la meme logique que le barème a 1 point. */
+var MICRO_BUT=10;
 function hostName(){
   var sid=D.microStyle||'classique';
   if(!D.hostNames) D.hostNames={};
@@ -2125,17 +2117,19 @@ function microTeam(){
    Noms volontairement drôles : c'est l'animatrice qui les prononce en jeu.
    j/n/c sont les anciennes cles (v80 et avant) : elles restent lues. */
 var MICRO_LVL=[
-  {k:'p',label:'🐣 Poussin',      n:2, txt:"ce qu'on apprend à l'école primaire"},
-  {k:'m',label:'🌱 Petit malin',  n:4, txt:"niveau collège : sport, cinéma, jeux vidéo, culture ado"},
-  {k:'t',label:'☕ Tête bien faite',n:6, txt:"bon joueur de quiz adulte"},
-  {k:'g',label:'🧠 Grosse tête',  n:8, txt:"détail latéral, angle inattendu — une question que la plupart des adultes connaissent spontanément n'est PAS de ce niveau"}
+  {k:'p',label:'🐣 Poussin',        n:2, txt:"école primaire : ce qu'on apprend avant le collège"},
+  {k:'a',label:'🎧 Tête d\'ado',    n:4, txt:"collège et lycée : sport, cinéma, séries, jeux vidéo, culture ado"},
+  {k:'h',label:'☕ Honnête cultivé', n:5, txt:"adulte : culture générale répandue, ce qu'un adulte attentif sait"},
+  {k:'b',label:'🧠 Tête bien faite', n:6, txt:"adulte : connaissance précise ou raisonnement exigeant, au-delà du réflexe"},
+  {k:'g',label:'🔥 Grosse tête',    n:8, txt:"adulte aguerri : détail latéral, angle inattendu — une question que la plupart des adultes connaissent spontanément n'est PAS de ce niveau"}
 ];
-var MICRO_LVL_OLD={j:'m',n:'t',c:'g'};
+/* Cles historiques : v80 (j/n/c) puis v81 (m/t). Relues, jamais perdues. */
+var MICRO_LVL_OLD={j:'a',n:'h',c:'g',m:'a',t:'h'};
 function microLvl(id){
   if(!D.microLvl) D.microLvl={};
   var v=D.microLvl[id];
   if(MICRO_LVL_OLD[v]) v=MICRO_LVL_OLD[v];        // migration silencieuse
-  return v||'t';
+  return v||'h';
 }
 function lvlOf(k){ return MICRO_LVL.filter(function(x){return x.k===k;})[0]||MICRO_LVL[2]; }
 function cycleMicroLvl(id){
@@ -2177,34 +2171,28 @@ function microSimpleUI(){
       MICRO_LVL.map(function(L){ return '<div style="font-size:12px;padding:2px 0"><b>'+L.label+'</b> — '+esc(L.txt)+'</div>'; }).join('')+
     '</div></div>';
 
-  h+='<div class="card"><h2><span class="stepn">2</span>Ton animatrice</h2>'+
-    '<div class="row" style="gap:8px">'+
-      '<span class="mini" style="flex:0 0 auto;margin:0">Elle s\'appelle</span>'+
-      '<input value="'+esc(hostNameF())+'" placeholder="'+esc(hostNameF())+'" style="flex:1" aria-label="Prénom de l\'animatrice" onchange="setHostF(this.value)">'+
-      '<button class="sm" style="flex:0 0 44px;background:var(--card)" aria-label="Autre prénom" onclick="rollHostF()">🎲</button>'+
+  h+='<div class="card"><h2><span class="stepn">2</span>La partie</h2>'+
+    '<div style="display:flex;flex-direction:column;gap:5px;font-size:13px">'+
+    '<div>🎙️ <b>Une animatrice</b> — voix de femme, français le plus clair possible, drôle et taquine.</div>'+
+    '<div>🎯 <b>Premier à '+MICRO_BUT+' points</b> — 1 point par bonne réponse.</div>'+
+    '<div>🔄 <b>Chacun son tour</b>, dans l\'ordre ci-dessus, sans exception.</div>'+
     '</div>'+
-    '<p class="mini" style="margin:8px 0 0">Voix de femme, drôle et taquine, français sans accent imité. Une seule personnalité en mode simple : c\'est ce qui tient le mieux à l\'oral.</p></div>';
+    '<p class="mini" style="margin:8px 0 0">Rien à régler ici : ce sont exactement les points sur lesquels l\'IA dérivait en vocal. Les figer, c\'est ce qui la tient.</p></div>';
 
-  h+='<div class="card"><h2><span class="stepn">3</span>Objectif</h2>'+
-    '<div class="chips">'+[10,15,20].map(function(o){
-      return '<button class="chip'+(microGoalS()===o?' on':'')+'" onclick="setMicroGoalS('+o+')">'+o+' pts</button>';
-    }).join('')+'</div>'+
-    '<p class="mini" style="margin:8px 0 0">1 point par bonne réponse. Pas de barème double, pas de mécaniques : c\'est ce qui faussait le score en vocal.</p></div>';
-
-  h+='<div class="card"><h2><span class="stepn">4</span>Ton assistant IA</h2>'+
+  h+='<div class="card"><h2><span class="stepn">3</span>Ton assistant IA</h2>'+
     '<div class="chips">'+AI_APPS.map(function(a){
       return '<button class="chip'+((D.aiApp||'claude')===a.id?' on':'')+'" onclick="setAiApp(\''+a.id+'\')">'+a.label+'</button>';
     }).join('')+'</div></div>';
 
-  h+='<div class="card"><h2><span class="stepn">5</span>Consigne libre <span style="font-weight:400;font-size:12px;color:#a8a29e">(facultatif)</span></h2>'+
+  h+='<div class="card"><h2><span class="stepn">4</span>Consigne libre <span style="font-weight:400;font-size:12px;color:#a8a29e">(facultatif)</span></h2>'+
     '<input placeholder="ex. « des questions sur la Bretagne », « pas de sport »" value="'+(D.microCustom||'').replace(/"/g,'&quot;')+'" onchange="D.microCustom=this.value;persist();render()"></div>';
 
   var noms=ids.map(function(id){ return (D.lib.filter(function(p){return p.id===id;})[0]||{}).name; }).filter(Boolean);
   h+='<div class="card" style="background:var(--bg)"><h2 style="font-size:14px;margin-bottom:8px">📋 Ce que tu as choisi</h2>'+
     '<div style="display:flex;flex-direction:column;gap:5px;font-size:13px">'+
     '<div><b>Joueurs</b> · '+(noms.length?esc(noms.join(', ')):'aucun')+'</div>'+
-    '<div><b>Animatrice</b> · '+esc(hostNameF())+'</div>'+
-    '<div><b>Objectif</b> · premier à '+microGoalS()+' points, 1 point par bonne réponse</div>'+
+    '<div><b>Objectif</b> · premier à '+MICRO_BUT+' points, 1 point par bonne réponse</div>'+
+    (D.journal.length?'<div><b>Anti-répétition</b> · '+pl(D.journal.length,'question')+' en mémoire</div>':'')+
     ((D.microCustom||'').trim()?'<div><b>Consigne</b> · '+esc(D.microCustom.trim())+'</div>':'')+
     '</div></div>';
 
@@ -2227,46 +2215,54 @@ function briefSimple(){
     var p=D.lib.filter(function(x){return x.id===id;})[0];
     return {nom:p.name, lvl:lvlOf(microLvl(id))};
   });
-  if(!joueurs.length) joueurs=[{nom:'Joueur 1',lvl:lvlOf('t')}];
-  var nom=hostNameF(), but=microGoalS(), premier=joueurs[0].nom;
-  var used={}; joueurs.forEach(function(j){ used[j.lvl.k]=j.lvl; });
+  if(!joueurs.length) joueurs=[{nom:'Joueur 1',lvl:lvlOf('h')}];
+  var but=MICRO_BUT, premier=joueurs[0].nom, suivant=(joueurs[1]||joueurs[0]).nom;
+  var used={}; joueurs.forEach(function(j){ used[j.lvl.k]=1; });
 
   var t='🎙️ QUIZ ORAL — colle ce texte dans ton assistant, puis passe en mode vocal.\n\n';
-  t+='Tu animes un quiz oral en français. Tu t\'appelles '+nom+', tu es une animatrice drôle, taquine et un peu vantarde. Français standard, aucun accent imité. Ton humour ne fausse jamais l\'arbitrage.\n\n';
+  t+='Tu animes un quiz oral en français. Tu es une animatrice : voix de femme, le français le plus clair et le plus naturel possible, sans accent imité ni imitation de personne réelle. Tu es drôle, taquine, un peu vantarde. Choisis-toi un prénom simple et garde-le toute la partie. Ton humour ne fausse jamais l\'arbitrage.\n\n';
+
   t+='JOUEURS, dans cet ordre de passage :\n';
   joueurs.forEach(function(j){ t+='- '+j.nom+' — niveau '+j.lvl.label+'\n'; });
-  t+='\nBUT : le premier à '+but+' points. 1 point par bonne réponse, rien d\'autre. Aucun autre barème, aucun bonus.\n\n';
+  t+='\nBUT : le premier à '+but+' points. 1 point par bonne réponse, rien d\'autre. Aucun barème double, aucun bonus, aucun point retiré.\n\n';
 
-  t+='AVANT DE COMMENCER\nTa toute première phrase est uniquement : « Le mode vocal est activé ? » Puis tu t\'arrêtes et tu attends. Tu ne poses aucune question de quiz tant que la réponse n\'est pas oui. Quand c\'est oui : tu te présentes en une phrase, dans ton personnage, puis tu poses immédiatement la première question à '+premier+'.\n\n';
+  t+='AVANT DE COMMENCER\nTa toute première phrase est uniquement : « Le mode vocal est activé ? » Puis tu t\'arrêtes et tu attends. Tu ne poses aucune question tant que la réponse n\'est pas oui. Quand c\'est oui : tu te présentes en une phrase, dans ton personnage, puis tu poses immédiatement la première question à '+premier+'.\n\n';
 
-  t+='LES 6 RÈGLES\n';
-  t+='1. Une seule question à la fois. Tu la poses en nommant le joueur, puis tu te tais. Tu ne poses jamais deux questions d\'affilée.\n';
-  t+='2. Tu ne réponds jamais à ta propre question, et tu ne donnes pas la réponse avant le joueur.\n';
-  t+='3. Si tu as mal entendu, si la réponse est coupée, hésitante ou si tu ne sais pas qui a parlé : tu n\'arbitres pas. Tu dis « [Prénom], ta réponse officielle ? » et tu te tais. Perdre une seconde vaut mieux que fausser la partie.\n';
-  t+='4. Après chaque réponse tu annonces le score à voix haute : « Un point — '+premier+', 4 sur '+but+'. » ou « Non — '+premier+' reste à 3 sur '+but+'. » C\'est ta table de marque : tu la relis, tu ne recalcules jamais de mémoire.\n';
-  t+='5. Puis, sans t\'arrêter, tu poses la question suivante au joueur suivant dans l\'ordre. Tour de rôle strict. Jamais de « c\'est à qui ? », jamais de blanc après une correction : une prise de parole se termine toujours par une question.\n';
-  t+='6. Réponse fausse → tu donnes la bonne réponse et UNE phrase qui l\'explique. Réponse juste → UNE anecdote sympa sur le sujet. Jamais plus d\'une phrase, jamais de cours.\n\n';
+  t+='LES 7 RÈGLES\n';
+  t+='1. TOUR DE RÔLE STRICT. '+premier+', puis '+suivant+', puis le suivant, et on recommence dans l\'ordre ci-dessus. Tu nommes le joueur dans chaque question — c\'est ce prénom prononcé qui te dit où tu en es. Jamais « c\'est à qui ? », jamais deux questions de suite au même joueur, jamais un joueur sauté.\n';
+  t+='2. UNE SEULE QUESTION OUVERTE. Tu poses, puis tu te tais. Tu ne réponds jamais à ta propre question et tu ne donnes pas la réponse avant le joueur.\n';
+  t+='3. DOUTE = PAS D\'ARBITRAGE. Réponse coupée, hésitante, à moitié entendue, ou tu ne sais pas qui a parlé : tu dis « [Prénom], ta réponse officielle ? » et tu te tais. Perdre une seconde vaut mieux que fausser la partie.\n';
+  t+='4. SCORE ANNONCÉ À VOIX HAUTE après chaque réponse : « Un point — '+premier+', 4 sur '+but+'. » ou « Non — '+premier+' reste à 3 sur '+but+'. » C\'est ta table de marque : tu la relis, tu ne recalcules jamais de mémoire.\n';
+  t+='5. RYTHME. Après le score, tu enchaînes dans la même prise de parole sur la question suivante. Une prise de parole se termine toujours par une question, ou par « ta réponse officielle ? ». Jamais par un blanc, jamais par « on continue ? ».\n';
+  t+='6. PÉDAGOGIE COURTE. Faux → la bonne réponse et UNE phrase qui l\'explique. Juste → UNE anecdote sympa sur le sujet. Jamais plus d\'une phrase, jamais de cours.\n';
+  t+='7. BRUIT DE FOND. Les joueurs parlent entre eux, rient, réfléchissent à voix haute. Pendant que tu parles, tu ne t\'interromps pas pour un commentaire de fond. Après une question, tu écoutes vraiment. Un bavardage, une blague ou un mot lancé en l\'air n\'est pas une réponse : seule compte la réponse donnée par le joueur interrogé. Si un autre souffle la bonne réponse, personne ne marque, et tu reposes une autre question au même joueur.\n\n';
 
-  t+='NIVEAUX (chaque joueur reçoit des questions à SON niveau)\n';
+  t+='NIVEAUX — chaque joueur reçoit des questions à SON niveau, sans jamais le commenter à voix haute.\n';
   MICRO_LVL.forEach(function(L){ if(used[L.k]) t+=L.label+' — '+L.txt+'.\n'; });
-  t+='À l\'intérieur du niveau d\'un joueur, alterne : une qui passe crème, une qui pique, une qui fait mal. Ne reste jamais sur le même cran.\n\n';
+  t+='À l\'intérieur du niveau d\'un joueur, alterne les crans : une qui passe crème, une qui pique, une qui fait mal. Ne reste jamais deux fois de suite sur le même cran.\n\n';
 
-  t+='VARIÉTÉ\nChange de domaine à chaque question : histoire, sciences, nature, cinéma, musique, sport, géographie, langue française, inventions, logique, culture populaire. Jamais deux fois le même fait, même reformulé. Évite les grands classiques (capitale de l\'Australie, formule de l\'eau, peintre de la Joconde). La réponse attendue tient en quelques mots — jamais une explication.\n\n';
+  t+='ALTERNE AUSSI LE TYPE DE QUESTION — jamais deux fois de suite le même :\n';
+  t+='· question directe · vrai ou faux · devinette en deux indices · estimation (un nombre : le point est accordé si le joueur tombe à 10 % près) · « qui suis-je ? » · question à trois propositions, uniquement si le joueur sèche vraiment.\n';
+  t+='Quel que soit le type, ça vaut 1 point. La réponse attendue tient en quelques mots.\n\n';
+
+  t+='VARIÉTÉ DES SUJETS\nChange de domaine à chaque question : histoire, sciences, nature, cinéma, musique, sport, géographie, langue française, inventions, technologie, cuisine, logique, culture populaire. Évite les grands classiques (capitale de l\'Australie, formule de l\'eau, peintre de la Joconde, plus long fleuve).\n\n';
+
+  t+='ANTI-RÉPÉTITION — c\'est un point sur lequel tu dérives, sois-y attentive.\nTu tiens la liste des faits que tu as posés depuis le début de la partie. Un fait posé, révélé ou soufflé ne revient JAMAIS, même reformulé autrement : « quel élément a été repéré dans le spectre solaire » et « quel élément doit son nom au Soleil » sont le même fait. Avant chaque question, résume-toi le fait en trois mots et vérifie qu\'il n\'est pas déjà sorti.\n';
+  if(D.journal && D.journal.length){
+    var faits=D.journal.slice(0,60).map(function(x){return typeof x==='string'?x:(x.q||x.fait||'');}).filter(Boolean);
+    if(faits.length) t+='Déjà posé lors des parties précédentes, interdit de reprendre : '+faits.join(' · ')+'\n';
+  }
+  t+='\n';
 
   if((D.microCustom||'').trim()) t+='CONSIGNE DES JOUEURS : '+D.microCustom.trim()+'\n\n';
 
-  if(D.journal && D.journal.length){
-    var faits=D.journal.slice(0,15).map(function(x){return typeof x==='string'?x:(x.q||x.fait||'');}).filter(Boolean);
-    if(faits.length) t+='DÉJÀ POSÉ lors des parties précédentes, à ne pas reprendre : '+faits.join(' · ')+'\n\n';
-  }
-
-  t+='RELECTURE\nToutes les 5 questions, tu relis ces règles avant de parler. Si tu t\'aperçois que tu as sauté un tour ou perdu le fil du score, tu annonces le score complet et tu reprends proprement, sans t\'excuser longuement.\n\n';
-  t+='FIN DE PARTIE\nLe premier à '+but+' gagne. Tu annonces le vainqueur dans ton personnage, puis tu listes les questions posées, une par ligne, pour que l\'application les mémorise.\n';
+  t+='RELECTURE\nToutes les 5 questions, tu relis ces règles avant de parler. Si tu t\'aperçois que tu as sauté un tour, répété un fait ou perdu le fil du score, tu annonces le score complet et tu reprends proprement, sans t\'excuser longuement.\n\n';
+  t+='FIN DE PARTIE\nLe premier à '+but+' gagne. Tu annonces le vainqueur dans ton personnage, puis tu listes les questions posées, une par ligne, pour que l\'application les mémorise et ne te les ressorte plus.\n';
   return t;
 }
 /* Rappel court à recoller en cours de partie si l'animatrice dérive. */
 function briefRappel(){
-  return 'Rappel des règles : 1 point par bonne réponse, premier à '+microGoalS()+'. '+
+  return 'Rappel des règles : 1 point par bonne réponse, premier à '+MICRO_BUT+'. '+
     'Tu annonces le score à voix haute après chaque réponse. Tour de rôle strict. '+
     'Silence après chaque question. Une phrase d\'explication maximum. Reprends la partie.';
 }
