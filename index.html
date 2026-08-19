@@ -387,7 +387,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='80';
+var APP_VERSION='81';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -1586,6 +1586,17 @@ function renderQuizz(hd,app,banner){
 
   var h=banner;
   if(S.qtab==='play'){
+    h+='<div class="card"><div class="row" style="gap:8px">'+
+      ['simple','complet'].map(function(m){
+        return '<button class="chip'+(microMode()===m?' on':'')+'" style="flex:1;text-align:center" onclick="setMicroMode(\''+m+'\')">'+(m==='simple'?'⚡️ Partie simple':'🎛️ Partie complète')+'</button>';
+      }).join('')+'</div>'+
+      '<p class="mini" style="margin:8px 0 0">'+(microMode()==='simple'
+        ? 'Règles minimales, 1 point par bonne réponse. C\'est le mode qui tient le mieux en vocal.'
+        : 'Mécaniques, personnalités, barème double. Plus riche, mais l\'IA s\'y perd plus vite à l\'oral.')+'</p></div>';
+  }
+  if(S.qtab==='play' && microMode()==='simple'){
+    h+=microSimpleUI();
+  } else if(S.qtab==='play'){
     var sel=D.microTeam||D.lib.map(function(p){return p.id;});
     var team=microTeam();
     h+='<div class="card"><h2><span class="stepn">1</span>Participants ('+team.length+')</h2>'+
@@ -1593,7 +1604,7 @@ function renderQuizz(hd,app,banner){
       D.lib.map(function(p){ var on=sel.indexOf(p.id)>=0;
         return '<button onclick="microToggleP(\''+p.id+'\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;border:2px solid '+(on?'var(--gr)':'var(--line)')+';background:'+(on?'var(--gr-l)':'var(--card)')+';border-radius:14px;padding:8px 4px;cursor:pointer;opacity:'+(on?'1':'.5')+';min-width:0">'+
           av(p.name,'sm')+'<span style="font-size:11px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name)+'</span>'+
-          (on?'<span onclick="event.stopPropagation();cycleMicroLvl(\''+p.id+'\')" style="font-size:9.5px;font-weight:800;border-radius:99px;padding:1px 6px;background:var(--card);border:1px solid var(--line);color:#78716c">'+esc(MICRO_LVL.filter(function(x){return x.k===microLvl(p.id);})[0].label)+'</span>':'')+
+          (on?'<span onclick="event.stopPropagation();cycleMicroLvl(\''+p.id+'\')" style="font-size:9.5px;font-weight:800;border-radius:99px;padding:1px 6px;background:var(--card);border:1px solid var(--line);color:#78716c">'+esc(lvlOf(microLvl(p.id)).label)+'</span>':'')+
           '</button>';
       }).join('')+'</div>'+
       '<p class="mini" style="margin:8px 0 0">Touche la pastille sous un prénom pour régler son niveau de départ.</p>'+
@@ -1681,8 +1692,8 @@ function renderQuizz(hd,app,banner){
         (D.microParler? ' · '+esc((MICRO_PARLERS.filter(function(x){return x.id===D.microParler;})[0]||{}).label||'') : '')+'</div>'+
       '<div><b>Thème</b> · '+esc(thm?thm.label:'Tous sujets')+' — objectif '+(D.microGoal||15)+' points</div>'+
       (function(){ var v=(D.microTeam||[]).map(function(id){ return microLvl(id); });
-        return (v.length && v.some(function(x){return x!=='n';}))
-          ? '<div><b>Niveaux</b> · '+esc(microTeam().map(function(n,i){ return n+' ('+MICRO_LVL.filter(function(x){return x.k===v[i];})[0].label+')'; }).join(', '))+'</div>' : ''; })()+
+        return (v.length && v.some(function(x){return x!=='t';}))
+          ? '<div><b>Niveaux</b> · '+esc(microTeam().map(function(n,i){ return n+' ('+lvlOf(v[i]).label+')'; }).join(', '))+'</div>' : ''; })()+
       '<div><b>Contexte</b> · '+(ctxLbl?esc(ctxLbl):'Standard')+'</div>'+
       '<div><b>Mécaniques</b> · '+(microMecs().length? microMecs().length+' sur '+MICRO_MECS.length+(microMecs().length>MICRO_MECS_MAX?' — '+MICRO_MECS_MAX+' tirées par partie':'') : 'aucune, questions classiques')+'</div>'+
       ((D.microCustom||'').trim()?'<div><b>Consigne</b> · '+esc(D.microCustom.trim())+'</div>':'')+
@@ -1788,6 +1799,7 @@ function planFormats(sel){
   return out;
 }
 function briefText(){
+  if(microMode()==='simple') return briefSimple();
   /* COUCHE 1 : configuration dynamique venant de l'interface.
      COUCHE 2 : MICRO_PROMPT, le moteur fixe.
      COUCHE 3 : personnalité + consignes issues des options.
@@ -1998,6 +2010,22 @@ var HOST_NAMES_BY_STYLE={
   susceptible:['Gérald','Édith','Raymond']
 };
 var HOST_NAMES=['Sacha','Nadia','Bruno','Clara','Léo','Manu'];
+/* Mode simple : une seule animatrice, voix de femme, prénom qui sonne drôle. */
+var HOST_NAMES_F=['Ginette','Solange','Josiane','Mireille','Huguette','Nadia','Clara','Raymonde'];
+function microMode(){ return D.microMode||'simple'; }
+function setMicroMode(m){ D.microMode=m; persist(); render(); }
+function hostNameF(){
+  if(!D.hostF) { D.hostF=HOST_NAMES_F[Math.floor(Math.random()*HOST_NAMES_F.length)]; persist(); }
+  return D.hostF;
+}
+function setHostF(v){ var n=(v||'').trim(); if(n) D.hostF=n.charAt(0).toUpperCase()+n.slice(1); persist(); render(); }
+function rollHostF(){
+  var cur=D.hostF, n=cur;
+  while(n===cur && HOST_NAMES_F.length>1) n=HOST_NAMES_F[Math.floor(Math.random()*HOST_NAMES_F.length)];
+  D.hostF=n; persist(); render();
+}
+function microGoalS(){ return D.microGoalS||10; }
+function setMicroGoalS(v){ D.microGoalS=v; persist(); render(); }
 function hostName(){
   var sid=D.microStyle||'classique';
   if(!D.hostNames) D.hostNames={};
@@ -2093,15 +2121,30 @@ function microTeam(){
 /* Niveau de départ par joueur : dans une famille, un ado et un adulte
    ne partent pas du même niveau. Le moteur adaptait déjà, mais seulement
    après 4 à 6 questions — trop tard pour les premières. 3 crans suffisent. */
-var MICRO_LVL=[{k:'j',label:'Junior',n:3},{k:'n',label:'Normal',n:5},{k:'c',label:'Costaud',n:7}];
-function microLvl(id){ if(!D.microLvl) D.microLvl={}; return D.microLvl[id]||'n'; }
-function cycleMicroLvl(id){
-  var order=['j','n','c'], cur=microLvl(id);
+/* L'echelle porte le niveau du JOUEUR, pas la difficulte d'une question.
+   Noms volontairement drôles : c'est l'animatrice qui les prononce en jeu.
+   j/n/c sont les anciennes cles (v80 et avant) : elles restent lues. */
+var MICRO_LVL=[
+  {k:'p',label:'🐣 Poussin',      n:2, txt:"ce qu'on apprend à l'école primaire"},
+  {k:'m',label:'🌱 Petit malin',  n:4, txt:"niveau collège : sport, cinéma, jeux vidéo, culture ado"},
+  {k:'t',label:'☕ Tête bien faite',n:6, txt:"bon joueur de quiz adulte"},
+  {k:'g',label:'🧠 Grosse tête',  n:8, txt:"détail latéral, angle inattendu — une question que la plupart des adultes connaissent spontanément n'est PAS de ce niveau"}
+];
+var MICRO_LVL_OLD={j:'m',n:'t',c:'g'};
+function microLvl(id){
   if(!D.microLvl) D.microLvl={};
-  D.microLvl[id]=order[(order.indexOf(cur)+1)%3];
+  var v=D.microLvl[id];
+  if(MICRO_LVL_OLD[v]) v=MICRO_LVL_OLD[v];        // migration silencieuse
+  return v||'t';
+}
+function lvlOf(k){ return MICRO_LVL.filter(function(x){return x.k===k;})[0]||MICRO_LVL[2]; }
+function cycleMicroLvl(id){
+  var order=MICRO_LVL.map(function(x){return x.k;}), cur=microLvl(id);
+  if(!D.microLvl) D.microLvl={};
+  D.microLvl[id]=order[(order.indexOf(cur)+1)%order.length];
   persist(); render();
 }
-function lvlNum(k){ var f=MICRO_LVL.filter(function(x){return x.k===k;})[0]; return f?f.n:5; }
+function lvlNum(k){ return lvlOf(k).n; }
 function microToggleP(id){
   if(!D.microTeam) D.microTeam=D.lib.map(function(p){return p.id;});
   var i=D.microTeam.indexOf(id);
@@ -2112,6 +2155,122 @@ function microToggleP(id){
 function briefShare(){ if(navigator.share){navigator.share({text:briefText()}).catch(function(){});} else briefCopy(); }
 function briefCopy(){ copy(briefText(),'Lancement copié — colle-le dans ton assistant IA, puis passe en voix'); }
 /* Un seul geste : copie le lancement PUIS ouvre Claude (il ne reste qu'à coller) */
+/* ---- MODE SIMPLE ----------------------------------------------------
+   Constat des tests vocaux : au-dela de ~2000 caracteres de regles, le modele
+   cesse d'appliquer les invariants (rotation, score, silence) et retombe en
+   assistant. Ce generateur produit un moteur court, a barème unique (1 point),
+   ou tout l'etat critique est PRONONCE — donc relisible par le modele au tour
+   suivant. Le moteur complet reste disponible en mode « Partie complete ». */
+function microSimpleUI(){
+  var sel=D.microTeam||D.lib.map(function(p){return p.id;});
+  var ids=sel.filter(function(id){ return D.lib.some(function(p){return p.id===id;}); });
+  var h='<div class="card"><h2><span class="stepn">1</span>Qui joue ? ('+ids.length+')</h2>'+
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'+
+    D.lib.map(function(p){ var on=sel.indexOf(p.id)>=0;
+      return '<button onclick="microToggleP(\''+p.id+'\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;border:2px solid '+(on?'var(--gr)':'var(--line)')+';background:'+(on?'var(--gr-l)':'var(--card)')+';border-radius:14px;padding:8px 4px;cursor:pointer;opacity:'+(on?'1':'.5')+';min-width:0">'+
+        av(p.name,'sm')+'<span style="font-size:11px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name)+'</span>'+
+        (on?'<span onclick="event.stopPropagation();cycleMicroLvl(\''+p.id+'\')" style="font-size:9.5px;font-weight:800;border-radius:99px;padding:1px 6px;background:var(--card);border:1px solid var(--line);color:#78716c">'+esc(lvlOf(microLvl(p.id)).label)+'</span>':'')+
+        '</button>';
+    }).join('')+'</div>'+
+    '<p class="mini" style="margin:8px 0 0">Touche la pastille sous un prénom pour changer son niveau. L\'ordre des questions suit l\'ordre d\'affichage.</p>'+
+    '<div style="margin-top:10px;background:var(--bg);border-radius:10px;padding:8px 10px">'+
+      MICRO_LVL.map(function(L){ return '<div style="font-size:12px;padding:2px 0"><b>'+L.label+'</b> — '+esc(L.txt)+'</div>'; }).join('')+
+    '</div></div>';
+
+  h+='<div class="card"><h2><span class="stepn">2</span>Ton animatrice</h2>'+
+    '<div class="row" style="gap:8px">'+
+      '<span class="mini" style="flex:0 0 auto;margin:0">Elle s\'appelle</span>'+
+      '<input value="'+esc(hostNameF())+'" placeholder="'+esc(hostNameF())+'" style="flex:1" aria-label="Prénom de l\'animatrice" onchange="setHostF(this.value)">'+
+      '<button class="sm" style="flex:0 0 44px;background:var(--card)" aria-label="Autre prénom" onclick="rollHostF()">🎲</button>'+
+    '</div>'+
+    '<p class="mini" style="margin:8px 0 0">Voix de femme, drôle et taquine, français sans accent imité. Une seule personnalité en mode simple : c\'est ce qui tient le mieux à l\'oral.</p></div>';
+
+  h+='<div class="card"><h2><span class="stepn">3</span>Objectif</h2>'+
+    '<div class="chips">'+[10,15,20].map(function(o){
+      return '<button class="chip'+(microGoalS()===o?' on':'')+'" onclick="setMicroGoalS('+o+')">'+o+' pts</button>';
+    }).join('')+'</div>'+
+    '<p class="mini" style="margin:8px 0 0">1 point par bonne réponse. Pas de barème double, pas de mécaniques : c\'est ce qui faussait le score en vocal.</p></div>';
+
+  h+='<div class="card"><h2><span class="stepn">4</span>Ton assistant IA</h2>'+
+    '<div class="chips">'+AI_APPS.map(function(a){
+      return '<button class="chip'+((D.aiApp||'claude')===a.id?' on':'')+'" onclick="setAiApp(\''+a.id+'\')">'+a.label+'</button>';
+    }).join('')+'</div></div>';
+
+  h+='<div class="card"><h2><span class="stepn">5</span>Consigne libre <span style="font-weight:400;font-size:12px;color:#a8a29e">(facultatif)</span></h2>'+
+    '<input placeholder="ex. « des questions sur la Bretagne », « pas de sport »" value="'+(D.microCustom||'').replace(/"/g,'&quot;')+'" onchange="D.microCustom=this.value;persist();render()"></div>';
+
+  var noms=ids.map(function(id){ return (D.lib.filter(function(p){return p.id===id;})[0]||{}).name; }).filter(Boolean);
+  h+='<div class="card" style="background:var(--bg)"><h2 style="font-size:14px;margin-bottom:8px">📋 Ce que tu as choisi</h2>'+
+    '<div style="display:flex;flex-direction:column;gap:5px;font-size:13px">'+
+    '<div><b>Joueurs</b> · '+(noms.length?esc(noms.join(', ')):'aucun')+'</div>'+
+    '<div><b>Animatrice</b> · '+esc(hostNameF())+'</div>'+
+    '<div><b>Objectif</b> · premier à '+microGoalS()+' points, 1 point par bonne réponse</div>'+
+    ((D.microCustom||'').trim()?'<div><b>Consigne</b> · '+esc(D.microCustom.trim())+'</div>':'')+
+    '</div></div>';
+
+  h+='<button class="btn micro" style="font-size:17px" onclick="briefGo()" aria-label="Générer le texte de lancement et ouvrir l assistant">🚀 Générer et lancer</button>'+
+    '<p class="mini" style="text-align:center;margin:8px 2px 0">Colle le texte, puis active le <b>mode vocal 🎙️</b>. L\'animatrice te demandera confirmation avant la première question.</p>'+
+    '<div class="row" style="margin-top:10px;gap:8px">'+
+      '<button class="sm" style="flex:1;background:var(--card)" onclick="briefCopy()">📋 Copier</button>'+
+      '<button class="sm" style="flex:1;background:var(--card)" onclick="briefShare()">📤 Envoyer</button>'+
+    '</div>'+
+    '<button class="sm" style="width:100%;margin-top:8px;background:var(--card)" onclick="copyRappel()">🔁 Copier le rappel des règles</button>'+
+    '<p class="mini" style="text-align:center;margin:6px 2px 0">Si l\'animatrice s\'égare en cours de partie, colle ce rappel : elle reprend le fil.</p>'+
+    '<button class="btn micro" style="margin-top:12px" onclick="S.microSheet=true;render()">🏆 Enregistrer le résultat de la partie</button>';
+  return h;
+}
+function briefSimple(){
+  var ids=(D.microTeam||D.lib.map(function(p){return p.id;})).filter(function(id){
+    return D.lib.some(function(p){return p.id===id;});
+  });
+  var joueurs=ids.map(function(id){
+    var p=D.lib.filter(function(x){return x.id===id;})[0];
+    return {nom:p.name, lvl:lvlOf(microLvl(id))};
+  });
+  if(!joueurs.length) joueurs=[{nom:'Joueur 1',lvl:lvlOf('t')}];
+  var nom=hostNameF(), but=microGoalS(), premier=joueurs[0].nom;
+  var used={}; joueurs.forEach(function(j){ used[j.lvl.k]=j.lvl; });
+
+  var t='🎙️ QUIZ ORAL — colle ce texte dans ton assistant, puis passe en mode vocal.\n\n';
+  t+='Tu animes un quiz oral en français. Tu t\'appelles '+nom+', tu es une animatrice drôle, taquine et un peu vantarde. Français standard, aucun accent imité. Ton humour ne fausse jamais l\'arbitrage.\n\n';
+  t+='JOUEURS, dans cet ordre de passage :\n';
+  joueurs.forEach(function(j){ t+='- '+j.nom+' — niveau '+j.lvl.label+'\n'; });
+  t+='\nBUT : le premier à '+but+' points. 1 point par bonne réponse, rien d\'autre. Aucun autre barème, aucun bonus.\n\n';
+
+  t+='AVANT DE COMMENCER\nTa toute première phrase est uniquement : « Le mode vocal est activé ? » Puis tu t\'arrêtes et tu attends. Tu ne poses aucune question de quiz tant que la réponse n\'est pas oui. Quand c\'est oui : tu te présentes en une phrase, dans ton personnage, puis tu poses immédiatement la première question à '+premier+'.\n\n';
+
+  t+='LES 6 RÈGLES\n';
+  t+='1. Une seule question à la fois. Tu la poses en nommant le joueur, puis tu te tais. Tu ne poses jamais deux questions d\'affilée.\n';
+  t+='2. Tu ne réponds jamais à ta propre question, et tu ne donnes pas la réponse avant le joueur.\n';
+  t+='3. Si tu as mal entendu, si la réponse est coupée, hésitante ou si tu ne sais pas qui a parlé : tu n\'arbitres pas. Tu dis « [Prénom], ta réponse officielle ? » et tu te tais. Perdre une seconde vaut mieux que fausser la partie.\n';
+  t+='4. Après chaque réponse tu annonces le score à voix haute : « Un point — '+premier+', 4 sur '+but+'. » ou « Non — '+premier+' reste à 3 sur '+but+'. » C\'est ta table de marque : tu la relis, tu ne recalcules jamais de mémoire.\n';
+  t+='5. Puis, sans t\'arrêter, tu poses la question suivante au joueur suivant dans l\'ordre. Tour de rôle strict. Jamais de « c\'est à qui ? », jamais de blanc après une correction : une prise de parole se termine toujours par une question.\n';
+  t+='6. Réponse fausse → tu donnes la bonne réponse et UNE phrase qui l\'explique. Réponse juste → UNE anecdote sympa sur le sujet. Jamais plus d\'une phrase, jamais de cours.\n\n';
+
+  t+='NIVEAUX (chaque joueur reçoit des questions à SON niveau)\n';
+  MICRO_LVL.forEach(function(L){ if(used[L.k]) t+=L.label+' — '+L.txt+'.\n'; });
+  t+='À l\'intérieur du niveau d\'un joueur, alterne : une qui passe crème, une qui pique, une qui fait mal. Ne reste jamais sur le même cran.\n\n';
+
+  t+='VARIÉTÉ\nChange de domaine à chaque question : histoire, sciences, nature, cinéma, musique, sport, géographie, langue française, inventions, logique, culture populaire. Jamais deux fois le même fait, même reformulé. Évite les grands classiques (capitale de l\'Australie, formule de l\'eau, peintre de la Joconde). La réponse attendue tient en quelques mots — jamais une explication.\n\n';
+
+  if((D.microCustom||'').trim()) t+='CONSIGNE DES JOUEURS : '+D.microCustom.trim()+'\n\n';
+
+  if(D.journal && D.journal.length){
+    var faits=D.journal.slice(0,15).map(function(x){return typeof x==='string'?x:(x.q||x.fait||'');}).filter(Boolean);
+    if(faits.length) t+='DÉJÀ POSÉ lors des parties précédentes, à ne pas reprendre : '+faits.join(' · ')+'\n\n';
+  }
+
+  t+='RELECTURE\nToutes les 5 questions, tu relis ces règles avant de parler. Si tu t\'aperçois que tu as sauté un tour ou perdu le fil du score, tu annonces le score complet et tu reprends proprement, sans t\'excuser longuement.\n\n';
+  t+='FIN DE PARTIE\nLe premier à '+but+' gagne. Tu annonces le vainqueur dans ton personnage, puis tu listes les questions posées, une par ligne, pour que l\'application les mémorise.\n';
+  return t;
+}
+/* Rappel court à recoller en cours de partie si l'animatrice dérive. */
+function briefRappel(){
+  return 'Rappel des règles : 1 point par bonne réponse, premier à '+microGoalS()+'. '+
+    'Tu annonces le score à voix haute après chaque réponse. Tour de rôle strict. '+
+    'Silence après chaque question. Une phrase d\'explication maximum. Reprends la partie.';
+}
+function copyRappel(){ fallbackCopy(briefRappel(),'Rappel copié — colle-le dans la conversation'); }
 function briefGo(){
   var t=briefText();
   /* iOS exige que window.open soit SYNCHRONE dans le geste utilisateur :
