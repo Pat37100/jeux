@@ -18,6 +18,9 @@
   :root{
     --bg:#f5f5f4; --card:#fff; --line:#e7e5e4; --ink:#1c1917; --mut:#78716c; --soft:#78716c;
     --gr:#059669; --gr-l:#ecfdf5; --gr-b:#a7f3d0; --am:#f59e0b; --am-l:#fffbeb; --ro:#e11d48; --ro-l:#fff1f2;
+    /* Couleurs réservées au TEXTE : contraste AA (≥ 4.5:1) sur carte, dans les
+       deux modes. --gr/--ro restent pour les anneaux, barres et fonds. */
+    --okx:#047857; --nox:#9f1239;
   }
   /* ── Mode sombre : on joue le soir, l'iPhone est souvent en sombre.
         Un écran blanc à table éblouit et fatigue. Suit le réglage du téléphone. ── */
@@ -25,6 +28,7 @@
     :root{
       --bg:#0c0a09; --card:#1c1917; --line:#292524; --ink:#f5f5f4; --mut:#a8a29e; --soft:#a8a29e;
       --gr:#10b981; --gr-l:#052e21; --gr-b:#065f46; --am:#f59e0b; --am-l:#2a1e05; --ro:#f43f5e; --ro-l:#2d0b14;
+      --okx:#34d399; --nox:#fb7185;
     }
     body{background:var(--bg);color:var(--ink)}
     header{background:rgba(28,25,23,.94) !important;border-bottom-color:var(--line)}
@@ -137,7 +141,7 @@
   .lane .who{font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px;padding:0 2px}
   .lane .tt{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em;margin-top:2px}
   .lane .gd{font-size:11px;font-weight:700;color:#047857;margin-top:1px}
-  .lane.live{border-color:#059669;box-shadow:0 0 0 3px rgba(5,150,105,.18),0 6px 18px rgba(5,150,105,.22);transform:translateY(-4px) scale(1.04)}
+  .lane.live{border-color:var(--okx);box-shadow:0 0 0 3px rgba(5,150,105,.18),0 6px 18px rgba(5,150,105,.22);transform:translateY(-4px) scale(1.04)}
   .lane.live .tt{font-size:26px}
   .lane.warn{border-color:#f59e0b}
   .lane.danger{border-color:#e11d48;animation:pulseRed .7s ease-in-out infinite}
@@ -256,7 +260,7 @@
   .chrow{display:grid;grid-template-columns:38px 1fr 66px 32px;gap:8px;align-items:center}
   .secwrap{position:relative;display:block}
   .secwrap input{width:100%;text-align:center;padding-right:15px}
-  .secwrap i{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-style:normal;font-size:11px;color:#a8a29e;pointer-events:none}
+  .secwrap i{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-style:normal;font-size:11px;color:var(--mut);pointer-events:none}
   .dieface{display:inline-flex;align-items:center;justify-content:center;background:var(--card);border:2px solid var(--line);border-radius:14px;
     width:64px;height:64px;font-size:26px;font-weight:800;color:#0f766e;box-shadow:0 4px 12px rgba(0,0,0,.08)}
   .dieface.roll{animation:dieShake .32s ease infinite}
@@ -320,7 +324,7 @@
   .empty p{color:var(--mut);font-size:14px;margin:0 0 16px}
   .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;background:#1c1917;color:#fff;
     padding:10px 18px;border-radius:99px;font-size:14px;font-weight:600;z-index:60;max-width:90%;text-align:center}
-  .warn{background:var(--ro-l);border:1px solid #fecdd3;color:#9f1239;border-radius:12px;padding:10px;font-size:12.5px;line-height:1.4;margin-bottom:12px}
+  .warn{background:var(--ro-l);border:1px solid #fecdd3;color:var(--nox);border-radius:12px;padding:10px;font-size:12.5px;line-height:1.4;margin-bottom:12px}
   .ok{background:var(--gr-l);border:1px solid var(--gr-b);color:#065f46;border-radius:12px;padding:10px;font-size:12.5px;line-height:1.4;margin-bottom:12px}
   ul.lst{list-style:none;padding:0;margin:0}
   ul.lst li{display:flex;gap:8px;align-items:flex-start;background:var(--bg);border-radius:10px;padding:8px 10px;margin-bottom:5px;font-size:14px}
@@ -387,7 +391,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='92';
+var APP_VERSION='93';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -567,7 +571,7 @@ function render_(){
         })()+
 
       '</div>'+
-      tip+(canSave?'<p class="mini" style="margin-top:12px;color:#059669">✓ Sauvegardé sur cet iPhone</p>':'');
+      tip+(canSave?'<p class="mini" style="margin-top:12px;color:var(--okx)">✓ Sauvegardé sur cet iPhone</p>':'');
     return;
   }
   if(S.view==='outils'){
@@ -638,7 +642,7 @@ function tool(k,em,t,d,cls,note,tag){
   return '<button class="tool '+cls+'" onclick="go(\''+k+'\')"><span class="wm">'+em+'</span><span class="em" style="position:relative;z-index:1">'+em+'</span>'+
    '<span style="flex:1;min-width:0;position:relative;z-index:1"><b>'+t+'</b>'+
    (tag?'<span class="tag">'+tag+'</span>':'')+'<small>'+d+'</small>'+
-   (note?'<small style="color:#059669;margin-top:3px;font-weight:600">'+note+'</small>':'')+'</span><span style="color:#d6d3d1;position:relative;z-index:1">›</span></button>';
+   (note?'<small style="color:var(--okx);margin-top:3px;font-weight:600">'+note+'</small>':'')+'</span><span style="color:#d6d3d1;position:relative;z-index:1">›</span></button>';
 }
 
 /* -------------------------- DÉCOMPTE POINTS ----------------------- */
@@ -948,7 +952,7 @@ function mcard(m){
     (m.winRule==='low'?' · moins gagne':'')+
     (lead.length>1?' · 🏆 '+esc(lead.join(', ')):'')+'</small></span>'+
     '<span style="text-align:right;flex-shrink:0;max-width:104px"><b style="font-size:13px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(r.count?'🏆 '+esc(nm):'—')+'</b>'+
-    '<small style="display:block;font-size:10px;color:#78716c;text-transform:uppercase">'+(r.count?'en tête':'à démarrer')+'</small></span></button></div></div>';
+    '<small style="display:block;font-size:11px;color:#78716c;text-transform:uppercase">'+(r.count?'en tête':'à démarrer')+'</small></span></button></div></div>';
 }
 function archMatch(id){
   S.matchId=id; S.view='match';
@@ -1171,7 +1175,7 @@ function tabPlay(m){
     var c=cumOf[p.id]||{points:0,played:0};
     h+='<div class="plr'+(on?' win':'')+'"><span class="n" style="display:flex;align-items:center;gap:7px;min-width:0">'+av(p.name,'sm')+
       '<span style="min-width:0"><span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name)+(on?' 👑':'')+'</span>'+
-      '<small style="display:block;font-size:10.5px;color:#78716c">total '+nf(c.points)+' · '+pl(c.played,'manche')+'</small></span></span>'+
+      '<small style="display:block;font-size:11px;color:#78716c">total '+nf(c.points)+' · '+pl(c.played,'manche')+'</small></span></span>'+
       '<button class="stp" aria-label="Retirer '+step+' points à '+esc(p.name)+'" onclick="bump(\''+p.id+'\',-'+step+')">−'+(step>1?step:'')+'</button>'+
       '<input inputmode="decimal" placeholder="—" value="'+(S.inputs[p.id]!==undefined?S.inputs[p.id]:'')+'" oninput="S.inputs[\''+p.id+'\']=this.value" onchange="render()">'+
       '<button class="stp p" aria-label="Ajouter '+step+' points à '+esc(p.name)+'" onclick="bump(\''+p.id+'\','+step+')">+'+(step>1?step:'')+'</button></div>';
@@ -1255,7 +1259,7 @@ function histGrid(m){
       '<td class="stick nmcell"><span class="nmwrap">'+av(p.name,'sm')+
         '<span class="nmtxt"><b>'+esc(p.name)+medal+(function(){
           var pp=m.players.filter(function(q){return q.id===p.id;})[0];
-          return (pp&&pp.out)? ' <span style="font-size:10px;font-weight:700;color:#a8a29e;background:var(--bg);border-radius:99px;padding:1px 5px">retiré</span>' : '';
+          return (pp&&pp.out)? ' <span style="font-size:11px;font-weight:700;color:var(--mut);background:var(--bg);border-radius:99px;padding:2px 7px">retiré</span>' : '';
         })()+'</b>'+
         '<span class="nmbar"><i style="width:'+barW+'%"></i></span></span></span></td>'+
       cells+'<td class="tot"><b>'+nf(p.points)+'</b><small>'+pl(p.wins,'V')+'</small></td></tr>';
@@ -1264,7 +1268,7 @@ function histGrid(m){
     '<h2 style="padding:0 14px">▦ Le tableau de la partie</h2>'+
     '<div class="gridwrap"><table class="gtab"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>'+
     '<p class="mini" style="text-align:center;margin:10px 14px 0">Fais glisser vers la gauche pour voir toutes les manches · '+
-    '<b style="color:#059669">vert 👑</b> = manche gagnée · la barre montre l\'écart de cumul.</p>'+
+    '<b style="color:var(--okx)">vert 👑</b> = manche gagnée · la barre montre l\'écart de cumul.</p>'+
     '</div>';
 }
 function resSelector(mode,nb){
@@ -1272,7 +1276,7 @@ function resSelector(mode,nb){
   var modes=[['grid','▦','Grille'],['rank','🏅','Par joueur'],['graph','📈','Courbe']];
   if(nb!==undefined && nb<3) modes=modes.filter(function(o){return o[0]!=='graph';});
   return '<div class="row" style="gap:6px;margin-bottom:10px">'+modes.map(function(o){
-    return '<button class="chip'+(mode===o[0]?' on':'')+'" style="flex:1;text-align:center;padding:9px 4px" onclick="setResMode(\''+o[0]+'\')">'+o[1]+'<br><span style="font-size:10.5px;font-weight:600">'+o[2]+'</span></button>';
+    return '<button class="chip'+(mode===o[0]?' on':'')+'" style="flex:1;text-align:center;padding:9px 4px" onclick="setResMode(\''+o[0]+'\')">'+o[1]+'<br><span style="font-size:11px;font-weight:600">'+o[2]+'</span></button>';
   }).join('')+'</div>';
 }
 function setResMode(v){ S.histMode=(v==='list'?'grid':v); window.scrollTo(0,0); render(); }
@@ -1444,8 +1448,8 @@ function tabSet(m){
        var canDrop = !out && m.status!=='done' && activePlayers(m).length>2;
        return (canDrop? swipeRow(row, delAct("askDropPlayer('"+p.id+"')",'Retirer'), 96, true) : row)+
          (S.confirm==='dp'+p.id
-           ? '<div style="background:var(--ro-l);padding:10px;border-radius:10px"><p style="margin:0 0 8px;font-size:12.5px;color:#9f1239;font-weight:600">Retirer '+esc(p.name)+' de la partie ?</p>'+
-             '<p class="mini" style="margin:0 0 8px;color:#9f1239">'+(played
+           ? '<div style="background:var(--ro-l);padding:10px;border-radius:10px"><p style="margin:0 0 8px;font-size:12.5px;color:var(--nox);font-weight:600">Retirer '+esc(p.name)+' de la partie ?</p>'+
+             '<p class="mini" style="margin:0 0 8px;color:var(--nox)">'+(played
                 ? 'Ses '+pl(played,'score')+' restent visibles dans l\'historique, il ne jouera plus les manches suivantes.'
                 : 'Il n\'a aucun score : il sera simplement supprimé.')+'</p>'+
              '<div class="row" style="gap:8px"><button class="sm r" style="flex:1" onclick="dropPlayerFull(\''+p.id+'\')">'+(played?'Mettre en retrait':'Supprimer')+'</button>'+
@@ -1604,7 +1608,7 @@ function renderQuizz(hd,app,banner){
     if(!D.journal.length) h+='<p class="mini" style="text-align:center;padding:12px 0">Journal vide.</p>';
     else{
       h+='<ul class="lst" style="max-height:340px;overflow-y:auto">'+D.journal.map(function(e){
-        return '<li><span style="font-size:10px;color:#78716c;flex-shrink:0">'+fr(e.date).slice(0,5)+'</span><span style="flex:1">'+esc(e.text)+'</span>'+
+        return '<li><span style="font-size:11px;color:#78716c;flex-shrink:0">'+fr(e.date).slice(0,5)+'</span><span style="flex:1">'+esc(e.text)+'</span>'+
         '<button class="icobtn" style="font-size:14px;padding:0 4px" onclick="delJ(\''+e.id+'\')">🗑</button></li>';}).join('')+'</ul>'+
         '<button class="sm" style="width:100%;margin-top:10px" onclick="copyJournal()">Copier tout le journal</button>';
     }
@@ -1805,7 +1809,9 @@ function playerGrid(selIds, toggleFn, pillFn, hint){
   return h;
 }
 function pillBtn(fn,id,label){
-  return '<span onclick="event.stopPropagation();'+fn+'(\''+id+'\')" style="font-size:9.5px;font-weight:800;border-radius:99px;padding:1px 6px;background:var(--card);border:1px solid var(--line);color:#78716c">'+esc(label)+'</span>';
+  /* C'est un CONTRÔLE, pas une étiquette : il lui faut une taille de doigt.
+     11px de texte, du padding, et une hauteur minimale au lieu du 16px d'avant. */
+  return '<span onclick="event.stopPropagation();'+fn+'(\''+id+'\')" role="button" style="font-size:11px;font-weight:800;border-radius:99px;padding:4px 10px;min-height:24px;display:inline-flex;align-items:center;background:var(--bg);border:1.5px solid var(--line);color:var(--mut)">'+esc(label)+'</span>';
 }
 function addPlayerFromGrid(){
   var el=document.getElementById('npg'); if(!el) return;
@@ -1872,7 +1878,7 @@ function microSimpleUI(){
         }).join('')+'</div>'
       : '')+
     '<p class="mini" style="margin:8px 0 0">Pas de partie au chronomètre : l\'animateur n\'a pas d\'horloge en conversation vocale, il estimerait la durée au lieu de la mesurer. Un nombre de questions, lui, se compte à voix haute.</p></div>';
-  h+='<div class="card"><h2><span class="stepn">3</span>Sujets <span style="font-weight:400;font-size:12px;color:#a8a29e">('+(th.length?th.length+' choisi'+(th.length>1?'s':''):'tous')+')</span></h2>'+
+  h+='<div class="card"><h2><span class="stepn">3</span>Sujets <span style="font-weight:400;font-size:12px;color:var(--mut)">('+(th.length?th.length+' choisi'+(th.length>1?'s':''):'tous')+')</span></h2>'+
     '<div class="chips">'+
       '<button class="chip'+(th.length?'':' on')+'" onclick="clearMicroThemes()">🌍 Tous sujets</button>'+
       THEMES.map(function(t){
@@ -1887,7 +1893,7 @@ function microSimpleUI(){
       return '<button class="chip'+((D.aiApp||'claude')===a.id?' on':'')+'" onclick="setAiApp(\''+a.id+'\')">'+a.label+'</button>';
     }).join('')+'</div></div>';
 
-  h+='<div class="card"><h2><span class="stepn">5</span>Consigne libre <span style="font-weight:400;font-size:12px;color:#a8a29e">(facultatif)</span></h2>'+
+  h+='<div class="card"><h2><span class="stepn">5</span>Consigne libre <span style="font-weight:400;font-size:12px;color:var(--mut)">(facultatif)</span></h2>'+
     '<input placeholder="ex. « des questions sur la Bretagne », « pas de sport »" value="'+(D.microCustom||'').replace(/"/g,'&quot;')+'" onchange="D.microCustom=this.value;persist();render()"></div>';
 
   var noms=ids.map(function(id){ return (D.lib.filter(function(p){return p.id===id;})[0]||{}).name; }).filter(Boolean);
@@ -2188,7 +2194,7 @@ function microPalmares(){
     podiumBoard(agg.map(function(p){
       return {name:p.name, ratio:p.wins/bestW,
         sub:pl(p.games,'partie')+(p.best!==null?' · record '+nf(p.best)+' pts':''),
-        main:'<b>'+p.wins+'</b> <span style="color:#a8a29e;font-size:11.5px">victoire'+(p.wins>1?'s':'')+'</span>'};
+        main:'<b>'+p.wins+'</b> <span style="color:var(--mut);font-size:11.5px">victoire'+(p.wins>1?'s':'')+'</span>'};
     }))+'</div>';
   h+='<button class="btn dark" style="margin-top:8px" onclick="microShare()">📤 Partager le palmarès</button>';
   return h;
@@ -2347,7 +2353,7 @@ function renderChampions(hd,app,banner){
   var cm=S.champMode||'jeu';
   h+='<div class="row" style="gap:6px;margin-bottom:12px">'+
     [['jeu','▦','Par jeu'],['global','🏆','Général'],['tout','☰','Tout']].map(function(o){
-      return '<button class="chip'+(cm===o[0]?' on':'')+'" style="flex:1;text-align:center;padding:9px 4px" onclick="S.champMode=\''+o[0]+'\';window.scrollTo(0,0);render()">'+o[1]+'<br><span style="font-size:10.5px;font-weight:600">'+o[2]+'</span></button>';
+      return '<button class="chip'+(cm===o[0]?' on':'')+'" style="flex:1;text-align:center;padding:9px 4px" onclick="S.champMode=\''+o[0]+'\';window.scrollTo(0,0);render()">'+o[1]+'<br><span style="font-size:11px;font-weight:600">'+o[2]+'</span></button>';
     }).join('')+'</div>';
   if(cm!=='global') h+=champGameBlocks();
   if(cm!=='jeu') h+='<div class="card"><h2>Toutes disciplines confondues</h2>'+
@@ -2368,7 +2374,7 @@ function renderChampions(hd,app,banner){
         '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>🏆 La Coupe</span><b>'+pl(p.coupes,'titre')+' · '+pl(p.coupeManches,'manche gagnée')+'</b></div>'+
         '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>🎙️ Le Micro</span><b>'+p.quizWins+' / '+pl(p.quizGames,'partie')+'</b></div>'+
         '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>⏱️ Tic-Tac</span><b>'+p.duelWins+' / '+pl(p.duels,'duel')+'</b></div>'+
-        '<div style="display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid var(--line);margin-top:4px"><span>📊 Taux de victoire</span><b>'+rateTxt+' <span style="font-weight:500;color:#a8a29e;font-size:11.5px">sur '+pl(p.parties,'partie')+'</span></b></div>'+
+        '<div style="display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid var(--line);margin-top:4px"><span>📊 Taux de victoire</span><b>'+rateTxt+' <span style="font-weight:500;color:var(--mut);font-size:11.5px">sur '+pl(p.parties,'partie')+'</span></b></div>'+
         '<button class="sm" style="width:100%;margin-top:8px" onclick="event.stopPropagation();champToggleHide(\''+esc(p.name).replace(/'/g,"\\'")+'\')">🙈 Masquer du mur</button>'+
       '</div>';
     }
@@ -2436,7 +2442,7 @@ function renderSave(hd,app,banner){
   h+='<div class="card"><h2>Sauvegarde</h2>'+
      (nb>=3 && (!D.lastBackup || (Date.now()-new Date(D.lastBackup).getTime())>1000*60*60*24*30)
        ? '<div class="warn" style="background:var(--am-l);border-color:var(--am);color:#92400e;margin-bottom:10px"><b>💾 Pense à sauvegarder</b> — '+pl(nb,'partie')+' en mémoire'+(lastB?' · dernière sauvegarde le '+lastB:' · jamais sauvegardé')+'.</div>'
-       : (lastB?'<p class="mini" style="margin-bottom:8px;color:#059669">✓ Dernière sauvegarde le '+lastB+'</p>':''))+
+       : (lastB?'<p class="mini" style="margin-bottom:8px;color:var(--okx)">✓ Dernière sauvegarde le '+lastB+'</p>':''))+
      '<p class="mini" style="margin-bottom:10px">Tout est enregistré sur cet iPhone. Envoie-toi une copie de temps en temps : c\'est ton filet si tu changes de téléphone.</p>'+
      '<button class="btn dark" onclick="shareBackup()">📤 M\'envoyer une copie</button>'+
      '<label class="sm" for="rstf" style="display:block;width:100%;text-align:center;margin-top:8px;cursor:pointer;position:relative;overflow:hidden">📂 Restaurer depuis un fichier'+
@@ -2451,7 +2457,7 @@ function obDraw(){
   var el=document.createElement('div'); el.className='sheet'; el.id='obsh';
   var chips=D.lib.map(function(p){
     return '<span style="display:inline-flex;align-items:center;gap:6px;background:var(--gr-l);border:1px solid var(--gr-b);border-radius:99px;padding:5px 6px 5px 10px;font-size:13px;font-weight:600">'+esc(p.name)+
-      '<button style="border:0;background:var(--card);border-radius:99px;width:20px;height:20px;line-height:1;cursor:pointer;color:#9f1239" onclick="obDel(\''+p.id+'\')">✕</button></span>';
+      '<button style="border:0;background:var(--card);border-radius:99px;width:20px;height:20px;line-height:1;cursor:pointer;color:var(--nox)" onclick="obDel(\''+p.id+'\')">✕</button></span>';
   }).join(' ');
   el.innerHTML='<div class="in" onclick="event.stopPropagation()"><div class="grab"></div>'+
     '<div style="text-align:center;font-size:44px;margin:2px 0 6px">🎲</div>'+
@@ -3459,7 +3465,7 @@ function chDayBoard(){
   var list=[]; for(var k in agg) list.push(agg[k]);
   list.sort(function(a,b){ return b.v-a.v || b.good-a.good; });
   var med=['🥇','🥈','🥉'];
-  return '<div class="card" style="background:var(--bg)"><h2 style="font-size:14px;margin:0 0 8px">📅 Classement du jour <span style="font-weight:400;font-size:12px;color:#a8a29e">('+pl(n,'manche')+')</span></h2>'+
+  return '<div class="card" style="background:var(--bg)"><h2 style="font-size:14px;margin:0 0 8px">📅 Classement du jour <span style="font-weight:400;font-size:12px;color:var(--mut)">('+pl(n,'manche')+')</span></h2>'+
     list.map(function(p,i){
       return '<div style="display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0">'+
         '<span style="width:20px">'+(med[i]||'')+'</span>'+
@@ -3517,7 +3523,7 @@ function chGame(){
         '<p class="mini" style="margin:0 0 6px;color:#92400e">'+esc(CH.q.t)+' · niveau '+CH.q.n+'</p>'+
         '<p style="margin:0;font-size:16px;font-weight:700;line-height:1.35">'+esc(CH.q.q)+'</p>'+
         (CH.qShow
-          ? '<p style="margin:9px 0 0;font-size:15px;font-weight:800;color:#059669">→ '+esc(CH.q.a)+'</p>'
+          ? '<p style="margin:9px 0 0;font-size:15px;font-weight:800;color:var(--okx)">→ '+esc(CH.q.a)+'</p>'
           : '<button class="sm" style="width:100%;margin-top:9px;background:var(--card)" onclick="qbankReveal()">👁 Voir la réponse</button>')+
         '<button class="sm" style="width:100%;margin-top:6px;background:var(--card)" onclick="qbankNext()">🔄 Autre question</button>'+
       '</div>';
@@ -3544,10 +3550,10 @@ function chGame(){
           podiumBoard(srt.map(function(p){
             var t=p.good+(p.bad||0);
             return {name:p.name, ratio:p.good/best,
-              main:'<b style="color:#059669">✓ '+p.good+'</b> <b style="color:#9f1239;font-weight:600">✗ '+(p.bad||0)+'</b>'+(t?' <span style="color:#a8a29e;font-size:11.5px">'+Math.round(p.good/t*100)+'%</span>':'')};
+              main:'<b style="color:var(--okx)">✓ '+p.good+'</b> <b style="color:var(--nox);font-weight:600">✗ '+(p.bad||0)+'</b>'+(t?' <span style="color:var(--mut);font-size:11.5px">'+Math.round(p.good/t*100)+'%</span>':'')};
           }))+
           '</div></div>'; })()+
-      '<p class="mini" style="text-align:center;color:#059669;margin-top:12px">✓ Enregistrée au 🏅 Mur des champions</p>'+
+      '<p class="mini" style="text-align:center;color:var(--okx);margin-top:12px">✓ Enregistrée au 🏅 Mur des champions</p>'+
       '<button class="btn tictac" style="margin-top:8px" onclick="chToCoupe()">🏆 Compter dans La Coupe</button>'+
       '<button class="btn" style="margin-top:8px" onclick="chStart()">Rejouer</button>'+
       '<button class="btn grey" style="margin-top:8px" onclick="chReset()">Modifier les réglages</button>';
@@ -3601,11 +3607,11 @@ function chGame(){
           rang en direct, bonnes, mauvaises et taux. Plus de tableau redondant
           en bas de l'écran. */
        '<div class="gd" style="line-height:1.35">'+
-         '<span style="color:#059669">\u2713 '+pl.good+'</span> '+
-         '<span style="color:#9f1239">\u2717 '+(pl.bad||0)+'</span>'+
+         '<span style="color:var(--okx)">\u2713 '+pl.good+'</span> '+
+         '<span style="color:var(--nox)">\u2717 '+(pl.bad||0)+'</span>'+
          (function(){ var tot=pl.good+(pl.bad||0);
-           return tot? '<br><span style="font-size:10.5px;color:#78716c;font-weight:700">'+Math.round(pl.good/tot*100)+' % · '+rg(rangDe[pl.name])+'</span>'
-                     : '<br><span style="font-size:10.5px;color:#a8a29e;font-weight:600">à jouer</span>'; })()+
+           return tot? '<br><span style="font-size:11.5px;color:#78716c;font-weight:700">'+Math.round(pl.good/tot*100)+' % · '+rg(rangDe[pl.name])+'</span>'
+                     : '<br><span style="font-size:11.5px;color:var(--mut);font-weight:600">à jouer</span>'; })()+
        '</div>'+
        '</div>';
   });
@@ -3650,7 +3656,7 @@ function chGame(){
      '<label class="lb">Arrêter cette manche</label>'+
      '<button class="sm g" style="width:100%;margin-bottom:7px" onclick="chFinishNow()">🏁 Terminer et désigner le vainqueur</button>'+
      
-     '<button class="sm" style="width:100%;color:#9f1239" onclick="chAbandon()">✕ Abandonner sans compter</button></div>';
+     '<button class="sm" style="width:100%;color:var(--nox)" onclick="chAbandon()">✕ Abandonner sans compter</button></div>';
   return h;
 }
 
