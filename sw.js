@@ -1,7 +1,7 @@
 /* Cache simple : l'appli se charge même sans réseau (voiture, montagne).
    Stratégie « réseau d'abord, cache en secours » pour recevoir les mises à jour
    sans jamais bloquer l'ouverture hors ligne. */
-var CACHE = 'jeux-famille-v93';
+var CACHE = 'jeux-famille-v94';
 var FILES = ['./', './index.html', './manifest.webmanifest',
              './icon-180.png', './icon-512.png', './icon-1024.png'];
 
