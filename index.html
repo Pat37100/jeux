@@ -387,7 +387,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='91';
+var APP_VERSION='92';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -3103,7 +3103,7 @@ function qbankNext(){
 function qbankReveal(){ if(CH){ CH.qShow=true; chPersist(); render(); } }
 function chSetQTheme(t){ chSettings().qTheme=t; persist(); if(CH) qbankNext(); else render(); }
 function chSettings(){
-  if(!D.chrono) D.chrono={secs:60, players:['Joueur 1','Joueur 2','Joueur 3'], sound:true};
+  if(!D.chrono) D.chrono={secs:60, players:[], sound:true};
   return D.chrono;
 }
 function renderChrono(hd,app,nav,banner){
@@ -3207,7 +3207,8 @@ function chConfig(){
       'Touche la pastille sous un prénom pour lui donner un temps différent. « défaut » = le temps commun réglé juste en dessous.')+
     '</div>';
   var pr=s.pass||'wrong';
-  h+='<div class="card"><h2><span class="stepn">2</span>Temps par joueur</h2>'+
+  h+='<div class="card"><h2><span class="stepn">2</span>Temps commun</h2>'+
+    '<p class="mini" style="margin:0 0 8px">Le compte à rebours de départ de chacun. Pour donner plus ou moins de temps à un joueur en particulier, touche la pastille sous son prénom, en haut.</p>'+
     '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px">'+presets.map(function(p){
       var lb=p<60?p+'s':(p%60?Math.floor(p/60)+'\u2032'+(p%60):(p/60)+' min');
       return '<button class="chip'+(s.secs===p?' on':'')+'" style="padding:9px 2px;text-align:center;font-size:13px" onclick="chSetSecs('+p+')">'+lb+'</button>';}).join('')+
@@ -3277,7 +3278,14 @@ var CH_SECS_CYCLE=[0,30,45,60,90,120];
 function chPick(){
   var s=chSettings();
   if(!s.pick){
-    s.pick=(s.players||[]).map(function(n){ return libIdForName(n); });
+    /* Migration : on reprend les noms existants, SAUF le trio « Joueur 1/2/3 »
+       par défaut jamais utilisé — sinon trois fiches fantômes entraient dans la
+       bibliothèque et polluaient aussi le Micro. */
+    var legacy=(s.players||[]);
+    var untouched = legacy.join('|')==='Joueur 1|Joueur 2|Joueur 3' && !(D.tictac||[]).length;
+    if(untouched) legacy=[];
+    s.pick = legacy.length ? legacy.map(function(n){ return libIdForName(n); })
+                           : D.lib.map(function(x){ return x.id; });   // comme au Micro : tout le monde est proposé
     if(s.custom){                                  // reprise des anciens temps, indexés par position
       var c={}; s.pick.forEach(function(id,i){ if(s.custom[i]) c[id]=s.custom[i]; }); s.custom=c;
     }
@@ -3320,6 +3328,7 @@ function chRestore(){
   return false;
 }
 function chStart(){
+  if(chPick().length<2){ toast('Ajoute au moins deux joueurs'); return; }
   var s=chSettings();
   CH={ players:chPick().map(function(id){
          var nm=(D.lib.filter(function(p){return p.id===id;})[0]||{}).name;
@@ -3343,6 +3352,7 @@ function chCountdown(done){
   document.body.appendChild(ov);
   var steps=[['3',760],['2',760],['1',760],['GO !',1180]], i=0;
   function next(){
+    if(!CH){ var o=document.getElementById('cnt321'); if(o) o.remove(); return; }   // partie quittée en plein décompte
     if(i>0){ var el=document.getElementById('cnum'); if(el){ el.textContent=steps[i][0]; el.style.fontSize=steps[i][0]==='GO !'?'72px':'110px'; } }
     if(CH&&CH.sound){
       if(i===3){ // GO !
@@ -3361,6 +3371,7 @@ function chCountdown(done){
   next();
 }
 function chRunNow(){
+  if(!CH || CH.winner) return;              // manche abandonnée ou finie pendant le décompte
   if(CH.running) return;
   CH.running=true; chStopTick();
   var last=Date.now();
@@ -3659,7 +3670,7 @@ function checkVersion(force){
   if(!force && now-__vCheckAt<60000) return;
   __vCheckAt=now;
   try{
-    fetch('./index.html?v='+now, {cache:'no-store'}).then(function(r){ return r.text(); })
+    fetch('./index.html', {cache:'no-store'}).then(function(r){ return r.text(); })
     .then(function(txt){
       var m=txt.match(/APP_VERSION='(\d+)'/);
       if(m && m[1] !== APP_VERSION) showUpdateBar(m[1]);
