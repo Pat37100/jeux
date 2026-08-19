@@ -387,7 +387,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='88';
+var APP_VERSION='89';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -930,7 +930,11 @@ function delAct(fn,label){
 function mcard(m){
   var r=rank(m),ld=leaders(r.byCumul,'points',m.winRule);
   var gm=gameOf(m);
-  var nm=ld.length?r.byCumul.filter(function(p){return ld.indexOf(p.id)>=0;}).map(function(p){return p.name;}).join(' & '):'—';
+  /* Avec deux ou trois ex æquo, les prénoms joints débordaient et cassaient la
+     carte. La colonne de droite reste courte ; les noms complets vont dans la
+     ligne de détail, qui est tronquée proprement. */
+  var lead=ld.length?r.byCumul.filter(function(p){return ld.indexOf(p.id)>=0;}).map(function(p){return p.name;}):[];
+  var nm = lead.length===0 ? '—' : (lead.length===1 ? lead[0] : lead.length+' ex æquo');
   var badge=(gm && gm!=='Autre' && gm.toLowerCase()!==(m.name||'').toLowerCase())
     ? '<span class="tag" style="background:var(--bg);color:#78716c;margin-left:6px">'+esc(gm)+'</span>' : '';
   var actv=m.status!=='done';
@@ -938,9 +942,11 @@ function mcard(m){
     (actv?'<button class="arch" onclick="archMatch(\''+m.id+'\')"><span class="ic">🏁</span>Terminer</button>':'')+
     '<button class="del" style="width:'+(actv?84:96)+'px" onclick="askDelMatch(\''+m.id+'\')"><span class="ic">🗑</span>Supprimer</button></div>'+
     '<div class="front"><button class="tool on" style="width:100%" onclick="openMatch(\''+m.id+'\')"><span class="em" style="background:#d1fae5;font-size:20px">🧮</span>'+
-    '<span style="flex:1;min-width:0"><b>'+esc(m.name)+badge+'</b><small>'+pl(m.players.length,'joueur')+' · '+pl(r.count,'manche')+
-    (m.winRule==='low'?' · moins gagne':'')+'</small></span>'+
-    '<span style="text-align:right;flex-shrink:0"><b style="font-size:13px">'+(r.count?'🏆 '+esc(nm):'—')+'</b>'+
+    '<span style="flex:1;min-width:0"><b>'+esc(m.name)+badge+'</b>'+
+    '<small style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+pl(m.players.length,'joueur')+' · '+pl(r.count,'manche')+
+    (m.winRule==='low'?' · moins gagne':'')+
+    (lead.length>1?' · 🏆 '+esc(lead.join(', ')):'')+'</small></span>'+
+    '<span style="text-align:right;flex-shrink:0;max-width:104px"><b style="font-size:13px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(r.count?'🏆 '+esc(nm):'—')+'</b>'+
     '<small style="display:block;font-size:10px;color:#78716c;text-transform:uppercase">'+(r.count?'en tête':'à démarrer')+'</small></span></button></div></div>';
 }
 function archMatch(id){
@@ -2154,36 +2160,70 @@ function microPalmares(){
 
 /* --------------------------- SAUVEGARDE --------------------------- */
 /* ---- MUR DES CHAMPIONS : agrégation transverse des 3 jeux ---- */
+/* Période : mêmes repères que les filtres de La Coupe, appliqués aux dates.
+   « tout » par défaut : on ne cache jamais l'historique sans le dire. */
+function champPeriod(){ return S.champPeriod||'tout'; }
+function champInPeriod(d){
+  var per=champPeriod(); if(per==='tout' || !d) return true;
+  var n=new Date(), y=n.getFullYear(), m=n.getMonth()+1;
+  var s=String(d);
+  if(per==='annee') return s.slice(0,4)===String(y);
+  return s.slice(0,7)===y+'-'+(m<10?'0':'')+m;
+}
+/* Masquage : un joueur de passage n'a pas à rester au mur pour toujours.
+   On ne supprime rien — les parties gardent leur historique. */
+function champHidden(){ if(!D.champHide) D.champHide=[]; return D.champHide; }
+function champToggleHide(name){
+  var k=fp(name), c=champHidden(), i=c.indexOf(k);
+  if(i>=0) c.splice(i,1); else c.push(k);
+  D.champHide=c; S.detail=null; persist(); render();
+}
 function championsAgg(){
   var agg={};
   function slot(name){ var k=fp(name); if(!k) return null;
-    if(!agg[k]) agg[k]={name:name, coupes:0, coupeManches:0, quizWins:0, quizGames:0, duels:0, duelWins:0}; return agg[k]; }
+    if(!agg[k]) agg[k]={name:name, coupes:0, coupeParties:0, coupeManches:0, quizWins:0, quizGames:0, duels:0, duelWins:0}; return agg[k]; }
   // La Coupe : titres (champion cumul, toutes parties) + manches gagnées
   D.matches.forEach(function(m){
-    var r=rank(m,function(){return true;}); if(!r.count) return;
+    var r=rank(m,function(rd){ return champInPeriod(rd.date); }); if(!r.count) return;
     r.byCumul.forEach(function(p){ var s=slot(p.name); if(s) s.coupeManches+=p.wins; });
     var lead=leaders(r.byCumul,'points',m.winRule);
-    m.players.forEach(function(p){ if(lead.indexOf(p.id)>=0){ var s=slot(p.name); if(s) s.coupes++; } });
+    m.players.forEach(function(p){ var s=slot(p.name); if(!s) return; s.coupeParties++; if(lead.indexOf(p.id)>=0) s.coupes++; });
   });
   // Le Micro
   D.micro.forEach(function(g){
+    if(!champInPeriod(g.date)) return;
     g.players.forEach(function(p,i){ var s=slot(p.name); if(s){ s.quizGames++; if(i===0) s.quizWins++; } });
   });
   // Tic-Tac
   D.tictac.forEach(function(d){
+    if(!champInPeriod(d.date)) return;
     d.players.forEach(function(p){ var s=slot(p.name); if(s){ s.duels++; if(d.winner&&fp(d.winner)===fp(p.name)) s.duelWins++; } });
   });
   /* Le total unique mélangeait des victoires incomparables : une partie de
      Uno entière valait autant qu'une manche de Tic-Tac de 30 secondes.
      On garde les couronnes pour l'ordre d'affichage, mais chaque discipline
      est désormais restituée séparément (voir renderChampions). */
+  var hid=champHidden();
   var list=[]; for(var k in agg){ var a=agg[k];
     a.crowns=a.coupes+a.quizWins+a.duelWins;
-    a.parties=a.coupes+a.quizGames+a.duels;
+    /* Parties réellement jouées, pour un taux honnête : au Micro et au Tic-Tac
+       on connaît le nombre de participations ; à La Coupe, une partie gagnée ou
+       non compte pour une. */
+    a.parties=a.quizGames+a.duels+a.coupeParties;
+    a.rate = a.parties ? Math.round(a.crowns/a.parties*100) : null;
+    a.hidden = hid.indexOf(k)>=0;
     list.push(a); }
-  list.sort(function(a,b){return b.crowns-a.crowns || (b.coupeManches+b.quizGames+b.duels)-(a.coupeManches+a.quizGames+a.duels);});
+  var by=S.champSort==='taux'
+    ? function(a,b){
+        var ra=(a.parties>=CHAMP_MIN?a.rate:-1), rb=(b.parties>=CHAMP_MIN?b.rate:-1);
+        return rb-ra || b.crowns-a.crowns; }
+    : function(a,b){ return b.crowns-a.crowns || (b.coupeManches+b.quizGames+b.duels)-(a.coupeManches+a.quizGames+a.duels); };
+  list.sort(by);
   return list;
 }
+/* En dessous de ce nombre de parties, un taux ne veut rien dire :
+   une seule victoire ferait 100 %. On l'affiche, on ne classe pas dessus. */
+var CHAMP_MIN=3;
 /* Palmarès par discipline : comparer ce qui est comparable. */
 function champByGame(){
   var out=[];
@@ -2239,11 +2279,11 @@ function renderChampions(hd,app,banner){
   hd.innerHTML=back()+'<h1>🏅 Mur des champions<span class="sub">Tous les jeux réunis</span></h1><span style="width:38px"></span>';
   var list=championsAgg();
   var h=banner;
-  if(!list.length || list.every(function(p){return p.crowns===0 && !p.coupeManches && !p.quizGames && !p.duels;})){
+  if(!list.length || list.filter(function(p){return !p.hidden;}).every(function(p){return p.crowns===0 && !p.coupeManches && !p.quizGames && !p.duels;})){
     h+='<div class="empty"><div class="e">🏅</div><h3>Le mur est encore vierge</h3><p>Joue des parties à La Coupe, au Micro ou au Tic-Tac : les couronnes de chacun s\'accumuleront ici, tous jeux confondus.</p></div>';
     app.innerHTML=h; return;
   }
-  var champ=list[0];
+  var champ=list.filter(function(p){return !p.hidden;})[0]; if(!champ) champ=list[0];
   var conf='<div class="confetti" style="position:absolute;inset:0;pointer-events:none;overflow:hidden">'+
     ['🎉','👑','⭐️','✨','🏆'].map(function(e,i){return '<span style="left:'+(8+i*20)+'%;animation-delay:'+(i*.35)+'s">'+e+'</span>';}).join('')+'</div>';
   h+='<div class="hero" style="text-align:center;position:relative;background:linear-gradient(135deg,#7c3aed,#a78bfa)">'+conf+
@@ -2251,11 +2291,12 @@ function renderChampions(hd,app,banner){
     '<div style="margin:6px 0 2px">'+av(champ.name,'big')+'</div>'+
     '<h2 style="font-size:28px;margin:2px 0">👑 '+esc(champ.name)+'</h2>'+
     '<p style="margin:0;font-size:13px;opacity:.92">'+pl(champ.crowns,'couronne')+' au total</p></div>';
-  if(list.length>=2 && list[0].crowns>0){
-    var gap=list[0].crowns-list[1].crowns;
+  var vis=list.filter(function(p){return !p.hidden;});
+  if(vis.length>=2 && vis[0].crowns>0){
+    var gap=vis[0].crowns-vis[1].crowns;
     var rival = gap===0
-      ? '⚡️ Égalité parfaite au sommet entre <b>'+esc(list[0].name)+'</b> et <b>'+esc(list[1].name)+'</b> — la prochaine partie départage !'
-      : '💥 <b>'+esc(list[1].name)+'</b> n\'est qu\'à '+pl(gap,'couronne')+' de <b>'+esc(list[0].name)+'</b> — ça se joue à rien !';
+      ? '⚡️ Égalité parfaite au sommet entre <b>'+esc(vis[0].name)+'</b> et <b>'+esc(vis[1].name)+'</b> — la prochaine partie départage !'
+      : '💥 <b>'+esc(vis[1].name)+'</b> n\'est qu\'à '+pl(gap,'couronne')+' de <b>'+esc(vis[0].name)+'</b> — ça se joue à rien !';
     if(gap<=3) h+='<div class="card" style="background:var(--am-l);border-color:var(--am)"><p style="margin:0;font-size:13.5px;color:#92400e;line-height:1.5">'+rival+'</p></div>';
   }
   var cm=S.champMode||'jeu';
@@ -2294,7 +2335,7 @@ function champShare(){
 }
 
 function renderSave(hd,app,banner){
-  hd.innerHTML=back()+'<h1>Joueurs & équipes<span class="sub">Avatars, options, sauvegarde</span></h1><span style="width:38px"></span>';
+  hd.innerHTML=back()+'<h1>Réglages<span class="sub">Joueurs, sons, sauvegarde</span></h1><span style="width:38px"></span>';
   var h=banner+(canSave?'<div class="ok">✓ L\'historique est enregistré sur cet iPhone. Il sera là au prochain lancement.</div>':'');
   h+='<div class="card"><h2>🔊 Sons</h2>'+
     '<div class="row" style="gap:8px">'+
@@ -2302,7 +2343,8 @@ function renderSave(hd,app,banner){
       '<button class="chip'+(D.sound===false?' on':'')+'" style="flex:1;text-align:center" onclick="D.sound=false;persist();render()">🔇 Tout couper</button>'+
     '</div>'+
     '<p class="mini" style="margin:8px 0 0">Coupe d\'un geste tous les jeux et outils — pratique tard le soir.</p></div>';
-  h+='<div class="card"><h2>Joueurs & équipes</h2>';
+  h+='<div class="card"><h2>Joueurs & équipes</h2>'+
+    '<p class="mini" style="margin:0 0 10px">Les personnes enregistrées ici sont <b>proposées d\'office</b> dans les trois jeux : La Coupe, le Tic-Tac et Le Micro. Tu n\'as plus qu\'à cocher qui joue au moment de démarrer.</p>';
   D.lib.forEach(function(p){
     var row='<div class="row" style="background:var(--bg);border-radius:10px;padding:8px 10px">'+
       '<button style="border:0;background:none;padding:0;cursor:pointer" onclick="openAv(\''+p.id+'\')">'+av(p.name)+'</button>'+
@@ -2311,9 +2353,9 @@ function renderSave(hd,app,banner){
     h+='<div style="margin-bottom:6px">'+swipeRow(row, delAct("delLib('"+p.id+"')",'Retirer'), 96, true)+'</div>';});
   h+='<div class="row" style="margin-top:8px"><input id="nl" placeholder="Prénom ou nom d\'équipe"><button class="sm g" onclick="addLib()">Ajouter</button></div>'+
      '<p class="mini" style="margin-top:8px">Touche <b>Avatar</b> pour mettre une <b>photo</b> 📷 ou un personnage. Un participant peut être une personne <b>ou une équipe</b> (ex. « Les Bleus »). Le retirer ici ne touche pas aux parties déjà jouées.</p></div>';
-  h+='<div class="card"><h2>Options</h2>'+
-     '<button class="sm" style="width:100%;margin-bottom:10px" onclick="obReplay()">🎬 Revoir la présentation de bienvenue</button>'+
-     '<button class="sm" style="width:100%;margin-bottom:10px" onclick="forceUpdate()">🔄 Forcer la mise à jour</button>'+
+  /* « Revoir la présentation » et « Forcer la mise à jour » retirés : la mise à
+     jour se fait seule depuis la v88, et personne ne rejoue un tutoriel. */
+  h+='<div class="card"><h2>Voix & effets</h2>'+
      '<div class="row">'+
      '<button class="chip'+(D.voice?' on':'')+'" style="flex:1;text-align:center" onclick="setVoice(true)">🔊 Annonce vocale</button>'+
      '<button class="chip'+(!D.voice?' on':'')+'" style="flex:1;text-align:center" onclick="setVoice(false)">🔇 Silencieux</button></div>'+
@@ -2327,20 +2369,18 @@ function renderSave(hd,app,banner){
   h+='<div class="card"><h2>💛 Ton avis compte</h2>'+
      '<p class="mini" style="margin-bottom:8px">Une idée, un bug, un jeu à ajouter ? Dis-le : cette app grandit avec vos soirées. Et si elle te plaît, garde ta note pour sa sortie sur l\'App Store 😉</p>'+
      '<a class="sm" style="display:block;text-align:center;text-decoration:none" href="mailto:enjeux.app@gmail.com?subject=En%20Jeux%20—%20mon%20avis&body=Ce%20que%20j\'aime%20%3A%0A%0ACe%20qui%20manque%20%3A%0A">✉️ Envoyer une idée ou un bug</a></div>';
-  h+='<div class="card"><h2>Sauvegarde de secours</h2>'+
+  /* Avant : télécharger, copier, coller dans un champ, restaurer depuis un
+     fichier, envoyer — cinq chemins pour une seule idée. On en garde deux :
+     envoyer une copie, et la réinstaller depuis un fichier. */
+  h+='<div class="card"><h2>Sauvegarde</h2>'+
      (nb>=3 && (!D.lastBackup || (Date.now()-new Date(D.lastBackup).getTime())>1000*60*60*24*30)
        ? '<div class="warn" style="background:var(--am-l);border-color:var(--am);color:#92400e;margin-bottom:10px"><b>💾 Pense à sauvegarder</b> — '+pl(nb,'partie')+' en mémoire'+(lastB?' · dernière sauvegarde le '+lastB:' · jamais sauvegardé')+'.</div>'
        : (lastB?'<p class="mini" style="margin-bottom:8px;color:#059669">✓ Dernière sauvegarde le '+lastB+'</p>':''))+
-     '<button class="btn dark" style="margin-bottom:8px" onclick="backupFile()" aria-label="Télécharger la sauvegarde">💾 Télécharger le fichier de sauvegarde</button>'+
-     '<label class="sm" for="rstf" style="display:block;width:100%;text-align:center;margin-bottom:12px;cursor:pointer;position:relative;overflow:hidden">📂 Restaurer depuis un fichier'+
+     '<p class="mini" style="margin-bottom:10px">Tout est enregistré sur cet iPhone. Envoie-toi une copie de temps en temps : c\'est ton filet si tu changes de téléphone.</p>'+
+     '<button class="btn dark" onclick="shareBackup()">📤 M\'envoyer une copie</button>'+
+     '<label class="sm" for="rstf" style="display:block;width:100%;text-align:center;margin-top:8px;cursor:pointer;position:relative;overflow:hidden">📂 Restaurer depuis un fichier'+
        '<input id="rstf" type="file" accept="application/json,.json" onchange="restoreFile(this)" '+
-         'style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:0"></label>'+
-     '<p class="mini" style="margin-bottom:10px">Envoie-toi cette sauvegarde par WhatsApp ou Notes de temps en temps. C\'est ton filet si tu changes de téléphone.</p>'+
-     '<button class="btn dark" onclick="shareBackup()">📤 Envoyer la sauvegarde</button>'+
-     '<button class="sm" style="width:100%;margin-top:8px" onclick="copy(JSON.stringify(D),\'Sauvegarde copiée\')">Copier</button>'+
-     '<label class="lb" style="margin-top:16px">Restaurer</label>'+
-     '<textarea id="imp" rows="3" placeholder="Colle ici une sauvegarde"></textarea>'+
-     '<button class="sm" style="width:100%;margin-top:8px" onclick="restore()">Restaurer (remplace tout)</button></div>';
+         'style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:0"></label></div>';
   h+='<p class="mini" style="text-align:center;margin-top:4px;color:#78716c">En Jeux — version '+APP_VERSION+'</p>';
   app.innerHTML=h;
 }
