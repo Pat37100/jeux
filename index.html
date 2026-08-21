@@ -404,7 +404,7 @@ function nowHM(){
 }
 function stamp(r){ return fr(r.date)+(r.time?' · '+r.time:''); }
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='96';
+var APP_VERSION='97';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -2295,7 +2295,7 @@ function tBuildBracket(ids){
   while(g<=d){ ordre.push(g++); if(g<=d) ordre.push(d--); }
   var r1=[]; for(var i=0;i<nbM;i++) r1.push({id:uid(), a:null, b:null, sa:null, sb:null});
   var reste=ids.slice(), pris={};
-  for(var e=0;e<byes;e++){ r1[ordre[e]].a=reste.shift(); pris[ordre[e]]=1; }
+  for(var e=0;e<byes;e++){ r1[ordre[e]].a=reste.shift(); r1[ordre[e]].bye=1; pris[ordre[e]]=1; }
   for(var m=0;m<nbM;m++){
     if(pris[m]) continue;
     r1[m].a=reste.shift()||null;
@@ -2323,9 +2323,9 @@ function tPropagate(rounds){
   });
 }
 function tWinnerOf(m){
-  if(m.a && !m.b) return m.a;                 // exemption
-  if(m.b && !m.a) return m.b;
-  if(m.sa===null||m.sb===null) return null;
+  if(m.bye) return m.a||m.b||null;            // exemption déclarée à la construction
+  if(!m.a || !m.b) return null;               // match encore incomplet : personne ne monte
+  if(m.sa===null||m.sb===null||m.sa===undefined||m.sb===undefined) return null;
   if(m.sa===m.sb) return null;
   return m.sa>m.sb ? m.a : m.b;
 }
@@ -2333,7 +2333,15 @@ function tRoundLabel(rounds, ri){
   var reste=rounds.length-1-ri;
   return reste===0?'Finale':reste===1?'Demi-finales':reste===2?'Quarts de finale':reste===3?'Huitièmes de finale':'Tour '+(ri+1);
 }
-function tById(id){ return (D.tournois||[]).filter(function(t){return t.id===id;})[0]; }
+function tById(id){
+  var t=(D.tournois||[]).filter(function(x){return x.id===id;})[0];
+  /* Tournois créés avant le marquage des exemptions : une case seule au premier
+     tour est bien une exemption, jamais ailleurs. */
+  if(t && t.bracket && t.bracket[0]) t.bracket[0].forEach(function(m){
+    if(!m.bye && ((m.a&&!m.b)||(m.b&&!m.a))) m.bye=1;
+  });
+  return t;
+}
 function tEnt(t,id){ return t.entrants.filter(function(e){return e.id===id;})[0]; }
 function tEntName(t,id){ var e=tEnt(t,id); return e?e.name:'—'; }
 
@@ -2437,7 +2445,7 @@ function tConfig(){
     '</div>'+
     (s.format==='poule'?
       '<p class="mini" style="margin:10px 0 6px">Qualifiés pour la phase finale</p><div class="chips">'+
-      [2,4,8].filter(function(n){ return n<=Math.max(2,ent.length); }).map(function(n){
+      [2,4,8,16].filter(function(n){ return n<=Math.max(2,ent.length); }).map(function(n){
         return '<button class="chip'+(s.qualifs===n?' on':'')+'" onclick="tSetQualifs('+n+')">'+n+'</button>';
       }).join('')+'</div>'+
       (ent.length>1? '<p class="mini" style="margin:8px 0 0">'+pl(ent.length*(ent.length-1)/2,'match')+' de poule à jouer.</p>':'')
@@ -2480,13 +2488,13 @@ function tBoard(t){
     h+='<button class="sm" style="width:100%;margin-bottom:10px;background:var(--card);text-align:left" onclick="S.tPoule=!S.tPoule;render()">'+
        (S.tPoule?'▾':'›')+' Revoir le classement de la poule</button>'+(S.tPoule?tPouleTable(t):'');
   }
-  if(t.bracket) h+=tBracketView(t);
+  if(t.bracket){ h+=tBracketView(t); h+=tPlayNow(t); }
   h+='<button class="sm" style="width:100%;margin-top:14px" onclick="tDelete(\''+t.id+'\')">🗑 Supprimer ce tournoi</button>';
   return h;
 }
 function tMatchRow(t,m,lbl){
   var w=tWinnerOf(m);
-  var exempt = (m.a&&!m.b)||(m.b&&!m.a);
+  var exempt = !!m.bye;
   var side=function(id,sc,key){
     var win = w && w===id;
     return '<div style="display:flex;align-items:center;gap:7px;padding:4px 0">'+
@@ -2537,13 +2545,90 @@ function tPouleTable(t){
     }).join('')+
     '<p class="mini" style="margin:8px 0 0">V victoires · J joués · DIFF différence de points. Les '+t.qualifs+' premiers sont qualifiés.</p></div>';
 }
-function tBracketView(t){
-  return '<div class="card"><h2>Phase finale</h2>'+
-    t.bracket.map(function(r,ri){
-      return '<p style="margin:10px 0 6px;font-weight:800;font-size:13.5px">'+tRoundLabel(t.bracket,ri)+'</p>'+
-        r.map(function(m){ return tMatchRow(t,m,''); }).join('');
-    }).join('')+'</div>';
+/* ---- Le tableau, dessiné comme un vrai tableau de tournoi ----
+   Les positions sont calculées en pixels plutôt que confiées au CSS : c'est
+   la seule façon d'aligner un match sur le milieu exact des deux matchs qui
+   l'alimentent, quel que soit le nombre de tours (3, 5, 9, 16, 32 joueurs). */
+var BRK_H=52, BRK_G=8, BRK_W=136, BRK_LINK=20;
+function tBoxTop(ri,i){
+  var u=BRK_H+BRK_G, pas=Math.pow(2,ri);
+  return u*(pas*i + (pas-1)/2);
 }
+function tBracketView(t){
+  var B=t.bracket, u=BRK_H+BRK_G, totalH=u*B[0].length;
+  var h='<div class="card"><h2>Le tableau</h2>'+
+    '<p class="mini" style="margin:0 0 8px">Touche un match pour saisir ou corriger son score. Fais glisser vers la droite pour voir la suite du tableau.</p>'+
+    '<div class="brk" style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px">'+
+    '<div style="display:flex;align-items:flex-start;min-width:min-content">';
+  B.forEach(function(r,ri){
+    /* colonne du tour */
+    h+='<div style="flex:0 0 '+BRK_W+'px;position:relative;height:'+totalH+'px">'+
+       '<p style="position:absolute;top:-2px;left:0;right:0;margin:0;font-size:11px;font-weight:800;color:var(--mut);text-transform:uppercase;letter-spacing:.03em;text-align:center">'+tRoundLabel(B,ri)+'</p>';
+    r.forEach(function(m,i){
+      h+=tBox(t,m,tBoxTop(ri,i)+18);
+    });
+    h+='</div>';
+    /* colonne de liaison vers le tour suivant */
+    if(ri<B.length-1){
+      h+='<div style="flex:0 0 '+BRK_LINK+'px;position:relative;height:'+totalH+'px">';
+      for(var k=0;k<r.length;k+=2){
+        var y1=tBoxTop(ri,k)+BRK_H/2+18, y2=tBoxTop(ri,k+1)+BRK_H/2+18, ym=(y1+y2)/2;
+        h+='<i style="position:absolute;left:0;top:'+y1+'px;width:'+(BRK_LINK/2)+'px;border-top:2px solid var(--line)"></i>'+
+           '<i style="position:absolute;left:0;top:'+y2+'px;width:'+(BRK_LINK/2)+'px;border-top:2px solid var(--line)"></i>'+
+           '<i style="position:absolute;left:'+(BRK_LINK/2)+'px;top:'+y1+'px;height:'+(y2-y1)+'px;border-left:2px solid var(--line)"></i>'+
+           '<i style="position:absolute;left:'+(BRK_LINK/2)+'px;top:'+ym+'px;width:'+(BRK_LINK/2)+'px;border-top:2px solid var(--line)"></i>';
+      }
+      h+='</div>';
+    }
+  });
+  h+='</div></div>';
+  /* trophée du vainqueur, à la sortie du dernier tour */
+  return h+'</div>';
+}
+/* Ce qu'il y a à jouer maintenant : le premier tour incomplet, et rien d'autre.
+   Un tableau de 16 affiche 15 matchs — en proposer 15 champs de saisie d'un
+   coup serait illisible sur un téléphone. */
+function tPlayNow(t){
+  var B=t.bracket, sel=S.tEdit;
+  if(sel){
+    var m=tAllMatches(t).filter(function(x){return x.id===sel;})[0];
+    if(m){
+      var ri=0; B.forEach(function(r,k){ if(r.indexOf(m)>=0) ri=k; });
+      if(!m.a||!m.b) return '<p class="mini" style="text-align:center">Ce match attend encore ses participants.</p>';
+      return '<div class="card"><h2>'+tRoundLabel(B,ri)+'</h2>'+tMatchRow(t,m,'')+
+        '<button class="sm" style="width:100%" onclick="tOpen(\''+m.id+'\')">Fermer</button></div>';
+    }
+  }
+  var tour=-1;
+  B.forEach(function(r,ri){ if(tour<0 && r.some(function(m){ return m.a&&m.b&&!tWinnerOf(m); })) tour=ri; });
+  if(tour<0) return t.status==='done' ? '' :
+    '<p class="mini" style="text-align:center">Les matchs du tour suivant s\'ouvriront dès que les précédents seront joués.</p>';
+  var jouables=B[tour].filter(function(m){ return m.a&&m.b&&!tWinnerOf(m); });
+  return '<div class="card"><h2>À jouer maintenant — '+tRoundLabel(B,tour)+'</h2>'+
+    jouables.map(function(m){ return tMatchRow(t,m,''); }).join('')+'</div>';
+}
+/* Une case du tableau : deux lignes, le vainqueur en gras sur fond vert. */
+function tBox(t,m,top){
+  var w=tWinnerOf(m), exempt=!!m.bye;
+  var sel=S.tEdit===m.id;
+  var ligne=function(id,sc){
+    var gagne = w && w===id;
+    return '<div style="display:flex;align-items:center;gap:4px;height:'+((BRK_H-10)/2)+'px">'+
+      '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;font-weight:'+(gagne?'800':'500')+'">'+
+        esc(id?tEntName(t,id):'—')+'</span>'+
+      '<b style="font-size:12px;width:20px;text-align:right;'+(gagne?'color:var(--okx)':'color:var(--mut)')+'">'+
+        (sc===null||sc===undefined?'·':sc)+'</b></div>';
+  };
+  return '<button onclick="tOpen(\''+m.id+'\')" style="position:absolute;top:'+top+'px;left:0;width:'+(BRK_W-8)+'px;height:'+BRK_H+'px;'+
+    'border:'+(sel?'2px solid var(--ok-b,#059669)':'1.5px solid var(--line)')+';border-radius:10px;padding:4px 6px;text-align:left;font-family:inherit;cursor:pointer;'+
+    'background:'+(w?'var(--gr-l)':'var(--card)')+'">'+
+    (exempt
+      ? '<div style="display:flex;align-items:center;height:100%"><span style="font-size:11.5px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(tEntName(t,m.a||m.b))+'</span></div>'+
+        '<span style="position:absolute;right:6px;bottom:3px;font-size:11px;font-weight:700;color:var(--mut)">exempté</span>'
+      : ligne(m.a,m.sa)+ligne(m.b,m.sb))+
+    '</button>';
+}
+function tOpen(id){ S.tEdit=(S.tEdit===id?null:id); persist(); render(); }
 function tHistory(){
   var l=D.tournois||[];
   if(!l.length) return '<div class="empty"><div class="e">🏓</div><h3>Aucun tournoi</h3><p>Crée ton premier tournoi depuis l\'onglet Nouveau : pétanque, ping-pong, molkky… l\'app tient le tableau.</p></div>';
@@ -2568,7 +2653,7 @@ function tVictories(t){
   var v={};
   tAllMatches(t).forEach(function(m){
     var w=tWinnerOf(m);
-    if(w && !((m.a&&!m.b)||(m.b&&!m.a))) v[w]=(v[w]||0)+1;
+    if(w && !m.bye) v[w]=(v[w]||0)+1;      // une exemption n'est pas une victoire
   });
   return v;
 }
