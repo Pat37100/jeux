@@ -404,7 +404,7 @@ function nowHM(){
 }
 function stamp(r){ return fr(r.date)+(r.time?' · '+r.time:''); }
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='98';
+var APP_VERSION='99';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -2333,6 +2333,32 @@ function tRoundLabel(rounds, ri){
   var reste=rounds.length-1-ri;
   return reste===0?'Finale':reste===1?'Demi-finales':reste===2?'Quarts de finale':reste===3?'Huitièmes de finale':'Tour '+(ri+1);
 }
+/* Palette : teinte + clarté choisies pour que le blanc reste lisible sur
+   chaque pastille (contraste ≥ 4,5 : les verts et les cyans ont dû être
+   assombris, sans quoi le texte devenait illisible au soleil). */
+var T_HUES=[[220,46],[145,32],[25,42],[285,46],[190,35],[45,34],
+            [330,46],[105,32],[255,46],[15,46],[170,31],[300,46]];
+function tHue(t,id){
+  var i=t.entrants.map(function(e){return e.id;}).indexOf(id);
+  if(i<0) return null;
+  var c=T_HUES[i%T_HUES.length], l=c[1]-Math.floor(i/T_HUES.length)*9;
+  return 'hsl('+c[0]+',62%,'+Math.max(16,l)+'%)';
+}
+function tInitials(name){
+  var mots=String(name||'').split(/[^A-Za-zÀ-ÿ0-9]+/).filter(Boolean);
+  if(!mots.length) return '?';
+  return (mots.length>1 ? mots[0][0]+mots[1][0] : mots[0][0]).toUpperCase();
+}
+/* La pastille : couleur + initiales. Sert de fil conducteur d'un tour à
+   l'autre du tableau, et surtout entre le tableau et la zone de saisie. */
+function tDot(t,id,px){
+  px=px||22;
+  var c=tHue(t,id);
+  if(!c) return '<span style="flex:0 0 '+px+'px;width:'+px+'px;height:'+px+'px;border-radius:50%;border:1.5px dashed var(--line)"></span>';
+  return '<span style="flex:0 0 '+px+'px;width:'+px+'px;height:'+px+'px;border-radius:50%;background:'+c+';color:#fff;'+
+    'display:inline-flex;align-items:center;justify-content:center;font-size:'+Math.round(px*0.46)+'px;font-weight:800;letter-spacing:-.02em">'+
+    esc(tInitials(tEntName(t,id)))+'</span>';
+}
 function tById(id){
   var t=(D.tournois||[]).filter(function(x){return x.id===id;})[0];
   /* Tournois créés avant le marquage des exemptions : une case seule au premier
@@ -2497,31 +2523,47 @@ function tMatchRow(t,m,lbl){
   var exempt = !!m.bye;
   var side=function(id,sc,key){
     var win = w && w===id;
-    return '<div style="display:flex;align-items:center;gap:7px;padding:4px 0">'+
-      '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px;font-weight:'+(win?'800':'500')+'">'+
-        (win?'👑 ':'')+esc(id?tEntName(t,id):'À déterminer')+'</span>'+
-      (id? '<input type="number" inputmode="numeric" value="'+(sc===null||sc===undefined?'':sc)+'" '+
-        'style="width:56px;text-align:center;padding:6px 4px;font-size:15px;font-weight:700" '+
+    var vide = sc===null||sc===undefined;
+    return '<div style="display:flex;align-items:center;gap:9px;padding:5px 0">'+
+      tDot(t,id,26)+
+      '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:'+(win?'800':'500')+'">'+
+        esc(id?tEntName(t,id):'À déterminer')+'</span>'+
+      (win?'<span style="font-size:15px">👑</span>':'')+
+      (id? '<input type="number" inputmode="numeric" placeholder="–" value="'+(vide?'':sc)+'" '+
+        'aria-label="Score de '+esc(tEntName(t,id))+'" '+
+        'style="width:58px;text-align:center;padding:7px 4px;font-size:16px;font-weight:800;'+
+        'border:2px solid '+(win?'var(--gr-b)':'var(--line)')+';border-radius:10px" '+
         'onchange="tScore(\''+t.id+'\',\''+m.id+'\',\''+key+'\',this.value)">' : '')+
       '</div>';
   };
   if(exempt){
     return '<div style="border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:8px;opacity:.75">'+
       (lbl?'<p class="mini" style="margin:0 0 3px">'+lbl+'</p>':'')+
-      '<div style="font-size:13.5px;font-weight:700">👑 '+esc(tEntName(t,m.a||m.b))+'</div>'+
-      '<p class="mini" style="margin:2px 0 0">Exempté : qualifié sans jouer</p></div>';
+      '<div style="display:flex;align-items:center;gap:9px">'+tDot(t,m.a||m.b,26)+
+      '<span style="font-size:14px;font-weight:700">'+esc(tEntName(t,m.a||m.b))+'</span></div>'+
+      '<p class="mini" style="margin:4px 0 0">Exempté : qualifié sans jouer</p></div>';
   }
   var tie = m.sa!==null && m.sb!==null && m.sa===m.sb;
-  return '<div style="border:1px solid '+(w?'var(--gr-b)':'var(--line)')+';border-radius:12px;padding:8px 10px;margin-bottom:8px;'+(w?'background:var(--gr-l)':'')+'">'+
-    (lbl?'<p class="mini" style="margin:0 0 3px">'+lbl+'</p>':'')+
-    side(m.a,m.sa,'sa')+side(m.b,m.sb,'sb')+
-    (tie?'<p class="mini" style="margin:2px 0 0;color:var(--nox)">Égalité impossible : il faut départager.</p>':'')+
+  var moitie = (m.sa===null||m.sa===undefined) !== (m.sb===null||m.sb===undefined);
+  /* Confirmation immédiate : c'est elle qui rattrape l'erreur la plus
+     fréquente, les deux scores saisis à l'envers. */
+  var confirme = w
+    ? '<div style="display:flex;align-items:center;gap:6px;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:13px;color:var(--okx);font-weight:700">'+
+      tDot(t,w,18)+'<span>'+esc(tEntName(t,w))+' l\'emporte '+Math.max(m.sa,m.sb)+' – '+Math.min(m.sa,m.sb)+'</span></div>'
+    : '';
+  return '<div style="border:'+(w?'2px solid var(--gr-b)':'1px solid var(--line)')+';border-radius:12px;padding:9px 11px;margin-bottom:9px;'+(w?'background:var(--gr-l)':'')+'">'+
+    (lbl?'<p class="mini" style="margin:0 0 4px;font-weight:700">'+lbl+'</p>':'')+
+    side(m.a,m.sa,'sa')+side(m.b,m.sb,'sb')+confirme+
+    (tie?'<p class="mini" style="margin:4px 0 0;color:var(--nox);font-weight:700">Égalité impossible : il faut départager.</p>':'')+
+    (moitie?'<p class="mini" style="margin:4px 0 0;color:var(--nox);font-weight:700">Il manque un score.</p>':'')+
     '</div>';
 }
 function tPouleView(t){
   var h=tPouleTable(t);
+  var reste0=t.poule.filter(function(m){ return !tWinnerOf(m); });
   h+='<div class="card"><h2>Matchs de poule</h2>'+
-    t.poule.map(function(m){ return tMatchRow(t,m,''); }).join('')+'</div>';
+    '<p class="mini" style="margin:0 0 9px">Chaque participant a sa couleur et ses initiales, pour ne pas saisir un score dans le mauvais match.</p>'+
+    t.poule.map(function(m,i){ return tMatchRow(t,m,'Match '+(i+1)+' sur '+t.poule.length); }).join('')+'</div>';
   var reste=t.poule.filter(function(m){ return !tWinnerOf(m); }).length;
   h+= reste
     ? '<p class="mini" style="text-align:center">Encore '+pl(reste,'match')+' avant la phase finale.</p>'
@@ -2538,7 +2580,8 @@ function tPouleTable(t){
       var q = i<t.qualifs;
       return '<div style="display:flex;align-items:center;gap:7px;padding:7px 0;border-bottom:1px solid var(--line)'+(q?'':';opacity:.55')+'">'+
         '<span style="width:18px;font-size:13px">'+(med[i]||(i+1))+'</span>'+
-        '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:13.5px">'+esc(p.name)+'</span>'+
+        tDot(t,p.id,20)+
+        '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:13.5px;margin-left:5px">'+esc(p.name)+'</span>'+
         '<b style="width:34px;text-align:right">'+p.v+'</b>'+
         '<span style="width:34px;text-align:right;color:var(--mut)">'+p.j+'</span>'+
         '<span style="width:44px;text-align:right;font-weight:700">'+(p.diff>0?'+':'')+p.diff+'</span></div>';
@@ -2549,7 +2592,7 @@ function tPouleTable(t){
    Les positions sont calculées en pixels plutôt que confiées au CSS : c'est
    la seule façon d'aligner un match sur le milieu exact des deux matchs qui
    l'alimentent, quel que soit le nombre de tours (3, 5, 9, 16, 32 joueurs). */
-var BRK_H=52, BRK_G=8, BRK_W=136, BRK_LINK=20;
+var BRK_H=52, BRK_G=8, BRK_W=156, BRK_LINK=20;
 function tBoxTop(ri,i){
   var u=BRK_H+BRK_G, pas=Math.pow(2,ri);
   return u*(pas*i + (pas-1)/2);
@@ -2605,7 +2648,8 @@ function tPlayNow(t){
     '<p class="mini" style="text-align:center">Les matchs du tour suivant s\'ouvriront dès que les précédents seront joués.</p>';
   var jouables=B[tour].filter(function(m){ return m.a&&m.b&&!tWinnerOf(m); });
   return '<div class="card"><h2>À jouer maintenant — '+tRoundLabel(B,tour)+'</h2>'+
-    jouables.map(function(m){ return tMatchRow(t,m,''); }).join('')+'</div>';
+    '<p class="mini" style="margin:0 0 9px">'+pl(jouables.length,'match')+' à saisir. La couleur et les initiales sont les mêmes que dans le tableau.</p>'+
+    jouables.map(function(m,i){ return tMatchRow(t,m,'Match '+(i+1)+' sur '+jouables.length); }).join('')+'</div>';
 }
 /* Une case du tableau : deux lignes, le vainqueur en gras sur fond vert. */
 function tBox(t,m,top){
@@ -2613,7 +2657,8 @@ function tBox(t,m,top){
   var sel=S.tEdit===m.id;
   var ligne=function(id,sc){
     var gagne = w && w===id;
-    return '<div style="display:flex;align-items:center;gap:4px;height:'+((BRK_H-10)/2)+'px">'+
+    return '<div style="display:flex;align-items:center;gap:5px;height:'+((BRK_H-10)/2)+'px">'+
+      tDot(t,id,15)+
       '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;font-weight:'+(gagne?'800':'500')+'">'+
         esc(id?tEntName(t,id):'—')+'</span>'+
       '<b style="font-size:12px;width:20px;text-align:right;'+(gagne?'color:var(--okx)':'color:var(--mut)')+'">'+
@@ -2623,7 +2668,8 @@ function tBox(t,m,top){
     'border:'+(sel?'2px solid var(--ok-b,#059669)':'1.5px solid var(--line)')+';border-radius:10px;padding:4px 6px;text-align:left;font-family:inherit;cursor:pointer;'+
     'background:'+(w?'var(--gr-l)':'var(--card)')+'">'+
     (exempt
-      ? '<div style="display:flex;align-items:center;height:100%"><span style="font-size:11.5px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(tEntName(t,m.a||m.b))+'</span></div>'+
+      ? '<div style="display:flex;align-items:center;gap:5px;height:100%">'+tDot(t,m.a||m.b,15)+
+        '<span style="font-size:11.5px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(tEntName(t,m.a||m.b))+'</span></div>'+
         '<span style="position:absolute;right:6px;bottom:3px;font-size:11px;font-weight:700;color:var(--mut)">exempté</span>'
       : ligne(m.a,m.sa)+ligne(m.b,m.sb))+
     '</button>';
