@@ -404,7 +404,7 @@ function nowHM(){
 }
 function stamp(r){ return fr(r.date)+(r.time?' · '+r.time:''); }
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='100';
+var APP_VERSION='101';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -758,6 +758,69 @@ function inferGame(name){
   return 'Autre';
 }
 function gameOf(m){ return m.game || inferGame(m.name); }
+
+/* ---- L'icône d'une partie ----
+   Toutes les parties affichaient le même boulier 🧮. On reconnaît d'abord le
+   jeu par son nom exact, puis par mot-clé (« soirée cartes », « tournoi de
+   fléchettes »), et seulement en dernier recours on retombe sur un dé neutre.
+   Chaque famille de jeu a aussi sa couleur de fond, pour que la liste des
+   parties se lise d'un coup d'œil. */
+var GAME_ICONS=[
+  /* jeux de cartes */
+  ['uno','🎴','cartes'], ['skyjo','🎴','cartes'], ['belote','🃏','cartes'], ['tarot','🃏','cartes'],
+  ['rami','🃏','cartes'], ['president','🃏','cartes'], ['poker','♠️','cartes'], ['bataille','🃏','cartes'],
+  ['coinche','🃏','cartes'], ['manille','🃏','cartes'], ['bridge','🃏','cartes'], ['pouilleux','🃏','cartes'],
+  ['jungle speed','🃏','cartes'], ['time\'s up','⏳','cartes'], ['dixit','🎨','cartes'],
+  ['loup-garou','🐺','cartes'], ['loup garou','🐺','cartes'], ['sept familles','🃏','cartes'],
+  /* dés et pions */
+  ['yams','🎲','des'], ['yahtzee','🎲','des'], ['421','🎲','des'], ['perudo','🎲','des'],
+  ['monopoly','🏠','plateau'], ['cluedo','🕵️','plateau'], ['risk','🗺️','plateau'],
+  ['jeu de l\'oie','🪿','plateau'], ['petits chevaux','🐴','plateau'], ['dames','⚫','plateau'],
+  ['echecs','♟️','plateau'], ['échecs','♟️','plateau'], ['domino','🁢','plateau'],
+  ['puissance 4','🔴','plateau'], ['awale','🌰','plateau'], ['backgammon','🎲','plateau'],
+  ['bataille navale','🚢','plateau'], ['mikado','🥢','plateau'], ['jenga','🧱','plateau'],
+  ['loto','🎰','plateau'], ['bingo','🎰','plateau'], ['pictionary','✏️','mots'],
+  /* mots et lettres */
+  ['scrabble','🔤','mots'], ['boggle','🔤','mots'], ['petit bac','✏️','mots'], ['mots','🔤','mots'],
+  /* jeux d'adresse et de plein air */
+  ['molkky','🪵','plein-air'], ['mölkky','🪵','plein-air'], ['petanque','🎱','plein-air'],
+  ['pétanque','🎱','plein-air'], ['boules','🎱','plein-air'], 
+  ['flechettes','🎯','plein-air'], ['fléchettes','🎯','plein-air'], ['bowling','🎳','plein-air'],
+  ['ping-pong','🏓','plein-air'], ['ping pong','🏓','plein-air'], ['tennis de table','🏓','plein-air'],
+  ['babyfoot','⚽','plein-air'], ['baby-foot','⚽','plein-air'], ['billard','🎱','plein-air'],
+  ['croquet','🏑','plein-air'], ['badminton','🏸','plein-air'], ['volant','🏸','plein-air'],
+  /* rubriques de l'app */
+  ['le micro','🎙️','quiz'], ['tic-tac','⏱️','quiz'], ['quiz','❓','quiz'], ['blind test','🎵','quiz'],
+  ['karaoke','🎤','quiz'], ['karaoké','🎤','quiz'], ['trivial','❓','quiz']
+];
+var GAME_FAM={cartes:'#fef3c7', des:'#e0e7ff', plateau:'#fce7f3', mots:'#dbeafe',
+              'plein-air':'#d1fae5', quiz:'#ede9fe', autre:'#f5f5f4'};
+/* Mots-clés de repli : « soirée cartes » ou « tournoi de fléchettes » doivent
+   trouver leur icône même si le nom exact du jeu n'est pas dans la liste. */
+var GAME_HINTS=[[/carte/,'🃏','cartes'],[/\bd[ée]s?\b/,'🎲','des'],[/quiz|question/,'❓','quiz'],
+  [/chanson|musi|blind/,'🎵','quiz'],[/foot/,'⚽','plein-air'],[/boule|p[ée]tanque/,'🎱','plein-air'],
+  [/fl[ée]ch/,'🎯','plein-air'],[/lettre|mot/,'🔤','mots'],[/plateau|soci[ée]t[ée]/,'🎲','plateau'],
+  [/course|relais/,'🏃','plein-air'],[/chrono|temps/,'⏱️','quiz'],[/dessin|dessine/,'✏️','mots'],
+  [/p[ée]tanque|boulodrome/,'🎱','plein-air'],[/raquette|tennis/,'🏓','plein-air'],
+  [/\bpalets?\b/,'🥏','plein-air']];
+var GAME_SORTED=null;
+function gameLook(m){
+  var n=fp(typeof m==='string'? m : ((m&&m.name)||''));
+  var g=fp(typeof m==='string'? m : (gameOf(m)||''));
+  /* Du nom le plus long au plus court : « bataille navale » doit l'emporter
+     sur « bataille », le jeu de cartes. */
+  if(!GAME_SORTED) GAME_SORTED=GAME_ICONS.slice().sort(function(a,b){ return b[0].length-a[0].length; });
+  for(var i=0;i<GAME_SORTED.length;i++){
+    var cle=fp(GAME_SORTED[i][0]);
+    if(cle && (g===cle || n.indexOf(cle)>=0 || g.indexOf(cle)>=0))
+      return {emo:GAME_SORTED[i][1], bg:GAME_FAM[GAME_SORTED[i][2]]};
+  }
+  for(var k=0;k<GAME_HINTS.length;k++){
+    if(GAME_HINTS[k][0].test(n) || GAME_HINTS[k][0].test(g))
+      return {emo:GAME_HINTS[k][1], bg:GAME_FAM[GAME_HINTS[k][2]]};
+  }
+  return {emo:'🎲', bg:GAME_FAM.autre};
+}
 function addGameHere(){
   var el=document.getElementById('gadd'); if(!el) return;
   var g=addGame(el.value);
@@ -962,7 +1025,7 @@ function mcard(m){
   return '<div class="swipe" data-reveal="'+(actv?168:96)+'" style="--reveal:'+(actv?168:96)+'px"><div class="acts">'+
     (actv?'<button class="arch" onclick="archMatch(\''+m.id+'\')"><span class="ic">🏁</span>Terminer</button>':'')+
     '<button class="del" style="width:'+(actv?84:96)+'px" onclick="askDelMatch(\''+m.id+'\')"><span class="ic">🗑</span>Supprimer</button></div>'+
-    '<div class="front"><button class="tool on" style="width:100%" onclick="openMatch(\''+m.id+'\')"><span class="em" style="background:#d1fae5;font-size:20px">🧮</span>'+
+    '<div class="front"><button class="tool on" style="width:100%" onclick="openMatch(\''+m.id+'\')"><span class="em" style="background:'+gameLook(m).bg+';font-size:20px">'+gameLook(m).emo+'</span>'+
     '<span style="flex:1;min-width:0"><b>'+esc(m.name)+badge+'</b>'+
     '<small style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+pl(m.players.length,'joueur')+' · '+pl(r.count,'manche')+
     (m.winRule==='low'?' · moins gagne':'')+
@@ -2481,7 +2544,7 @@ function tConfig(){
     '</div>';
 
   h+='<div class="card"><h2><span class="stepn">3</span>À quel jeu ?</h2><div class="chips">'+
-    T_GAMES.map(function(g){ return '<button class="chip'+(s.game===g?' on':'')+'" onclick="tSetGame(\''+g+'\')">'+g+'</button>'; }).join('')+
+    T_GAMES.map(function(g){ return '<button class="chip'+(s.game===g?' on':'')+'" onclick="tSetGame(\''+g+'\')">'+gameLook(g).emo+' '+g+'</button>'; }).join('')+
     '</div><input id="tgame" placeholder="Autre jeu…" value="'+(T_GAMES.indexOf(s.game)<0?esc(s.game):'')+'" '+
     'style="margin-top:10px;width:100%" onchange="tSetGame(this.value.trim()||\'Tournoi\')"></div>';
 
@@ -2506,7 +2569,7 @@ function tBoard(t){
       '<p style="margin:6px 0 0;font-size:13.5px;opacity:.94">'+esc(t.game)+' · '+fr(t.date)+'</p></div>'+
       '<button class="btn tournoi" style="margin-bottom:12px" onclick="tToCoupe(\''+t.id+'\')">🏆 Compter dans La Coupe</button>';
   } else {
-    h+='<div class="card" style="background:var(--bg)"><b style="font-size:15px">'+esc(t.game)+'</b>'+
+    h+='<div class="card" style="background:var(--bg)"><b style="font-size:15px">'+gameLook(t.game).emo+' '+esc(t.game)+'</b>'+
       '<p class="mini" style="margin:3px 0 0">'+pl(t.entrants.length, t.team?'équipe':'joueur')+' · '+
       (t.format==='poule'?(t.bracket?'phase finale':'phase de poule'):'élimination directe')+' · '+fr(t.date)+'</p></div>';
   }
@@ -2726,7 +2789,7 @@ function tHistory(){
   return '<div class="card"><h2>Tes tournois</h2>'+l.map(function(t){
     var done=t.status==='done';
     return '<button class="miniact" style="margin-bottom:8px" onclick="S.tid=\''+t.id+'\';window.scrollTo(0,0);render()">'+
-      '<span class="e">'+(done?'🏆':'▶︎')+'</span><span style="flex:1;min-width:0">'+
+      '<span class="e">'+(done?'🏆':gameLook(t.game).emo)+'</span><span style="flex:1;min-width:0">'+
       '<b>'+esc(t.game)+'</b><small>'+fr(t.date)+' · '+pl(t.entrants.length,t.team?'équipe':'joueur')+' · '+
       (done?'vainqueur : '+esc(tEntName(t,t.winner)):'en cours')+'</small></span><span style="color:#d6d3d1">›</span></button>';
   }).join('')+'</div>';
