@@ -98,6 +98,7 @@
   .tool.t-coupe .tag{background:#d1fae5;color:#047857}
   .tool.t-tictac .tag{background:#fef3c7;color:#b45309}
   .tool.t-micro .tag{background:#ede9fe;color:#6d28d9}
+  .tool.t-tournoi .tag{background:#ffedd5;color:#9a3412}
   .miniact{flex:0 0 auto;min-width:0;width:100%;display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 12px;cursor:pointer;font-family:inherit;text-align:left;box-shadow:0 1px 2px rgba(0,0,0,.03)}
   .miniact>span:last-child{min-width:0}
   .miniact b,.miniact small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -223,6 +224,10 @@
   .tool.t-tictac{border-color:#fde68a;background:linear-gradient(135deg,#fffbeb,#fef3c7)}
   .tool.t-tictac .em{background:linear-gradient(135deg,#d97706,#fbbf24)}
   .tool.t-micro{border-color:#ddd6fe;background:linear-gradient(135deg,#f5f3ff,#ede9fe)}
+  /* Le Tournoi : orange brûlé, distinct de l'ambre du Tic-Tac. */
+  .tool.t-tournoi{border-color:#fed7aa;background:linear-gradient(135deg,#fff7ed,#ffedd5)}
+  .tool.t-tournoi .em{background:linear-gradient(135deg,#9a3412,#f97316)}
+  .btn.tournoi{background:linear-gradient(135deg,#9a3412,#f97316)}
   .tool.t-micro .em{background:linear-gradient(135deg,#7c3aed,#a78bfa)}
   .tool.on{border-color:var(--gr-b);background:var(--gr-l)}
   .tool.on .em{background:var(--gr)}
@@ -391,7 +396,7 @@ function persist(){
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='94';
+var APP_VERSION='95';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -425,10 +430,10 @@ function av(name,cls){
 }
 
 var DEF=['Patrick','Mélanie','Mattéo','Maxime'];
-function fresh(){return {v:1, lib:DEF.map(function(n){return{id:uid(),name:n};}), matches:[], journal:[], micro:[], tictac:[]};}
+function fresh(){return {v:1, lib:DEF.map(function(n){return{id:uid(),name:n};}), matches:[], journal:[], micro:[], tictac:[], tournois:[]};}
 
 var D=loadStore()||fresh();
-if(!D.lib)D.lib=[]; if(!D.matches)D.matches=[]; if(!D.journal)D.journal=[]; if(!D.micro)D.micro=[]; if(!D.tictac)D.tictac=[];
+if(!D.lib)D.lib=[]; if(!D.matches)D.matches=[]; if(!D.journal)D.journal=[]; if(!D.micro)D.micro=[]; if(!D.tictac)D.tictac=[]; if(!D.tournois)D.tournois=[];
 if(!D.onboarded && (D.matches.length||D.journal.length||D.micro.length||D.tictac.length)) D.onboarded=1;
 
 /* ========================== LOGIQUE SCORE ========================= */
@@ -507,8 +512,8 @@ function render(){
   }catch(e){}
   try{
     var _a=document.getElementById('app');
-    if(_a){ _a.classList.remove('sc-tictac','sc-micro','sc-outils','sc-coupe');
-      var _m={chrono:'sc-tictac',quizz:'sc-micro',outils:'sc-outils',points:'sc-coupe',match:'sc-coupe'};
+    if(_a){ _a.classList.remove('sc-tictac','sc-micro','sc-outils','sc-coupe','sc-tournoi');
+      var _m={chrono:'sc-tictac',quizz:'sc-micro',outils:'sc-outils',points:'sc-coupe',match:'sc-coupe',tournoi:'sc-tournoi'};
       if(_m[S.view]) _a.classList.add(_m[S.view]); }
   }catch(e){}
   var r=render_();
@@ -556,6 +561,8 @@ function render_(){
         D.tictac.length?pl(D.tictac.length,'duel')+' au palmarès':'','Chrono & duel')+
       tool('quizz','🎙️','Le Micro','<b>Il transforme une IA en animateur.</b> Collez le texte préparé dans votre assistant : il anime un jeu télé à la voix.','t-micro',
         D.journal.length?pl(D.journal.length,'question')+' au journal':'','Quiz vocal · IA')+
+      tool('tournoi','🏓','Le Tournoi','<b>Il organise la compétition.</b> Pétanque, ping-pong, molkky… poule, quarts, demies et finale, l\'app tient le tableau.','t-tournoi',
+        (D.tournois||[]).length?pl(D.tournois.length,'tournoi')+' au palmarès':'','Poules & finales')+
       tool('outils','🎲','Les Outils','<b>Il complète la boîte.</b> Le dé perdu, le buzzer qui manque, le tirage au sort qui évite les disputes.','t-outils','','Dé · Buzzer · Sort')+
 
       '<div style="margin-top:14px;display:flex;flex-direction:column;gap:9px">'+
@@ -590,6 +597,7 @@ function render_(){
   if(S.view==='quizz') return renderQuizz(hd,app,banner);
   if(S.view==='points') return renderPoints(hd,app,banner);
   if(S.view==='match') return renderMatch(hd,app,nav,banner);
+  if(S.view==='tournoi') return renderTournoi(hd,app,nav,banner);
   if(S.view==='champions') return renderChampions(hd,app,banner);
 }
 /* Filet de sécurité : l'iPhone qui se verrouille ou un appel entrant
@@ -2220,10 +2228,398 @@ function champToggleHide(name){
   if(i>=0) c.splice(i,1); else c.push(k);
   D.champHide=c; S.detail=null; persist(); render();
 }
+/* ========================= TOURNOI ==============================
+   Quatrième rubrique. Même squelette que Le Micro et le Tic-Tac :
+   en-tête « Comment ça marche » → Qui joue ? (grille partagée) →
+   réglages → récap « Ce que tu as choisi » → bouton d'action.
+   Deux formats au choix, score saisi à chaque match, joueurs seuls
+   ou équipes tirées au sort. ================================== */
+var T_GAMES=['Pétanque','Ping-pong','Molkky','Fléchettes','Babyfoot','Bowling','Palet','Belote'];
+function tSettings(){
+  if(!D.tset) D.tset={format:'poule', team:0, teamSize:2, game:'Pétanque', qualifs:4};
+  return D.tset;
+}
+function tPick(){
+  var s=tSettings();
+  if(!s.pick) s.pick=D.lib.map(function(x){return x.id;});   // comme au Micro : tout le monde est proposé
+  return s.pick.filter(function(id){ return D.lib.some(function(p){return p.id===id;}); });
+}
+function tToggleP(id){
+  var s=tSettings(), pk=tPick().slice(), i=pk.indexOf(id);
+  if(i>=0) pk.splice(i,1); else pk.push(id);
+  s.pick=pk; s.teams=null; persist(); render();
+}
+function tName(id){ var p=D.lib.filter(function(x){return x.id===id;})[0]; return p?p.name:'?'; }
+function tSetFormat(v){ tSettings().format=v; persist(); render(); }
+function tSetGame(g){ tSettings().game=g; persist(); render(); }
+function tSetTeam(v){ var s=tSettings(); s.team=v; s.teams=null; persist(); render(); }
+function tSetTeamSize(n){ var s=tSettings(); s.teamSize=n; s.teams=null; persist(); render(); }
+function tSetQualifs(n){ tSettings().qualifs=n; persist(); render(); }
+
+/* Tirage des équipes : mélange puis découpe. Les restes rejoignent les
+   premières équipes plutôt que de former une équipe incomplète. */
+function tDrawTeams(){
+  var s=tSettings(), ids=tPick().slice(), n=s.teamSize||2;
+  for(var i=ids.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=ids[i]; ids[i]=ids[j]; ids[j]=t; }
+  var nb=Math.max(2, Math.floor(ids.length/n)), teams=[];
+  for(var k=0;k<nb;k++) teams.push([]);
+  ids.forEach(function(id,idx){ teams[idx%nb].push(id); });
+  s.teams=teams; persist(); render();
+}
+/* Les participants du tournoi : des joueurs, ou des équipes. */
+function tEntrants(){
+  var s=tSettings();
+  if(s.team){
+    if(!s.teams) return [];
+    return s.teams.map(function(mem,i){
+      return {id:'e'+i, members:mem.slice(), name:mem.map(tName).join(' & ')};
+    });
+  }
+  return tPick().map(function(id){ return {id:'e'+id, members:[id], name:tName(id)}; });
+}
+
+/* ---- Création du tournoi ---- */
+function tStart(){
+  var s=tSettings(), ent=tEntrants();
+  if(ent.length<3){ toast(s.team?'Il faut au moins trois équipes':'Il faut au moins trois joueurs'); return; }
+  var t={ id:uid(), date:today(), game:s.game, format:s.format, team:!!s.team,
+          entrants:ent, poule:null, bracket:null, status:'active', winner:null,
+          qualifs:Math.min(s.qualifs||4, ent.length) };
+  if(s.format==='poule'){
+    t.poule=[];
+    for(var i=0;i<ent.length;i++) for(var j=i+1;j<ent.length;j++)
+      t.poule.push({id:uid(), a:ent[i].id, b:ent[j].id, sa:null, sb:null});
+  } else {
+    t.bracket=tBuildBracket(tShuffle(ent.map(function(e){return e.id;})));
+  }
+  D.tournois=D.tournois||[]; D.tournois.unshift(t);
+  S.tid=t.id; persist(); window.scrollTo(0,0); render();
+}
+function tShuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;} return a; }
+
+/* Un tableau à élimination directe : on complète à la puissance de 2
+   avec des exemptions, qui sont qualifiées d'office au premier tour. */
+function tBuildBracket(ids){
+  var k=ids.length, n=1; while(n<k) n*=2;
+  var nbM=n/2, byes=n-k;                       // places vides = exemptions à distribuer
+  /* Une exemption doit toujours faire face à un participant : deux cases vides
+     dans le même match créeraient un match fantôme. On donne donc les
+     exemptions aux mieux placés, et on les répartit aux extrémités du tableau
+     pour que les deux premiers ne se croisent pas avant la finale. */
+  var ordre=[], g=0, d=nbM-1;
+  while(g<=d){ ordre.push(g++); if(g<=d) ordre.push(d--); }
+  var r1=[]; for(var i=0;i<nbM;i++) r1.push({id:uid(), a:null, b:null, sa:null, sb:null});
+  var reste=ids.slice(), pris={};
+  for(var e=0;e<byes;e++){ r1[ordre[e]].a=reste.shift(); pris[ordre[e]]=1; }
+  for(var m=0;m<nbM;m++){
+    if(pris[m]) continue;
+    r1[m].a=reste.shift()||null;
+    r1[m].b=reste.shift()||null;
+  }
+  var rounds=[r1], size=n/2;
+  while(size>1){
+    var r=[]; for(var k=0;k<size/2;k++) r.push({id:uid(), a:null, b:null, sa:null, sb:null});
+    rounds.push(r); size=size/2;
+  }
+  tPropagate(rounds);
+  return rounds;
+}
+/* Fait descendre les vainqueurs — et les exemptions — au tour suivant. */
+function tPropagate(rounds){
+  rounds.forEach(function(r,ri){
+    r.forEach(function(m,mi){
+      var w=tWinnerOf(m);
+      if(w && rounds[ri+1]){
+        var nm=rounds[ri+1][Math.floor(mi/2)];
+        if(mi%2===0){ if(nm.a!==w){ nm.a=w; nm.sa=null; nm.sb=null; } }
+        else        { if(nm.b!==w){ nm.b=w; nm.sa=null; nm.sb=null; } }
+      }
+    });
+  });
+}
+function tWinnerOf(m){
+  if(m.a && !m.b) return m.a;                 // exemption
+  if(m.b && !m.a) return m.b;
+  if(m.sa===null||m.sb===null) return null;
+  if(m.sa===m.sb) return null;
+  return m.sa>m.sb ? m.a : m.b;
+}
+function tRoundLabel(rounds, ri){
+  var reste=rounds.length-1-ri;
+  return reste===0?'Finale':reste===1?'Demi-finales':reste===2?'Quarts de finale':reste===3?'Huitièmes de finale':'Tour '+(ri+1);
+}
+function tById(id){ return (D.tournois||[]).filter(function(t){return t.id===id;})[0]; }
+function tEnt(t,id){ return t.entrants.filter(function(e){return e.id===id;})[0]; }
+function tEntName(t,id){ var e=tEnt(t,id); return e?e.name:'—'; }
+
+/* ---- Saisie d'un score ---- */
+function tScore(tid, mid, side, v){
+  var t=tById(tid); if(!t) return;
+  var m=tAllMatches(t).filter(function(x){return x.id===mid;})[0]; if(!m) return;
+  var n=v===''?null:parseInt(v,10);
+  if(n!==null && (isNaN(n)||n<0)) return;
+  m[side]=n;
+  if(t.bracket) tPropagate(t.bracket);
+  tCheckEnd(t);
+  persist(); render();
+}
+function tAllMatches(t){
+  var out=(t.poule||[]).slice();
+  (t.bracket||[]).forEach(function(r){ out=out.concat(r); });
+  return out;
+}
+/* Classement de poule : victoires, puis différence de points, puis points marqués. */
+function tPouleRank(t){
+  var st={};
+  t.entrants.forEach(function(e){ st[e.id]={id:e.id,name:e.name,v:0,j:0,pp:0,pc:0}; });
+  (t.poule||[]).forEach(function(m){
+    if(m.sa===null||m.sb===null||m.sa===m.sb) return;
+    var A=st[m.a], B=st[m.b]; if(!A||!B) return;
+    A.j++; B.j++; A.pp+=m.sa; A.pc+=m.sb; B.pp+=m.sb; B.pc+=m.sa;
+    if(m.sa>m.sb) A.v++; else B.v++;
+  });
+  var l=[]; for(var k in st){ st[k].diff=st[k].pp-st[k].pc; l.push(st[k]); }
+  l.sort(function(a,b){ return b.v-a.v || b.diff-a.diff || b.pp-a.pp; });
+  return l;
+}
+function tPouleDone(t){ return (t.poule||[]).every(function(m){ return tWinnerOf(m); }); }
+/* On ne lance la phase finale que sur demande : personne n'aime voir le
+   tableau se figer par surprise. */
+function tGoFinals(tid){
+  var t=tById(tid); if(!t||!tPouleDone(t)) return;
+  var q=tPouleRank(t).slice(0,t.qualifs).map(function(x){return x.id;});
+  t.bracket=tBuildBracket(q);
+  persist(); window.scrollTo(0,0); render();
+}
+function tCheckEnd(t){
+  if(!t.bracket) return;
+  var fin=t.bracket[t.bracket.length-1][0];
+  var w=tWinnerOf(fin);
+  if(w){ t.status='done'; t.winner=w; } else { t.status='active'; t.winner=null; }
+}
+function tDelete(tid){
+  var t=tById(tid); if(!t) return;
+  if(!confirm('Supprimer ce tournoi ? Les résultats seront perdus.')) return;
+  D.tournois=D.tournois.filter(function(x){return x.id!==tid;});
+  S.tid=null; persist(); render();
+}
+
+/* ---------------------------- ÉCRANS ---------------------------- */
+function renderTournoi(hd,app,nav,banner){
+  hd.innerHTML=back()+'<h1>🏓 Le Tournoi<span class="sub">Poules et phases finales</span></h1><span style="width:38px"></span>';
+  var t=S.tid?tById(S.tid):null;
+  if(t){ app.innerHTML=banner+tBoard(t); return; }
+  if(rtab()==='res'){
+    nav.innerHTML=rubTabs('Nouveau','🏓',(D.tournois||[]).length);
+    app.innerHTML=banner+tHistory(); return;
+  }
+  nav.innerHTML=rubTabs('Nouveau','🏓',(D.tournois||[]).length);
+  app.innerHTML=banner+tConfig();
+}
+function tConfig(){
+  var s=tSettings(), pk=tPick(), ent=tEntrants();
+  var h='<div class="card" style="background:var(--bg)"><h2 style="font-size:14px;margin-bottom:8px">🏓 Comment ça marche</h2>'+
+    '<div style="display:flex;flex-direction:column;gap:6px;font-size:13px">'+
+    '<div><b>1.</b> Tu choisis qui participe, seul ou en équipes tirées au sort.</div>'+
+    '<div><b>2.</b> Tu saisis le score de chaque match, l\'app tient le tableau.</div>'+
+    '<div><b>3.</b> Les mieux classés passent en quarts, demies puis finale.</div>'+
+    '<div><b>4.</b> Le vainqueur peut être compté dans La Coupe et au Mur des champions.</div>'+
+    '</div></div>';
+
+  h+='<div class="card"><h2><span class="stepn">1</span>Qui joue ? ('+pk.length+')</h2>'+
+    playerGrid(pk,'tToggleP',null,'Touche un prénom pour l\'ajouter ou le retirer du tournoi.')+
+    '<div class="row" style="gap:6px;margin-top:12px">'+
+      [[0,'👤 Chacun pour soi'],[1,'👥 Par équipes']].map(function(o){
+        return '<button class="chip'+((s.team?1:0)===o[0]?' on':'')+'" style="flex:1;text-align:center" onclick="tSetTeam('+o[0]+')">'+o[1]+'</button>';
+      }).join('')+'</div>'+
+    (s.team?
+      '<p class="mini" style="margin:10px 0 6px">Taille des équipes</p><div class="chips">'+
+      [2,3].map(function(n){ return '<button class="chip'+(s.teamSize===n?' on':'')+'" onclick="tSetTeamSize('+n+')">'+n+' joueurs</button>'; }).join('')+'</div>'+
+      '<button class="sm" style="width:100%;margin-top:10px" onclick="tDrawTeams()">🎲 '+(s.teams?'Retirer les équipes au sort':'Tirer les équipes au sort')+'</button>'+
+      (s.teams? '<div style="margin-top:10px">'+ent.map(function(e,i){
+          return '<div style="display:flex;align-items:center;gap:7px;background:var(--bg);border-radius:10px;padding:7px 10px;margin-bottom:5px;font-size:13px">'+
+            '<b style="width:60px;font-size:12px;color:var(--mut)">Équipe '+(i+1)+'</b><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(e.name)+'</span></div>';
+        }).join('')+'</div>' : '<p class="mini" style="margin:8px 0 0">Les équipes sont tirées au hasard : personne ne choisit son camp.</p>')
+      :'')+
+    '</div>';
+
+  h+='<div class="card"><h2><span class="stepn">2</span>Format</h2>'+
+    '<div style="display:flex;flex-direction:column;gap:7px">'+
+    '<button class="chip'+(s.format==='poule'?' on':'')+'" style="text-align:left;padding:10px 12px;white-space:normal" onclick="tSetFormat(\'poule\')">'+
+      '<b>🔄 Poule puis phase finale</b><br><span style="font-weight:400;font-size:11.5px;opacity:.85">Tout le monde s\'affronte, puis les mieux classés jouent les finales. Personne n\'est éliminé au premier match.</span></button>'+
+    '<button class="chip'+(s.format==='direct'?' on':'')+'" style="text-align:left;padding:10px 12px;white-space:normal" onclick="tSetFormat(\'direct\')">'+
+      '<b>⚔️ Élimination directe</b><br><span style="font-weight:400;font-size:11.5px;opacity:.85">On perd, on sort. Court et nerveux, mais le premier éliminé regarde la suite.</span></button>'+
+    '</div>'+
+    (s.format==='poule'?
+      '<p class="mini" style="margin:10px 0 6px">Qualifiés pour la phase finale</p><div class="chips">'+
+      [2,4,8].filter(function(n){ return n<=Math.max(2,ent.length); }).map(function(n){
+        return '<button class="chip'+(s.qualifs===n?' on':'')+'" onclick="tSetQualifs('+n+')">'+n+'</button>';
+      }).join('')+'</div>'+
+      (ent.length>1? '<p class="mini" style="margin:8px 0 0">'+pl(ent.length*(ent.length-1)/2,'match')+' de poule à jouer.</p>':'')
+      :'')+
+    '</div>';
+
+  h+='<div class="card"><h2><span class="stepn">3</span>À quel jeu ?</h2><div class="chips">'+
+    T_GAMES.map(function(g){ return '<button class="chip'+(s.game===g?' on':'')+'" onclick="tSetGame(\''+g+'\')">'+g+'</button>'; }).join('')+
+    '</div><input id="tgame" placeholder="Autre jeu…" value="'+(T_GAMES.indexOf(s.game)<0?esc(s.game):'')+'" '+
+    'style="margin-top:10px;width:100%" onchange="tSetGame(this.value.trim()||\'Tournoi\')"></div>';
+
+  h+='<div class="card" style="background:var(--bg)"><h2 style="font-size:14px;margin-bottom:8px">📋 Ce que tu as choisi</h2>'+
+    '<div style="display:flex;flex-direction:column;gap:5px;font-size:13px">'+
+    '<div><b>Participants</b> · '+(ent.length? pl(ent.length, s.team?'équipe':'joueur') : 'aucun')+(s.team&&!s.teams?' — équipes à tirer':'')+'</div>'+
+    '<div><b>Format</b> · '+(s.format==='poule'?'poule puis phase finale à '+s.qualifs:'élimination directe')+'</div>'+
+    '<div><b>Jeu</b> · '+esc(s.game)+'</div>'+
+    '<div><b>Score</b> · saisi à chaque match</div>'+
+    '</div></div>';
+  h+='<button class="btn tournoi" style="font-size:17px" onclick="tStart()">🏓 Lancer le tournoi</button>';
+  return h;
+}
+
+/* ---- Le tableau en cours ---- */
+function tBoard(t){
+  var h='<button class="sm" style="margin-bottom:10px" onclick="S.tid=null;render()">‹ Tous les tournois</button>';
+  if(t.status==='done'){
+    h+='<div class="hero" style="text-align:center;background:linear-gradient(135deg,#9a3412,#f97316)">'+
+      '<p style="margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.9">Vainqueur du tournoi</p>'+
+      '<h2 style="margin:6px 0 0;font-size:26px">🏆 '+esc(tEntName(t,t.winner))+'</h2>'+
+      '<p style="margin:6px 0 0;font-size:13.5px;opacity:.94">'+esc(t.game)+' · '+fr(t.date)+'</p></div>'+
+      '<button class="btn tournoi" style="margin-bottom:12px" onclick="tToCoupe(\''+t.id+'\')">🏆 Compter dans La Coupe</button>';
+  } else {
+    h+='<div class="card" style="background:var(--bg)"><b style="font-size:15px">'+esc(t.game)+'</b>'+
+      '<p class="mini" style="margin:3px 0 0">'+pl(t.entrants.length, t.team?'équipe':'joueur')+' · '+
+      (t.format==='poule'?(t.bracket?'phase finale':'phase de poule'):'élimination directe')+' · '+fr(t.date)+'</p></div>';
+  }
+  if(t.poule && !t.bracket){
+    h+=tPouleView(t);
+  } else if(t.poule){
+    h+='<button class="sm" style="width:100%;margin-bottom:10px;background:var(--card);text-align:left" onclick="S.tPoule=!S.tPoule;render()">'+
+       (S.tPoule?'▾':'›')+' Revoir le classement de la poule</button>'+(S.tPoule?tPouleTable(t):'');
+  }
+  if(t.bracket) h+=tBracketView(t);
+  h+='<button class="sm" style="width:100%;margin-top:14px" onclick="tDelete(\''+t.id+'\')">🗑 Supprimer ce tournoi</button>';
+  return h;
+}
+function tMatchRow(t,m,lbl){
+  var w=tWinnerOf(m);
+  var exempt = (m.a&&!m.b)||(m.b&&!m.a);
+  var side=function(id,sc,key){
+    var win = w && w===id;
+    return '<div style="display:flex;align-items:center;gap:7px;padding:4px 0">'+
+      '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px;font-weight:'+(win?'800':'500')+'">'+
+        (win?'👑 ':'')+esc(id?tEntName(t,id):'À déterminer')+'</span>'+
+      (id? '<input type="number" inputmode="numeric" value="'+(sc===null||sc===undefined?'':sc)+'" '+
+        'style="width:56px;text-align:center;padding:6px 4px;font-size:15px;font-weight:700" '+
+        'onchange="tScore(\''+t.id+'\',\''+m.id+'\',\''+key+'\',this.value)">' : '')+
+      '</div>';
+  };
+  if(exempt){
+    return '<div style="border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:8px;opacity:.75">'+
+      (lbl?'<p class="mini" style="margin:0 0 3px">'+lbl+'</p>':'')+
+      '<div style="font-size:13.5px;font-weight:700">👑 '+esc(tEntName(t,m.a||m.b))+'</div>'+
+      '<p class="mini" style="margin:2px 0 0">Exempté : qualifié sans jouer</p></div>';
+  }
+  var tie = m.sa!==null && m.sb!==null && m.sa===m.sb;
+  return '<div style="border:1px solid '+(w?'var(--gr-b)':'var(--line)')+';border-radius:12px;padding:8px 10px;margin-bottom:8px;'+(w?'background:var(--gr-l)':'')+'">'+
+    (lbl?'<p class="mini" style="margin:0 0 3px">'+lbl+'</p>':'')+
+    side(m.a,m.sa,'sa')+side(m.b,m.sb,'sb')+
+    (tie?'<p class="mini" style="margin:2px 0 0;color:var(--nox)">Égalité impossible : il faut départager.</p>':'')+
+    '</div>';
+}
+function tPouleView(t){
+  var h=tPouleTable(t);
+  h+='<div class="card"><h2>Matchs de poule</h2>'+
+    t.poule.map(function(m){ return tMatchRow(t,m,''); }).join('')+'</div>';
+  var reste=t.poule.filter(function(m){ return !tWinnerOf(m); }).length;
+  h+= reste
+    ? '<p class="mini" style="text-align:center">Encore '+pl(reste,'match')+' avant la phase finale.</p>'
+    : '<button class="btn tournoi" onclick="tGoFinals(\''+t.id+'\')">⚔️ Lancer la phase finale ('+t.qualifs+' qualifiés)</button>';
+  return h;
+}
+function tPouleTable(t){
+  var l=tPouleRank(t), med=['🥇','🥈','🥉'];
+  return '<div class="card"><h2>Classement de la poule</h2>'+
+    '<div style="display:flex;align-items:center;gap:7px;padding-bottom:6px;border-bottom:1px solid var(--line);font-size:11px;font-weight:800;color:var(--mut)">'+
+      '<span style="width:18px"></span><span style="flex:1">PARTICIPANT</span>'+
+      '<span style="width:34px;text-align:right">V</span><span style="width:34px;text-align:right">J</span><span style="width:44px;text-align:right">DIFF</span></div>'+
+    l.map(function(p,i){
+      var q = i<t.qualifs;
+      return '<div style="display:flex;align-items:center;gap:7px;padding:7px 0;border-bottom:1px solid var(--line)'+(q?'':';opacity:.55')+'">'+
+        '<span style="width:18px;font-size:13px">'+(med[i]||(i+1))+'</span>'+
+        '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:13.5px">'+esc(p.name)+'</span>'+
+        '<b style="width:34px;text-align:right">'+p.v+'</b>'+
+        '<span style="width:34px;text-align:right;color:var(--mut)">'+p.j+'</span>'+
+        '<span style="width:44px;text-align:right;font-weight:700">'+(p.diff>0?'+':'')+p.diff+'</span></div>';
+    }).join('')+
+    '<p class="mini" style="margin:8px 0 0">V victoires · J joués · DIFF différence de points. Les '+t.qualifs+' premiers sont qualifiés.</p></div>';
+}
+function tBracketView(t){
+  return '<div class="card"><h2>Phase finale</h2>'+
+    t.bracket.map(function(r,ri){
+      return '<p style="margin:10px 0 6px;font-weight:800;font-size:13.5px">'+tRoundLabel(t.bracket,ri)+'</p>'+
+        r.map(function(m){ return tMatchRow(t,m,''); }).join('');
+    }).join('')+'</div>';
+}
+function tHistory(){
+  var l=D.tournois||[];
+  if(!l.length) return '<div class="empty"><div class="e">🏓</div><h3>Aucun tournoi</h3><p>Crée ton premier tournoi depuis l\'onglet Nouveau : pétanque, ping-pong, molkky… l\'app tient le tableau.</p></div>';
+  return '<div class="card"><h2>Tes tournois</h2>'+l.map(function(t){
+    var done=t.status==='done';
+    return '<button class="miniact" style="margin-bottom:8px" onclick="S.tid=\''+t.id+'\';window.scrollTo(0,0);render()">'+
+      '<span class="e">'+(done?'🏆':'▶︎')+'</span><span style="flex:1;min-width:0">'+
+      '<b>'+esc(t.game)+'</b><small>'+fr(t.date)+' · '+pl(t.entrants.length,t.team?'équipe':'joueur')+' · '+
+      (done?'vainqueur : '+esc(tEntName(t,t.winner)):'en cours')+'</small></span><span style="color:#d6d3d1">›</span></button>';
+  }).join('')+'</div>';
+}
+/* Même geste que le Tic-Tac : on propose, on n'impose pas. */
+function tToCoupe(tid){
+  var t=tById(tid); if(!t||!t.winner) return;
+  var live=D.matches.filter(function(m){return m.status!=='done';});
+  var el=document.createElement('div'); el.className='sheet'; el.id='tosh';
+  el.onclick=function(){ try{el.remove();}catch(e){} };
+  el.innerHTML='<div class="in" onclick="event.stopPropagation()"><div class="grab"></div>'+
+    '<h2 style="margin:2px 0 4px">➕ Compter dans La Coupe</h2>'+
+    '<p class="mini" style="margin:0 0 10px">Chaque participant reçoit ses victoires du tournoi comme points d\'une manche.</p>'+
+    (live.length? live.map(function(m){
+      return '<button class="sm" style="width:100%;margin-bottom:7px;background:var(--card);text-align:left" onclick="tToCoupeGo(\''+tid+'\',\''+m.id+'\')">▶︎ '+esc(m.name)+' — '+pl(m.rounds.length,'manche')+'</button>';
+    }).join('') : '<p class="mini" style="margin-bottom:10px">Aucune partie en cours.</p>')+
+    '<button class="btn" onclick="tToCoupeGo(\''+tid+'\',\'\')">+ Nouvelle partie « '+esc(t.game)+' »</button>'+
+    '<button class="btn grey" style="margin-top:8px" onclick="document.getElementById(\'tosh\').remove()">Annuler</button></div>';
+  document.body.appendChild(el);
+}
+function tToCoupeGo(tid,mid){
+  var sh=document.getElementById('tosh'); if(sh) sh.remove();
+  var t=tById(tid); if(!t) return;
+  var v=tVictories(t);
+  var players=t.entrants.map(function(e){ return {name:e.name, score:v[e.id]||0}; });
+  var m=D.matches.filter(function(x){return x.id===mid;})[0];
+  if(m){
+    var scores={};
+    players.forEach(function(p){
+      var ex=m.players.filter(function(q){return fp(q.name)===fp(p.name);})[0];
+      if(!ex){ ex={id:uid(),name:p.name}; m.players.push(ex); }
+      scores[ex.id]=p.score;
+    });
+    m.rounds.unshift({id:uid(), date:today(), scores:scores});
+    persist();
+  } else {
+    autoToCoupe(t.game,t.game,players);
+  }
+  toast('Ajouté à La Coupe 🏆'); render();
+}
+/* Victoires de chacun sur l'ensemble du tournoi, poule et finales confondues. */
+function tVictories(t){
+  var v={};
+  tAllMatches(t).forEach(function(m){
+    var w=tWinnerOf(m);
+    if(w && !((m.a&&!m.b)||(m.b&&!m.a))) v[w]=(v[w]||0)+1;
+  });
+  return v;
+}
+
 function championsAgg(){
   var agg={};
   function slot(name){ var k=fp(name); if(!k) return null;
-    if(!agg[k]) agg[k]={name:name, coupes:0, coupeParties:0, coupeManches:0, quizWins:0, quizGames:0, duels:0, duelWins:0}; return agg[k]; }
+    if(!agg[k]) agg[k]={name:name, coupes:0, coupeParties:0, coupeManches:0, quizWins:0, quizGames:0, duels:0, duelWins:0, tournois:0, tournoiWins:0}; return agg[k]; }
   // La Coupe : titres (champion cumul, toutes parties) + manches gagnées
   D.matches.forEach(function(m){
     var r=rank(m,function(rd){ return champInPeriod(rd.date); }); if(!r.count) return;
@@ -2236,6 +2632,21 @@ function championsAgg(){
     if(!champInPeriod(g.date)) return;
     g.players.forEach(function(p,i){ var s=slot(p.name); if(s){ s.quizGames++; if(i===0) s.quizWins++; } });
   });
+  /* Tournois : chaque participant compte une participation, le vainqueur une
+     couronne. Pour une équipe, chacun de ses membres est crédité. */
+  (D.tournois||[]).forEach(function(t){
+    if(!champInPeriod(t.date)) return;
+    t.entrants.forEach(function(e){
+      var noms = (e.members&&e.members.length) ? e.members.map(function(id){
+        var p=D.lib.filter(function(x){return x.id===id;})[0]; return p?p.name:null;
+      }).filter(Boolean) : [e.name];
+      noms.forEach(function(n){
+        var s=slot(n); if(!s) return;
+        s.tournois++;
+        if(t.status==='done' && t.winner===e.id) s.tournoiWins++;
+      });
+    });
+  });
   // Tic-Tac
   D.tictac.forEach(function(d){
     if(!champInPeriod(d.date)) return;
@@ -2247,11 +2658,11 @@ function championsAgg(){
      est désormais restituée séparément (voir renderChampions). */
   var hid=champHidden();
   var list=[]; for(var k in agg){ var a=agg[k];
-    a.crowns=a.coupes+a.quizWins+a.duelWins;
+    a.crowns=a.coupes+a.quizWins+a.duelWins+(a.tournoiWins||0);
     /* Parties réellement jouées, pour un taux honnête : au Micro et au Tic-Tac
        on connaît le nombre de participations ; à La Coupe, une partie gagnée ou
        non compte pour une. */
-    a.parties=a.quizGames+a.duels+a.coupeParties;
+    a.parties=a.quizGames+a.duels+a.coupeParties+(a.tournois||0);
     a.rate = a.parties ? Math.round(a.crowns/a.parties*100) : null;
     a.hidden = hid.indexOf(k)>=0;
     list.push(a); }
@@ -2320,7 +2731,7 @@ function renderChampions(hd,app,banner){
   hd.innerHTML=back()+'<h1>🏅 Mur des champions<span class="sub">Tous les jeux réunis</span></h1><span style="width:38px"></span>';
   var list=championsAgg();
   var h=banner;
-  if(!list.length || list.filter(function(p){return !p.hidden;}).every(function(p){return p.crowns===0 && !p.coupeManches && !p.quizGames && !p.duels;})){
+  if(!list.length || list.filter(function(p){return !p.hidden;}).every(function(p){return p.crowns===0 && !p.coupeManches && !p.quizGames && !p.duels && !p.tournois;})){
     h+='<div class="empty"><div class="e">🏅</div><h3>Le mur est encore vierge</h3><p>Joue des parties à La Coupe, au Micro ou au Tic-Tac : les couronnes de chacun s\'accumuleront ici, tous jeux confondus.</p></div>';
     app.innerHTML=h; return;
   }
@@ -2382,6 +2793,7 @@ function renderChampions(hd,app,banner){
         '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>🏆 La Coupe</span><b>'+pl(p.coupes,'titre')+' · '+pl(p.coupeManches,'manche gagnée')+'</b></div>'+
         '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>🎙️ Le Micro</span><b>'+p.quizWins+' / '+pl(p.quizGames,'partie')+'</b></div>'+
         '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>⏱️ Tic-Tac</span><b>'+p.duelWins+' / '+pl(p.duels,'duel')+'</b></div>'+
+        (p.tournois? '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>🏓 Le Tournoi</span><b>'+p.tournoiWins+' / '+pl(p.tournois,'tournoi')+'</b></div>':'')+
         '<button class="sm" style="width:100%;margin-top:8px" onclick="event.stopPropagation();champToggleHide(\''+esc(p.name).replace(/'/g,"\\'")+'\')">🙈 Masquer du mur</button>'+
       '</div>';
     }
@@ -2401,7 +2813,7 @@ function renderChampions(hd,app,banner){
   h+='<button class="sm" style="width:100%;margin-top:10px;background:var(--card);text-align:left" onclick="S.champByGame=!S.champByGame;render()">'+
      (S.champByGame?'▾':'›')+' Classement jeu par jeu</button>';
   if(S.champByGame) h+=champGameBlocks();
-  h+='<p class="mini" style="text-align:center;margin-top:10px">👑 = un titre à La Coupe, une partie du Micro gagnée, ou un duel Tic-Tac remporté.</p>';
+  h+='<p class="mini" style="text-align:center;margin-top:10px">👑 = un titre à La Coupe, une partie du Micro, un duel Tic-Tac ou un tournoi remporté.</p>';
   h+='<button class="btn dark" style="margin-top:10px" onclick="champShare()">📤 Partager le mur</button>';
   app.innerHTML=h;
 }
