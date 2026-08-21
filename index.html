@@ -404,7 +404,7 @@ function nowHM(){
 }
 function stamp(r){ return fr(r.date)+(r.time?' · '+r.time:''); }
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='101';
+var APP_VERSION='102';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -1976,15 +1976,6 @@ function microSimpleUI(){
     '<input placeholder="ex. « des questions sur la Bretagne », « pas de sport »" value="'+(D.microCustom||'').replace(/"/g,'&quot;')+'" onchange="D.microCustom=this.value;persist();render()"></div>';
 
   var noms=ids.map(function(id){ return (D.lib.filter(function(p){return p.id===id;})[0]||{}).name; }).filter(Boolean);
-  h+='<div class="card" style="background:var(--bg)"><h2 style="font-size:14px;margin-bottom:8px">📋 Ce que tu as choisi</h2>'+
-    '<div style="display:flex;flex-direction:column;gap:5px;font-size:13px">'+
-    '<div><b>Joueurs</b> · '+(noms.length?esc(noms.join(', ')):'aucun')+'</div>'+
-    '<div><b>Fin</b> · '+(microFin()==='questions'? microNbq()+' questions chacun' : 'premier à '+MICRO_BUT+' points')+', 1 point par bonne réponse</div>'+
-    '<div><b>Sujets</b> · '+(th.length? esc(th.map(function(x){return x.label;}).join(', '))+' <i>(imposés)</i>' : 'tous sujets')+'</div>'+
-    (D.journal.length?'<div><b>Anti-répétition</b> · '+pl(D.journal.length,'question')+' en mémoire</div>':'')+
-    ((D.microCustom||'').trim()?'<div><b>Consigne</b> · '+esc(D.microCustom.trim())+'</div>':'')+
-    '</div></div>';
-
   h+='<button class="btn micro" style="font-size:17px" onclick="briefGo()" aria-label="Générer le texte de lancement et ouvrir l assistant">🚀 Générer et lancer</button>'+
     '<p class="mini" style="text-align:center;margin:8px 2px 0">Colle le texte, puis active le <b>mode vocal 🎙️</b>. L\'animatrice te demandera confirmation avant la première question.</p>'+
     '<div class="row" style="margin-top:10px;gap:8px">'+
@@ -2502,16 +2493,8 @@ function renderTournoi(hd,app,nav,banner){
 }
 function tConfig(){
   var s=tSettings(), pk=tPick(), ent=tEntrants();
-  var h='<div class="card" style="background:var(--bg)"><h2 style="font-size:14px;margin-bottom:8px">🏓 Comment ça marche</h2>'+
-    '<div style="display:flex;flex-direction:column;gap:6px;font-size:13px">'+
-    '<div><b>1.</b> Tu choisis qui participe, seul ou en équipes tirées au sort.</div>'+
-    '<div><b>2.</b> Tu saisis le score de chaque match, l\'app tient le tableau.</div>'+
-    '<div><b>3.</b> Les mieux classés passent en quarts, demies puis finale.</div>'+
-    '<div><b>4.</b> Le vainqueur peut être compté dans La Coupe et au Mur des champions.</div>'+
-    '</div></div>';
-
-  h+='<div class="card"><h2><span class="stepn">1</span>Qui joue ? ('+pk.length+')</h2>'+
-    playerGrid(pk,'tToggleP',null,'Touche un prénom pour l\'ajouter ou le retirer du tournoi.')+
+  var h='<div class="card"><h2><span class="stepn">1</span>Qui joue ? ('+pk.length+')</h2>'+
+    playerGrid(pk,'tToggleP',null,'')+
     '<div class="row" style="gap:6px;margin-top:12px">'+
       [[0,'👤 Chacun pour soi'],[1,'👥 Par équipes']].map(function(o){
         return '<button class="chip'+((s.team?1:0)===o[0]?' on':'')+'" style="flex:1;text-align:center" onclick="tSetTeam('+o[0]+')">'+o[1]+'</button>';
@@ -2523,7 +2506,7 @@ function tConfig(){
       (s.teams? '<div style="margin-top:10px">'+ent.map(function(e,i){
           return '<div style="display:flex;align-items:center;gap:7px;background:var(--bg);border-radius:10px;padding:7px 10px;margin-bottom:5px;font-size:13px">'+
             '<b style="width:60px;font-size:12px;color:var(--mut)">Équipe '+(i+1)+'</b><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(e.name)+'</span></div>';
-        }).join('')+'</div>' : '<p class="mini" style="margin:8px 0 0">Les équipes sont tirées au hasard : personne ne choisit son camp.</p>')
+        }).join('')+'</div>' : '')
       :'')+
     '</div>';
 
@@ -2548,13 +2531,6 @@ function tConfig(){
     '</div><input id="tgame" placeholder="Autre jeu…" value="'+(T_GAMES.indexOf(s.game)<0?esc(s.game):'')+'" '+
     'style="margin-top:10px;width:100%" onchange="tSetGame(this.value.trim()||\'Tournoi\')"></div>';
 
-  h+='<div class="card" style="background:var(--bg)"><h2 style="font-size:14px;margin-bottom:8px">📋 Ce que tu as choisi</h2>'+
-    '<div style="display:flex;flex-direction:column;gap:5px;font-size:13px">'+
-    '<div><b>Participants</b> · '+(ent.length? pl(ent.length, s.team?'équipe':'joueur') : 'aucun')+(s.team&&!s.teams?' — équipes à tirer':'')+'</div>'+
-    '<div><b>Format</b> · '+(s.format==='poule'?'poule puis phase finale à '+s.qualifs:'élimination directe')+'</div>'+
-    '<div><b>Jeu</b> · '+esc(s.game)+'</div>'+
-    '<div><b>Score</b> · saisi à chaque match</div>'+
-    '</div></div>';
   h+='<button class="btn tournoi" style="font-size:17px" onclick="tStart()">🏓 Lancer le tournoi</button>';
   return h;
 }
@@ -2666,7 +2642,6 @@ function tList(t,matches){
 function tPouleView(t){
   var h=tPouleTable(t);
   h+='<div class="card"><h2>Matchs de poule</h2>'+
-    '<p class="mini" style="margin:0 0 9px">Un seul match est ouvert à la fois. Touche une ligne pour l\'ouvrir ou corriger son score.</p>'+
     tList(t,t.poule)+'</div>';
   var reste=t.poule.filter(function(m){ return !tWinnerOf(m); }).length;
   h+= reste
@@ -2704,7 +2679,6 @@ function tBoxTop(ri,i){
 function tBracketView(t){
   var B=t.bracket, u=BRK_H+BRK_G, totalH=u*B[0].length;
   var h='<div class="card"><h2>Le tableau</h2>'+
-    '<p class="mini" style="margin:0 0 8px">Touche un match pour saisir ou corriger son score. Fais glisser vers la droite pour voir la suite du tableau.</p>'+
     '<div class="brk" style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px">'+
     '<div style="display:flex;align-items:flex-start;min-width:min-content">';
   B.forEach(function(r,ri){
@@ -2751,7 +2725,6 @@ function tPlayNow(t){
   if(tour<0) return t.status==='done' ? '' :
     '<p class="mini" style="text-align:center">Les matchs du tour suivant s\'ouvriront dès que les précédents seront joués.</p>';
   return '<div class="card"><h2>À jouer maintenant — '+tRoundLabel(B,tour)+'</h2>'+
-    '<p class="mini" style="margin:0 0 9px">Un seul match est ouvert à la fois. Les couleurs sont les mêmes que dans le tableau.</p>'+
     tList(t,B[tour])+'</div>';
 }
 /* Une case du tableau : deux lignes, le vainqueur en gras sur fond vert. */
@@ -2911,7 +2884,7 @@ function champByGame(){
 function champGameBlocks(){
   var g=champByGame(); if(!g.length) return '';
   var med=['🥇','🥈','🥉'];
-  return '<div class="card" style="margin-top:8px"><p class="mini" style="margin:0 0 10px">Une victoire au Uno et une manche de Tic-Tac ne se comparent pas : chaque jeu a son classement.</p>'+
+  return '<div class="card" style="margin-top:8px">'+
     g.map(function(b){
       return '<div style="margin-bottom:12px">'+
         '<p style="margin:0 0 5px;font-weight:800;font-size:13.5px">'+esc(b.game)+'</p>'+
@@ -2994,8 +2967,7 @@ function renderChampions(hd,app,banner){
       '</div>';
     }
   });
-  h+='<p class="mini" style="margin:8px 0 0">Touche 👑 ou TAUX pour changer le classement, un prénom pour le détail.'+
-     (faibles?' <b>*</b> moins de '+CHAMP_MIN+' parties : taux indicatif, hors classement.':'')+'</p>';
+  if(faibles) h+='<p class="mini" style="margin:8px 0 0"><b>*</b> moins de '+CHAMP_MIN+' parties : taux indicatif, hors classement.</p>';
   h+='</div>';
   if(hiddenList.length){
     h+='<button class="sm" style="width:100%;margin-top:10px;background:var(--card);text-align:left" onclick="S.champShowHid=!S.champShowHid;render()">'+
@@ -3793,14 +3765,7 @@ function chConfig(){
   var s=chSettings();
   var presets=[30,45,60,90,120];
   var pk=chPick();
-  var h='<div class="card" style="background:var(--bg)"><h2 style="font-size:14px;margin-bottom:8px">⏱️ Comment ça marche</h2>'+
-    '<div style="display:flex;flex-direction:column;gap:6px;font-size:13px">'+
-    '<div><b>1.</b> Chaque joueur a son propre chrono, qui ne tourne que pendant son tour.</div>'+
-    '<div><b>2.</b> Tu valides ses réponses : la main passe selon la règle choisie.</div>'+
-    '<div><b>3.</b> À zéro seconde, il est éliminé. Le dernier debout gagne.</div>'+
-    '<div><b>4.</b> En fin de manche, tu peux compter le résultat dans La Coupe.</div>'+
-    '</div></div>';
-  h+='<div class="card"><h2><span class="stepn">1</span>Qui joue ? ('+pk.length+')</h2>'+
+  var h='<div class="card"><h2><span class="stepn">1</span>Qui joue ? ('+pk.length+')</h2>'+
     playerGrid(pk,'chToggleP',function(pl){ return pillBtn('cycleChSecs',pl.id,chSecsLabel(pl.id)); },
       'Touche la pastille sous un prénom pour lui donner un temps différent. « défaut » = le temps commun réglé juste en dessous.')+
     '</div>';
@@ -3856,14 +3821,6 @@ function chConfig(){
   var lb=function(v){ return v<60?v+'s':(v%60?Math.floor(v/60)+'′'+(v%60):(v/60)+' min'); };
   var passLb={wrong:'après une erreur',good:'après une bonne réponse',both:'au choix pendant le jeu'}[s.pass||'wrong'];
   var thSel=chThemes().map(function(id){ var t=themeById(id); return t?t.label:''; }).filter(Boolean);
-  h+='<div class="card" style="background:var(--bg)"><h2 style="font-size:14px;margin-bottom:8px">📋 Ce que tu as choisi</h2>'+
-    '<div style="display:flex;flex-direction:column;gap:5px;font-size:13px">'+
-    '<div><b>Joueurs</b> · '+(chNames().length?esc(chNames().join(', ')):'aucun')+'</div>'+
-    '<div><b>Temps</b> · '+lb(s.secs)+' chacun'+(Object.keys(s.custom||{}).length?' <i>(dont des temps personnalisés)</i>':'')+'</div>'+
-    '<div><b>La main passe</b> · '+passLb+'</div>'+
-    '<div><b>Questions</b> · '+(qOn? 'proposées par l\'app — '+(thSel.length?esc(thSel.join(', ')):'tous sujets')+', niveau '+esc(lvlOf(chLvl()).label) : 'les vôtres, à voix haute')+'</div>'+
-    '<div><b>Son</b> · '+(s.sound?'activé':'silencieux')+'</div>'+
-    '</div></div>';
   h+='<button class="btn tictac" style="font-size:17px" onclick="chStart()">⏱️ Démarrer la partie</button>';
   /* L'historique des duels n'est plus doublonné ici : le Mur des champions
      est le seul palmarès de l'app (chDelDuel reste appelable depuis là). */
@@ -4210,7 +4167,7 @@ function chGame(){
   h+='</div>';
   var passLbl=(chSettings().pass||'wrong')==='good'?'la main passe apr\u00E8s une bonne r\u00E9ponse'
              :((chSettings().pass||'wrong')==='both'?'tu d\u00E9cides quand la main passe':'il garde la main tant qu\'il r\u00E9pond juste');
-  h+='<p class="mini" style="text-align:center;margin:-4px 0 10px">Sous chaque joueur : \u2713 bonnes \u00B7 \u2717 mauvaises \u00B7 taux et rang en direct \u00B7 '+passLbl+'.</p>';
+  h+='<p class="mini" style="text-align:center;margin:-4px 0 10px">'+passLbl.charAt(0).toUpperCase()+passLbl.slice(1)+'.</p>';
 
   // contrôle principal : Démarrer / Pause
   h+= CH.running
