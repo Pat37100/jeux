@@ -404,7 +404,7 @@ function nowHM(){
 }
 function stamp(r){ return fr(r.date)+(r.time?' · '+r.time:''); }
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='99';
+var APP_VERSION='100';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -2380,6 +2380,8 @@ function tScore(tid, mid, side, v){
   m[side]=n;
   if(t.bracket) tPropagate(t.bracket);
   tCheckEnd(t);
+  /* Match complet : on referme et le suivant s'ouvre de lui-même. */
+  if(tWinnerOf(m) && S.tEdit===mid) S.tEdit=null;
   persist(); render();
 }
 function tAllMatches(t){
@@ -2533,6 +2535,7 @@ function tMatchRow(t,m,lbl){
         'aria-label="Score de '+esc(tEntName(t,id))+'" '+
         'style="width:58px;text-align:center;padding:7px 4px;font-size:16px;font-weight:800;'+
         'border:2px solid '+(win?'var(--gr-b)':'var(--line)')+';border-radius:10px" '+
+        'onfocus="tFocus(this)" '+
         'onchange="tScore(\''+t.id+'\',\''+m.id+'\',\''+key+'\',this.value)">' : '')+
       '</div>';
   };
@@ -2558,12 +2561,50 @@ function tMatchRow(t,m,lbl){
     (moitie?'<p class="mini" style="margin:4px 0 0;color:var(--nox);font-weight:700">Il manque un score.</p>':'')+
     '</div>';
 }
+/* Ligne repliée : ce qui est joué, ou ce qui attend son tour. */
+function tLine(t,m,num){
+  var w=tWinnerOf(m), perdu=w? (w===m.a?m.b:m.a) : null;
+  var sW=w? Math.max(m.sa,m.sb):null, sP=w? Math.min(m.sa,m.sb):null;
+  return '<button onclick="tOpen(\''+m.id+'\')" style="display:flex;align-items:center;gap:8px;width:100%;'+
+    'border:1px solid var(--line);border-radius:11px;padding:7px 10px;margin-bottom:6px;background:'+(w?'var(--gr-l)':'var(--card)')+';'+
+    'font-family:inherit;cursor:pointer;text-align:left">'+
+    '<span style="flex:0 0 30px;font-size:10.5px;font-weight:800;color:var(--mut)">'+num+'</span>'+
+    (w
+      ? tDot(t,w,20)+'<b style="font-size:13px;max-width:34%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(tEntName(t,w))+'</b>'+
+        '<b style="font-size:13px;color:var(--okx)">'+sW+'</b>'+
+        '<span style="font-size:11px;color:var(--mut)">–</span>'+
+        '<span style="font-size:13px;color:var(--mut)">'+sP+'</span>'+
+        '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--mut)">'+esc(tEntName(t,perdu))+'</span>'+
+        '<span style="font-size:13px">👑</span>'
+      : tDot(t,m.a,20)+'<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px">'+esc(tEntName(t,m.a))+'</span>'+
+        '<span style="font-size:10.5px;color:var(--mut);font-weight:700">contre</span>'+
+        tDot(t,m.b,20)+'<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px">'+esc(tEntName(t,m.b))+'</span>')+
+    '</button>';
+}
+/* Une liste de matchs : un seul ouvert, les autres repliés. */
+function tList(t,matches){
+  var jouables=matches.filter(function(m){ return m.a&&m.b; });
+  var ouvert=null;
+  if(S.tEdit && jouables.some(function(m){ return m.id===S.tEdit; })) ouvert=S.tEdit;
+  else { var pre=jouables.filter(function(m){ return !tWinnerOf(m); })[0]; ouvert=pre?pre.id:null; }
+  var faits=jouables.filter(function(m){ return tWinnerOf(m); }).length;
+  var h='<div style="display:flex;align-items:center;gap:8px;margin:0 0 10px">'+
+    '<div style="flex:1;height:6px;border-radius:99px;background:var(--bg);overflow:hidden">'+
+      '<div style="height:100%;width:'+(jouables.length?Math.round(faits/jouables.length*100):0)+'%;background:var(--gr)"></div></div>'+
+    '<span class="mini" style="font-weight:800">'+faits+' / '+jouables.length+'</span></div>';
+  h+=matches.map(function(m,i){
+    if(m.bye) return tMatchRow(t,m,'');
+    if(!m.a||!m.b) return '';
+    return m.id===ouvert ? tMatchRow(t,m,'Match '+(i+1)+' sur '+matches.length)
+                         : tLine(t,m,'#'+(i+1));
+  }).join('');
+  return h;
+}
 function tPouleView(t){
   var h=tPouleTable(t);
-  var reste0=t.poule.filter(function(m){ return !tWinnerOf(m); });
   h+='<div class="card"><h2>Matchs de poule</h2>'+
-    '<p class="mini" style="margin:0 0 9px">Chaque participant a sa couleur et ses initiales, pour ne pas saisir un score dans le mauvais match.</p>'+
-    t.poule.map(function(m,i){ return tMatchRow(t,m,'Match '+(i+1)+' sur '+t.poule.length); }).join('')+'</div>';
+    '<p class="mini" style="margin:0 0 9px">Un seul match est ouvert à la fois. Touche une ligne pour l\'ouvrir ou corriger son score.</p>'+
+    tList(t,t.poule)+'</div>';
   var reste=t.poule.filter(function(m){ return !tWinnerOf(m); }).length;
   h+= reste
     ? '<p class="mini" style="text-align:center">Encore '+pl(reste,'match')+' avant la phase finale.</p>'
@@ -2646,10 +2687,9 @@ function tPlayNow(t){
   B.forEach(function(r,ri){ if(tour<0 && r.some(function(m){ return m.a&&m.b&&!tWinnerOf(m); })) tour=ri; });
   if(tour<0) return t.status==='done' ? '' :
     '<p class="mini" style="text-align:center">Les matchs du tour suivant s\'ouvriront dès que les précédents seront joués.</p>';
-  var jouables=B[tour].filter(function(m){ return m.a&&m.b&&!tWinnerOf(m); });
   return '<div class="card"><h2>À jouer maintenant — '+tRoundLabel(B,tour)+'</h2>'+
-    '<p class="mini" style="margin:0 0 9px">'+pl(jouables.length,'match')+' à saisir. La couleur et les initiales sont les mêmes que dans le tableau.</p>'+
-    jouables.map(function(m,i){ return tMatchRow(t,m,'Match '+(i+1)+' sur '+jouables.length); }).join('')+'</div>';
+    '<p class="mini" style="margin:0 0 9px">Un seul match est ouvert à la fois. Les couleurs sont les mêmes que dans le tableau.</p>'+
+    tList(t,B[tour])+'</div>';
 }
 /* Une case du tableau : deux lignes, le vainqueur en gras sur fond vert. */
 function tBox(t,m,top){
@@ -2675,6 +2715,11 @@ function tBox(t,m,top){
     '</button>';
 }
 function tOpen(id){ S.tEdit=(S.tEdit===id?null:id); persist(); render(); }
+/* Remonte le champ au milieu de l'écran : le clavier du téléphone couvre
+   sinon la ligne de confirmation, qui est justement le garde-fou. */
+function tFocus(el){
+  try{ setTimeout(function(){ el.scrollIntoView({block:'center',behavior:'smooth'}); },220); }catch(e){}
+}
 function tHistory(){
   var l=D.tournois||[];
   if(!l.length) return '<div class="empty"><div class="e">🏓</div><h3>Aucun tournoi</h3><p>Crée ton premier tournoi depuis l\'onglet Nouveau : pétanque, ping-pong, molkky… l\'app tient le tableau.</p></div>';
