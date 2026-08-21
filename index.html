@@ -395,8 +395,16 @@ function persist(){
 
 /* ============================= UTILS ============================== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+/* Heure de la manche : sans elle, trois parties du même jour se ressemblent
+   toutes dans l'historique. On l'écrit à la création et on l'affiche partout
+   où une date apparaît seule. */
+function nowHM(){
+  var d=new Date(), h=d.getHours(), m=d.getMinutes();
+  return (h<10?'0':'')+h+'h'+(m<10?'0':'')+m;
+}
+function stamp(r){ return fr(r.date)+(r.time?' · '+r.time:''); }
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='95';
+var APP_VERSION='96';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -1151,7 +1159,7 @@ function tabRankBody(m){
       h+='<div style="background:var(--bg);border-radius:12px;padding:10px 12px;margin:-2px 0 6px">'+
         (det.length?'<div style="font-size:11px;text-transform:uppercase;color:#78716c;font-weight:700;margin-bottom:6px">Détail de '+esc(p.name)+' — '+pl(det.length,'manche')+'</div>'+
           det.map(function(r){var w=winners(r,m.players,m.winRule).indexOf(p.id)>=0;
-            return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 0"><span style="color:#78716c">'+fr(r.date)+'</span><b style="color:'+(w?'#059669':'#1c1917')+'">'+nf(r.scores[p.id])+(w?' 👑':'')+'</b></div>';}).join(''):
+            return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:2px 0"><span style="color:#78716c">'+stamp(r)+'</span><b style="color:'+(w?'#059669':'#1c1917')+'">'+nf(r.scores[p.id])+(w?' 👑':'')+'</b></div>';}).join(''):
           '<p class="mini">Aucune manche sur la période.</p>')+'</div>';
     }
   });
@@ -1211,7 +1219,7 @@ function saveRound(){
     hit(PENTA[4],{dur:.18,vol:.26,fm:.5,fmRatio:3.01,cut:6000,rev:.3});
     toast('Manche corrigée ✓');window.scrollTo(0,0);render();return;
   }
-  m.rounds.unshift({id:uid(),date:S.date||today(),scores:sc});
+  m.rounds.unshift({id:uid(),date:S.date||today(),time:nowHM(),scores:sc});
   persist();S.inputs={};S.date=today();S.tab='rank';hit(PENTA[4],{dur:.18,vol:.26,fm:.5,fmRatio:3.01,cut:6000,rev:.3});hit(PENTA[6],{delay:.07,dur:.32,vol:.22,fm:.6,fmRatio:3.01,cut:7000,rev:.35});toast('Manche enregistrée ✓');window.scrollTo(0,0);render();
 }
 var GCOLORS=['#059669','#7c3aed','#d97706','#e11d48','#2563eb','#0d9488','#c026d3','#65a30d'];
@@ -1252,7 +1260,7 @@ function histGrid(m){
   var maxPts=Math.max.apply(null,order.map(function(p){return Math.abs(p.points)||0;}))||1;
   // en-têtes : M1, M2… + total
   var head='<tr><th class="stick">Joueur / équipe</th>'+
-    rounds.map(function(rd,i){return '<th title="'+fr(rd.date)+' — toucher pour corriger" style="cursor:pointer" onclick="editRound(\''+rd.id+'\')">M'+(i+1)+'<br><span style="font-size:10px;opacity:.6">✏️</span></th>';}).join('')+
+    rounds.map(function(rd,i){return '<th title="'+stamp(rd)+' — toucher pour corriger" style="cursor:pointer" onclick="editRound(\''+rd.id+'\')">M'+(i+1)+'<br><span style="font-size:10px;opacity:.6">'+(rd.time||'✏️')+'</span></th>';}).join('')+
     '<th class="tot">Total</th></tr>';
   var body=order.map(function(p,pi){
     var cells=rounds.map(function(rd){
@@ -1354,7 +1362,7 @@ function tabHist(m){
     return '<div class="swipe flat" data-reveal="168" style="--reveal:168px"><div class="acts">'+
       '<button class="arch" onclick="editRound(\''+r.id+'\')"><span class="ic">✏️</span>Corriger</button>'+
       '<button class="del" style="width:84px" onclick="delRound(\''+r.id+'\')"><span class="ic">🗑</span>Supprimer</button></div>'+
-      '<div class="front"><div class="hist" style="margin:0"><div class="top"><span class="dt">'+fr(r.date)+'</span><span style="display:flex;gap:8px;align-items:center">'+
+      '<div class="front"><div class="hist" style="margin:0"><div class="top"><span class="dt">'+stamp(r)+'</span><span style="display:flex;gap:8px;align-items:center">'+
       (wn?'<span class="w">👑 '+esc(wn)+'</span>':'')+
       '</span></div>'+
       '<div class="sc">'+sc+'</div>'+
@@ -2045,9 +2053,11 @@ function copyJournal(){copy(D.journal.map(function(e){return e.text;}).join('\n'
    restante est « on le compte aussi dans La Coupe ? ». */
 /* Une partie de Tic-Tac ou du Micro rejoint automatiquement La Coupe, dans
    une partie portant le nom du jeu : plus rien à sélectionner. */
+/* Un seul geste : on cherche la partie ouverte qui porte le nom du jeu, on la
+   crée si elle n'existe pas, on y ajoute la manche. Aucune question posée. */
 function autoToCoupe(label, game, players){
   if(!players || !players.length) return null;
-  var m=D.matches.filter(function(x){ return x.status!=='done' && x.name===label; })[0];
+  var m=D.matches.filter(function(x){ return x.status!=='done' && fp(x.name)===fp(label); })[0];
   if(!m){
     m={id:uid(),name:label,game:game,winRule:'high',status:'active',created:today(),players:[],rounds:[],target:null};
     D.matches.unshift(m);
@@ -2059,42 +2069,17 @@ function autoToCoupe(label, game, players){
     var v=(p.score!==null&&p.score!==undefined)?p.score:(p.pts!==undefined?p.pts:(p.good||0));
     scores[ex.id]=v;
   });
-  m.rounds.unshift({id:uid(), date:today(), scores:scores});
+  m.rounds.unshift({id:uid(), date:today(), time:nowHM(), label:label, scores:scores});
   persist();
   return m;
 }
-function microOfferCoupe(){
+/* Le Micro : le jeu s'appelle « Le Micro », c'est ce nom qui va dans La Coupe. */
+function microSaveToCoupe(){
   var last=D.micro&&D.micro[0]; if(!last||!last.players||!last.players.length) return;
-  var live=D.matches.filter(function(m){return m.status!=='done';});
-  var el=document.createElement('div'); el.className='sheet'; el.id='mcsh';
-  el.onclick=function(){ try{el.remove();}catch(e){} };
-  el.innerHTML='<div class="in" onclick="event.stopPropagation()"><div class="grab"></div>'+
-    '<h2 style="margin:2px 0 4px">➕ Compter dans La Coupe ?</h2>'+
-    '<p class="mini" style="margin:0 0 10px">Les scores du quiz deviennent une manche. La partie reste au Mur des champions dans tous les cas.</p>'+
-    (live.length? live.map(function(m){
-      return '<button class="sm" style="width:100%;margin-bottom:7px;background:var(--card);text-align:left" onclick="microToCoupe(\''+m.id+'\')">▶︎ '+esc(m.name)+' — '+pl(m.rounds.length,'manche')+'</button>';
-    }).join('') : '<p class="mini" style="margin-bottom:10px">Aucune partie en cours.</p>')+
-    '<button class="btn" onclick="microToCoupe(\'\')">+ Nouvelle partie « Le Micro »</button>'+
-    '<button class="btn grey" style="margin-top:8px" onclick="document.getElementById(\'mcsh\').remove()">Non merci</button></div>';
-  document.body.appendChild(el);
-}
-function microToCoupe(id){
-  var sh=document.getElementById('mcsh'); if(sh) sh.remove();
-  var last=D.micro&&D.micro[0]; if(!last) return;
-  var m=D.matches.filter(function(x){return x.id===id;})[0];
-  if(!m){
-    m={id:uid(),name:'Le Micro',game:'Quiz',date:today(),status:'live',winRule:'high',target:null,players:[],rounds:[]};
-    D.matches.unshift(m);
-  }
-  var scores={};
-  last.players.forEach(function(p){
-    var ex=m.players.filter(function(q){return q.name===p.name;})[0];
-    if(!ex){ ex={id:uid(),name:p.name}; m.players.push(ex); }
-    scores[ex.id]=p.pts!==undefined?p.pts:(p.score||0);
-  });
-  m.rounds.unshift({id:uid(),date:last.date||today(),scores:scores});
-  persist(); toast('Partie ajoutée à « '+m.name+' » 🏆');
-  S.matchId=m.id; S.tab='rank'; S.histMode='grid'; go('match');
+  var players=last.players.map(function(p){ return {name:p.name, score:(p.pts!==undefined?p.pts:(p.score||0))}; });
+  var m=autoToCoupe('Le Micro','Quiz',players);
+  if(m) toast('Ajouté à « '+m.name+' » 🏆');
+  render();
 }
 function microOpen(){ S.microSheet=true; render(); }
 function microClose(){ S.microSheet=false; render(); }
@@ -2140,7 +2125,7 @@ function microWin(i){
   reviewMoment(); persist(); S.microSheet=false; S.microDetail=false;
   toast((players[0]?players[0].name:'Résultat')+' gagne 🏆'); render();
   /* Même geste qu'au Tic-Tac : on propose, on n'impose pas. */
-  try{ microOfferCoupe(); }catch(e){}
+  try{ microSaveToCoupe(); }catch(e){}
 }
 function microSave(){
   var date=document.getElementById('mqd').value||today();
@@ -2159,7 +2144,7 @@ function microSave(){
   D.micro.unshift({id:uid(), date:date, players:players});
   reviewMoment(); persist(); S.microSheet=false; toast('Résultat enregistré 🏆'); render();
   /* Même geste qu'au Tic-Tac : on propose, on n'impose pas. */
-  try{ microOfferCoupe(); }catch(e){}
+  try{ microSaveToCoupe(); }catch(e){}
 }
 function microDel(id){
   var idx=D.micro.findIndex(function(g){return g.id===id;});
@@ -2573,38 +2558,10 @@ function tHistory(){
 /* Même geste que le Tic-Tac : on propose, on n'impose pas. */
 function tToCoupe(tid){
   var t=tById(tid); if(!t||!t.winner) return;
-  var live=D.matches.filter(function(m){return m.status!=='done';});
-  var el=document.createElement('div'); el.className='sheet'; el.id='tosh';
-  el.onclick=function(){ try{el.remove();}catch(e){} };
-  el.innerHTML='<div class="in" onclick="event.stopPropagation()"><div class="grab"></div>'+
-    '<h2 style="margin:2px 0 4px">➕ Compter dans La Coupe</h2>'+
-    '<p class="mini" style="margin:0 0 10px">Chaque participant reçoit ses victoires du tournoi comme points d\'une manche.</p>'+
-    (live.length? live.map(function(m){
-      return '<button class="sm" style="width:100%;margin-bottom:7px;background:var(--card);text-align:left" onclick="tToCoupeGo(\''+tid+'\',\''+m.id+'\')">▶︎ '+esc(m.name)+' — '+pl(m.rounds.length,'manche')+'</button>';
-    }).join('') : '<p class="mini" style="margin-bottom:10px">Aucune partie en cours.</p>')+
-    '<button class="btn" onclick="tToCoupeGo(\''+tid+'\',\'\')">+ Nouvelle partie « '+esc(t.game)+' »</button>'+
-    '<button class="btn grey" style="margin-top:8px" onclick="document.getElementById(\'tosh\').remove()">Annuler</button></div>';
-  document.body.appendChild(el);
-}
-function tToCoupeGo(tid,mid){
-  var sh=document.getElementById('tosh'); if(sh) sh.remove();
-  var t=tById(tid); if(!t) return;
   var v=tVictories(t);
   var players=t.entrants.map(function(e){ return {name:e.name, score:v[e.id]||0}; });
-  var m=D.matches.filter(function(x){return x.id===mid;})[0];
-  if(m){
-    var scores={};
-    players.forEach(function(p){
-      var ex=m.players.filter(function(q){return fp(q.name)===fp(p.name);})[0];
-      if(!ex){ ex={id:uid(),name:p.name}; m.players.push(ex); }
-      scores[ex.id]=p.score;
-    });
-    m.rounds.unshift({id:uid(), date:today(), scores:scores});
-    persist();
-  } else {
-    autoToCoupe(t.game,t.game,players);
-  }
-  toast('Ajouté à La Coupe 🏆'); render();
+  var m=autoToCoupe(t.game, t.game, players);      // le nom du jeu, pas « Tournoi »
+  if(m){ toast('Tournoi ajouté à « '+m.name+' » 🏆'); S.matchId=m.id; S.tab='rank'; S.histMode='grid'; go('match'); }
 }
 /* Victoires de chacun sur l'ensemble du tournoi, poule et finales confondues. */
 function tVictories(t){
@@ -3576,43 +3533,15 @@ function chSaveDuel(silent){ reviewMoment(); D.live=null;
 }
 /* Passerelle Tic-Tac -> La Coupe : les ✓ deviennent les points d'une manche.
    Pas de rubrique en plus : on réutilise les parties existantes. */
+/* Tic-Tac : une pression, la manche part dans la partie « Tic-Tac » de
+   La Coupe, créée au besoin. La feuille de choix a été retirée : elle
+   demandait trois gestes pour une décision que personne ne prenait autrement. */
 function chToCoupe(){
   if(!CH) return;
-  var live=D.matches.filter(function(m){return m.status!=='done';});
-  var el=document.createElement('div'); el.className='sheet'; el.id='tcsh';
-  el.onclick=function(){ try{el.remove();}catch(e){} };
-  el.innerHTML='<div class="in" onclick="event.stopPropagation()"><div class="grab"></div>'+
-    '<h2 style="margin:2px 0 4px">➕ Compter dans La Coupe</h2>'+
-    '<p class="mini" style="margin:0 0 10px">Les ✓ deviennent les points d\'une manche. La manche reste au Mur des champions dans tous les cas.</p>'+
-    (live.length? live.map(function(m){
-      return '<button class="sm" style="width:100%;margin-bottom:7px;background:var(--card);text-align:left" onclick="chToCoupeGo(\''+m.id+'\')">▶︎ '+esc(m.name)+' — '+pl(m.rounds.length,'manche')+'</button>';
-    }).join('') : '<p class="mini" style="margin-bottom:10px">Aucune partie en cours.</p>')+
-    '<button class="btn" onclick="chToCoupeGo(\'\')">+ Nouvelle partie « Tic-Tac »</button>'+
-    '<button class="btn grey" style="margin-top:8px" onclick="document.getElementById(\'tcsh\').remove()">Annuler</button></div>';
-  document.body.appendChild(el);
-}
-function chSaveOnly(){
-  var sh=document.getElementById('tcsh'); if(sh) sh.remove();
-  chSaveDuel();
-}
-function chToCoupeGo(id){
-  var sh=document.getElementById('tcsh'); if(sh) sh.remove();
-  if(!CH) return;
   if(!CH.saved) chSaveDuel();
-  var m=D.matches.filter(function(x){return x.id===id;})[0];
-  if(!m){
-    m={id:uid(),name:'Tic-Tac',game:'Quiz',date:today(),status:'live',winRule:'high',target:null,players:[],rounds:[]};
-    D.matches.unshift(m);
-  }
-  var scores={};
-  CH.players.forEach(function(p){
-    var ex=m.players.filter(function(q){return q.name===p.name;})[0];
-    if(!ex){ ex={id:uid(),name:p.name}; m.players.push(ex); }
-    scores[ex.id]=p.good;
-  });
-  m.rounds.unshift({id:uid(),date:today(),scores:scores});
-  persist(); toast('Manche ajoutée à « '+m.name+' » 🏆');
-  S.matchId=m.id; S.tab='rank'; S.histMode='grid'; go('match');
+  var players=CH.players.map(function(p){ return {name:p.name, score:p.good}; });
+  var m=autoToCoupe('Tic-Tac','Quiz',players);
+  if(m){ toast('Manche ajoutée à « '+m.name+' » 🏆'); S.matchId=m.id; S.tab='rank'; S.histMode='grid'; go('match'); }
 }
 function chDelDuel(id){
   var idx=D.tictac.findIndex(function(d){return d.id===id;});
