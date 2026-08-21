@@ -9,11 +9,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="En Jeux">
-<title>En Jeux — votre maître du jeu de poche</title>
+<title>En Jeux — le maître du jeu de poche</title>
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="description" content="En Jeux : trois jeux dans votre poche — scores, duel de temps et quiz animé. En famille, entre amis, en voiture.">
+<meta name="description" content="En Jeux : quatre jeux dans la poche — scores, duel de temps, quiz animé et tournois. En famille, entre amis, en voiture.">
 <style>
   :root{
     --bg:#f5f5f4; --card:#fff; --line:#e7e5e4; --ink:#1c1917; --mut:#78716c; --soft:#78716c;
@@ -404,7 +404,7 @@ function nowHM(){
 }
 function stamp(r){ return fr(r.date)+(r.time?' · '+r.time:''); }
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='97';
+var APP_VERSION='98';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -537,7 +537,7 @@ function render_(){
 
   if(S.view==='home'){
     if(!D.onboarded) setTimeout(obDraw,50);
-    hd.innerHTML='<span style="width:38px"></span><h1>En Jeux<span class="sub">Votre maître du jeu de poche</span></h1>'+
+    hd.innerHTML='<span style="width:38px"></span><h1>En Jeux<span class="sub">Le maître du jeu de poche</span></h1>'+
       '<button class="icobtn" onclick="go(\'save\')">⚙︎</button>';
     app.innerHTML=banner+
       '<div class="hero" style="padding:20px 20px 17px"><span class="dice">🎲</span>'+
@@ -550,7 +550,7 @@ function render_(){
           return '<button class="tool t-tictac" style="padding:12px 16px" onclick="go(\'chrono\')">'+
             '<span class="em" style="width:44px;height:44px;font-size:22px">⏱️</span>'+
             '<span style="flex:1;min-width:0;position:relative;z-index:1"><b>Duel en cours</b>'+
-            '<small>'+pl(D.live.players.filter(function(p){return !p.out;}).length,'joueur')+' encore en lice — reprends où vous en étiez</small></span>'+
+            '<small>'+pl(D.live.players.filter(function(p){return !p.out;}).length,'joueur')+' encore en lice — la partie vous attend</small></span>'+
             '<span style="color:#d6d3d1">›</span></button>';
         }
         return '';
@@ -567,7 +567,7 @@ function render_(){
         D.matches.length?pl(D.matches.length,'partie')+' en mémoire':'','Scores & palmarès')+
       tool('chrono','⏱️','Tic-Tac','<b>Il chronomètre chacun.</b> Un compte à rebours par joueur, dès qu\'il faut répondre vite.','t-tictac',
         D.tictac.length?pl(D.tictac.length,'duel')+' au palmarès':'','Chrono & duel')+
-      tool('quizz','🎙️','Le Micro','<b>Il transforme une IA en animateur.</b> Collez le texte préparé dans votre assistant : il anime un jeu télé à la voix.','t-micro',
+      tool('quizz','🎙️','Le Micro','<b>Il transforme une IA en animateur.</b> Colle le texte préparé dans ton assistant : il anime un jeu télé à la voix.','t-micro',
         D.journal.length?pl(D.journal.length,'question')+' au journal':'','Quiz vocal · IA')+
       tool('tournoi','🏓','Le Tournoi','<b>Il organise la compétition.</b> Pétanque, ping-pong, molkky… poule, quarts, demies et finale, l\'app tient le tableau.','t-tournoi',
         (D.tournois||[]).length?pl(D.tournois.length,'tournoi')+' au palmarès':'','Poules & finales')+
@@ -672,7 +672,7 @@ function renderPoints(hd,app,banner){
   var act=D.matches.filter(function(m){return m.status!=='done';}),dn=D.matches.filter(function(m){return m.status==='done';});
   var intro=(!D.matches.length)?'<div class="card" style="background:var(--gr-l);border-color:#a7f3d0;margin-bottom:12px">'+
     '<p style="margin:0;font-size:13.5px;color:#065f46;line-height:1.55"><b>🏆 Le carnet de scores de tous vos jeux.</b><br>'+
-    'Belote, tarot, Uno, molkky, jeux de société, ou un jeu que vous avez inventé : créez une partie, saisissez les points à chaque manche, '+
+    'Belote, tarot, Uno, molkky, jeux de société, ou un jeu que vous avez inventé : crée une partie, saisis les points à chaque manche, '+
     'et l\'app tient le classement, le cumul et le palmarès. <b>Une soirée ou une saison entière.</b></p></div>':'';
   var h=banner; h=intro+h;
   if(!D.matches.length){
@@ -2774,7 +2774,7 @@ function renderChampions(hd,app,banner){
   var list=championsAgg();
   var h=banner;
   if(!list.length || list.filter(function(p){return !p.hidden;}).every(function(p){return p.crowns===0 && !p.coupeManches && !p.quizGames && !p.duels && !p.tournois;})){
-    h+='<div class="empty"><div class="e">🏅</div><h3>Le mur est encore vierge</h3><p>Joue des parties à La Coupe, au Micro ou au Tic-Tac : les couronnes de chacun s\'accumuleront ici, tous jeux confondus.</p></div>';
+    h+='<div class="empty"><div class="e">🏅</div><h3>Le mur est encore vierge</h3><p>Joue des parties à La Coupe, au Micro, au Tic-Tac ou au Tournoi : les couronnes de chacun s\'accumuleront ici, tous jeux confondus.</p></div>';
     app.innerHTML=h; return;
   }
   var champ=list.filter(function(p){return !p.hidden;})[0]; if(!champ) champ=list[0];
@@ -2877,7 +2877,7 @@ function renderSave(hd,app,banner){
     '</div>'+
     '<p class="mini" style="margin:8px 0 0">Coupe d\'un geste tous les jeux et outils — pratique tard le soir.</p></div>';
   h+='<div class="card"><h2>Joueurs & équipes</h2>'+
-    '<p class="mini" style="margin:0 0 10px">Les personnes enregistrées ici sont <b>proposées d\'office</b> dans les trois jeux : La Coupe, le Tic-Tac et Le Micro. Tu n\'as plus qu\'à cocher qui joue au moment de démarrer.</p>';
+    '<p class="mini" style="margin:0 0 10px">Les personnes enregistrées ici sont <b>proposées d\'office</b> dans les quatre jeux : La Coupe, le Tic-Tac, Le Micro et Le Tournoi. Tu n\'as plus qu\'à cocher qui joue au moment de démarrer.</p>';
   D.lib.forEach(function(p){
     var row='<div class="row" style="background:var(--bg);border-radius:10px;padding:8px 10px">'+
       '<button style="border:0;background:none;padding:0;cursor:pointer" onclick="openAv(\''+p.id+'\')">'+av(p.name)+'</button>'+
@@ -2928,10 +2928,10 @@ function obDraw(){
   el.innerHTML='<div class="in" onclick="event.stopPropagation()"><div class="grab"></div>'+
     '<div style="text-align:center;font-size:44px;margin:2px 0 6px">🎲</div>'+
     '<h2 style="margin:0 0 4px;font-size:21px;text-align:center">Bienvenue dans En Jeux !</h2>'+
-    '<p class="mini" style="text-align:center;margin:0 0 14px">30 secondes et vous jouez.</p>'+
+    '<p class="mini" style="text-align:center;margin:0 0 14px">30 secondes et on joue.</p>'+
     '<div style="display:flex;flex-direction:column;gap:9px;margin-bottom:14px">'+
       '<div class="row" style="gap:10px"><span style="font-size:22px">1️⃣</span><span style="font-size:13.5px"><b>Qui joue ?</b> — des prénoms (famille, amis) <b>ou des équipes</b>, comme tu veux.</span></div>'+
-      '<div class="row" style="gap:10px"><span style="font-size:22px">2️⃣</span><span style="font-size:13.5px"><b>Lance un jeu</b> — quiz animé 🎙️, duel de chrono ⏱️ ou décompte de points 🏆.</span></div>'+
+      '<div class="row" style="gap:10px"><span style="font-size:22px">2️⃣</span><span style="font-size:13.5px"><b>Lance un jeu</b> — décompte de points 🏆, duel de chrono ⏱️, quiz animé 🎙️ ou tournoi 🏓.</span></div>'+
       '<div class="row" style="gap:10px"><span style="font-size:22px">3️⃣</span><span style="font-size:13.5px"><b>Les couronnes s\'accumulent</b> — chaque victoire nourrit le Mur des champions 👑.</span></div>'+
     '</div>'+
     '<label class="lb">Ton équipe ('+D.lib.length+')</label>'+
@@ -3203,7 +3203,7 @@ function restoreFile(inp){
       var msg='Remplacer le contenu actuel ('+pl(actuel,'partie')+') par cette sauvegarde ('+pl(nouveau,'partie')+') ?';
       if(actuel>0 && !confirmish(msg)){ toast('Restauration annulée'); return; }
       D=o; if(!D.lib)D.lib=[]; if(!D.matches)D.matches=[]; if(!D.journal)D.journal=[];
-      if(!D.micro)D.micro=[]; if(!D.tictac)D.tictac=[]; D.onboarded=1;
+      if(!D.micro)D.micro=[]; if(!D.tictac)D.tictac=[]; if(!D.tournois)D.tournois=[]; D.onboarded=1;
       persist(); go('home');
       if(__avant) offerUndo('Sauvegarde restaurée', function(){ D=__avant; });
       else toast('Sauvegarde restaurée ✓');
@@ -3214,7 +3214,7 @@ function restoreFile(inp){
 function restore(){
   try{var o=JSON.parse(document.getElementById('imp').value);
     if(!o||!o.matches){toast('Sauvegarde non reconnue');return;}
-    D=o;if(!D.lib)D.lib=[];if(!D.matches)D.matches=[];if(!D.journal)D.journal=[];
+    D=o;if(!D.lib)D.lib=[];if(!D.matches)D.matches=[];if(!D.journal)D.journal=[];if(!D.micro)D.micro=[];if(!D.tictac)D.tictac=[];if(!D.tournois)D.tournois=[];
     persist();toast('Sauvegarde restaurée ✓');go('home');
   }catch(e){toast('Texte invalide');}
 }
