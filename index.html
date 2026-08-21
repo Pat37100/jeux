@@ -404,7 +404,7 @@ function nowHM(){
 }
 function stamp(r){ return fr(r.date)+(r.time?' · '+r.time:''); }
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='102';
+var APP_VERSION='103';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -2410,7 +2410,7 @@ function tDot(t,id,px){
   var c=tHue(t,id);
   if(!c) return '<span style="flex:0 0 '+px+'px;width:'+px+'px;height:'+px+'px;border-radius:50%;border:1.5px dashed var(--line)"></span>';
   return '<span style="flex:0 0 '+px+'px;width:'+px+'px;height:'+px+'px;border-radius:50%;background:'+c+';color:#fff;'+
-    'display:inline-flex;align-items:center;justify-content:center;font-size:'+Math.round(px*0.46)+'px;font-weight:800;letter-spacing:-.02em">'+
+    'display:inline-flex;align-items:center;justify-content:center;font-size:'+Math.max(11,Math.round(px*0.46))+'px;font-weight:800;letter-spacing:-.02em">'+
     esc(tInitials(tEntName(t,id)))+'</span>';
 }
 function tById(id){
@@ -2423,7 +2423,20 @@ function tById(id){
   return t;
 }
 function tEnt(t,id){ return t.entrants.filter(function(e){return e.id===id;})[0]; }
-function tEntName(t,id){ var e=tEnt(t,id); return e?e.name:'—'; }
+/* Le nom est relu dans la bibliothèque à chaque affichage : corriger une
+   faute de frappe dans les réglages doit se voir aussi dans le tournoi.
+   Si un participant a été supprimé de la bibliothèque, on retombe sur le nom
+   enregistré au lancement plutôt que d'afficher un trou. */
+function tEntName(t,id){
+  var e=tEnt(t,id); if(!e) return '—';
+  if(e.members && e.members.length){
+    var noms=e.members.map(function(mid){
+      var p=D.lib.filter(function(x){return x.id===mid;})[0]; return p?p.name:null;
+    });
+    if(noms.every(Boolean)) return noms.join(' & ');
+  }
+  return e.name;
+}
 
 /* ---- Saisie d'un score ---- */
 function tScore(tid, mid, side, v){
@@ -2462,6 +2475,7 @@ function tPouleDone(t){ return (t.poule||[]).every(function(m){ return tWinnerOf
    tableau se figer par surprise. */
 function tGoFinals(tid){
   var t=tById(tid); if(!t||!tPouleDone(t)) return;
+  if(t.bracket) return;   // une phase finale ne se construit qu'une fois
   var q=tPouleRank(t).slice(0,t.qualifs).map(function(x){return x.id;});
   t.bracket=tBuildBracket(q);
   persist(); window.scrollTo(0,0); render();
@@ -2543,7 +2557,8 @@ function tBoard(t){
       '<p style="margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.9">Vainqueur du tournoi</p>'+
       '<h2 style="margin:6px 0 0;font-size:26px">🏆 '+esc(tEntName(t,t.winner))+'</h2>'+
       '<p style="margin:6px 0 0;font-size:13.5px;opacity:.94">'+esc(t.game)+' · '+fr(t.date)+'</p></div>'+
-      '<button class="btn tournoi" style="margin-bottom:12px" onclick="tToCoupe(\''+t.id+'\')">🏆 Compter dans La Coupe</button>';
+      '<button class="btn tournoi'+(t.sent?' grey':'')+'" style="margin-bottom:12px" onclick="tToCoupe(\''+t.id+'\')">'+
+      (t.sent?'✓ Déjà compté dans La Coupe':'🏆 Compter dans La Coupe')+'</button>';
   } else {
     h+='<div class="card" style="background:var(--bg)"><b style="font-size:15px">'+gameLook(t.game).emo+' '+esc(t.game)+'</b>'+
       '<p class="mini" style="margin:3px 0 0">'+pl(t.entrants.length, t.team?'équipe':'joueur')+' · '+
@@ -2734,7 +2749,7 @@ function tBox(t,m,top){
   var ligne=function(id,sc){
     var gagne = w && w===id;
     return '<div style="display:flex;align-items:center;gap:5px;height:'+((BRK_H-10)/2)+'px">'+
-      tDot(t,id,15)+
+      tDot(t,id,20)+
       '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;font-weight:'+(gagne?'800':'500')+'">'+
         esc(id?tEntName(t,id):'—')+'</span>'+
       '<b style="font-size:12px;width:20px;text-align:right;'+(gagne?'color:var(--okx)':'color:var(--mut)')+'">'+
@@ -2744,7 +2759,7 @@ function tBox(t,m,top){
     'border:'+(sel?'2px solid var(--ok-b,#059669)':'1.5px solid var(--line)')+';border-radius:10px;padding:4px 6px;text-align:left;font-family:inherit;cursor:pointer;'+
     'background:'+(w?'var(--gr-l)':'var(--card)')+'">'+
     (exempt
-      ? '<div style="display:flex;align-items:center;gap:5px;height:100%">'+tDot(t,m.a||m.b,15)+
+      ? '<div style="display:flex;align-items:center;gap:5px;height:100%">'+tDot(t,m.a||m.b,20)+
         '<span style="font-size:11.5px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(tEntName(t,m.a||m.b))+'</span></div>'+
         '<span style="position:absolute;right:6px;bottom:3px;font-size:11px;font-weight:700;color:var(--mut)">exempté</span>'
       : ligne(m.a,m.sa)+ligne(m.b,m.sb))+
@@ -2771,9 +2786,21 @@ function tHistory(){
 function tToCoupe(tid){
   var t=tById(tid); if(!t||!t.winner) return;
   var v=tVictories(t);
-  var players=t.entrants.map(function(e){ return {name:e.name, score:v[e.id]||0}; });
+  /* Une équipe n'est pas une personne : chacun de ses membres entre dans
+     La Coupe avec le score de l'équipe. Sans cela, « Léa & Hugo » devenait
+     un joueur à part entière et polluait le Mur des champions. */
+  var players=[];
+  t.entrants.forEach(function(e){
+    var pts=v[e.id]||0;
+    var noms=(e.members&&e.members.length)? e.members.map(function(mid){
+      var p=D.lib.filter(function(x){return x.id===mid;})[0]; return p?p.name:null;
+    }).filter(Boolean) : [];
+    if(!noms.length) noms=[tEntName(t,e.id)];
+    noms.forEach(function(n){ players.push({name:n, score:pts}); });
+  });
+  if(t.sent && !confirmish('Ce tournoi a déjà été compté dans La Coupe. L\'ajouter une seconde fois ?')) return;
   var m=autoToCoupe(t.game, t.game, players);      // le nom du jeu, pas « Tournoi »
-  if(m){ toast('Tournoi ajouté à « '+m.name+' » 🏆'); S.matchId=m.id; S.tab='rank'; S.histMode='grid'; go('match'); }
+  if(m){ t.sent=1; persist(); toast('Tournoi ajouté à « '+m.name+' » 🏆'); S.matchId=m.id; S.tab='rank'; S.histMode='grid'; go('match'); }
 }
 /* Victoires de chacun sur l'ensemble du tournoi, poule et finales confondues. */
 function tVictories(t){
