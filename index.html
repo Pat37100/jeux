@@ -233,6 +233,50 @@
   .tool.on .em{background:var(--gr)}
   @keyframes fall{0%{transform:translateY(-30px) rotate(0)}100%{transform:translateY(320px) rotate(340deg);opacity:0}}
   .confetti span{position:absolute;top:0;font-size:22px;animation:fall 2.6s linear infinite}
+
+  /* ── Célébration du vainqueur ─────────────────────────────────── */
+  .celebr{position:relative;overflow:hidden;border-radius:24px;padding:30px 20px 24px;margin-bottom:16px;color:#fff;text-align:center;
+    background:radial-gradient(120% 90% at 50% -10%,#fde68a 0%,#f59e0b 34%,#b45309 72%,#7c2d12 100%)}
+  .celebr.micro{background:radial-gradient(120% 90% at 50% -10%,#ddd6fe 0%,#a78bfa 34%,#7c3aed 72%,#4c1d95 100%)}
+  .celebr.tictac{background:radial-gradient(120% 90% at 50% -10%,#fed7aa 0%,#fb923c 34%,#ea580c 72%,#7c2d12 100%)}
+  .celebr.tournoi{background:radial-gradient(120% 90% at 50% -10%,#fed7aa 0%,#f97316 34%,#9a3412 72%,#431407 100%)}
+  /* Halo qui pulse doucement derrière l'avatar */
+  .celebr .halo{position:absolute;left:50%;top:34%;width:230px;height:230px;margin:-115px 0 0 -115px;border-radius:50%;
+    background:radial-gradient(circle,rgba(255,255,255,.55) 0%,rgba(255,255,255,0) 68%);animation:halo 3.2s ease-in-out infinite}
+  @keyframes halo{0%,100%{transform:scale(.92);opacity:.55}50%{transform:scale(1.06);opacity:.85}}
+  /* Rayons fixes, très discrets : donnent de la profondeur sans clignoter */
+  .celebr .rays{position:absolute;inset:-40% -10%;background:repeating-conic-gradient(from 0deg at 50% 30%,
+    rgba(255,255,255,.10) 0deg 6deg, rgba(255,255,255,0) 6deg 18deg);animation:spin 26s linear infinite;pointer-events:none}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  /* Confettis en papier : rectangles colorés, pas des émojis */
+  .celebr .papier{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  .celebr .papier i{position:absolute;top:-16px;width:8px;height:14px;border-radius:2px;opacity:.95;
+    animation:chute 3.4s cubic-bezier(.25,.6,.5,1) forwards}
+  @keyframes chute{0%{transform:translateY(-20px) rotate(0) scale(1);opacity:0}
+    12%{opacity:1}100%{transform:translateY(360px) rotate(560deg) scale(.85);opacity:0}}
+  /* L'avatar entre en scène, une seule fois */
+  .celebr .qui{position:relative;z-index:2;animation:entree .72s cubic-bezier(.2,1.5,.4,1) both}
+  @keyframes entree{0%{transform:scale(.4) translateY(18px);opacity:0}60%{transform:scale(1.08) translateY(0);opacity:1}100%{transform:scale(1)}}
+  .celebr .nom{position:relative;z-index:2;margin:8px 0 0;font-size:30px;font-weight:800;letter-spacing:-.03em;
+    text-shadow:0 2px 10px rgba(0,0,0,.28);animation:monte .5s .18s ease both}
+  .celebr .sur{position:relative;z-index:2;margin:0;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+    opacity:.95;animation:monte .5s ease both}
+  .celebr .det{position:relative;z-index:2;margin:8px 0 0;font-size:13.5px;opacity:.95;animation:monte .5s .3s ease both}
+  @keyframes monte{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .celebr .actions{position:relative;z-index:2;display:flex;gap:8px;justify-content:center;margin-top:16px;
+    animation:monte .5s .42s ease both}
+  .celebr .actions button{background:rgba(255,255,255,.96);color:#1c1917;border:0;border-radius:99px;
+    padding:10px 16px;font-size:13.5px;font-weight:700;font-family:inherit;cursor:pointer;min-height:44px;
+    box-shadow:0 4px 14px rgba(0,0,0,.18)}
+  /* Podium des suivants, sobre */
+  .celebr .podium{position:relative;z-index:2;display:flex;justify-content:center;gap:14px;margin-top:14px;
+    animation:monte .5s .36s ease both}
+  .celebr .podium div{font-size:12px;opacity:.92}
+  .celebr .podium b{display:block;font-size:14px}
+  @media (prefers-reduced-motion:reduce){
+    .celebr .halo,.celebr .rays,.celebr .papier i{animation:none}
+    .celebr .qui,.celebr .nom,.celebr .sur,.celebr .det,.celebr .actions,.celebr .podium{animation:none}
+  }
   .medal{font-size:17px;margin-right:2px}
   .av{display:inline-flex;align-items:center;justify-content:center;border-radius:99px;flex-shrink:0;
     width:34px;height:34px;font-size:19px;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.12)}
@@ -404,7 +448,7 @@ function nowHM(){
 }
 function stamp(r){ return fr(r.date)+(r.time?' · '+r.time:''); }
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='103';
+var APP_VERSION='104';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -600,7 +644,7 @@ function render_(){
     return;
   }
   if(S.view==='save') return renderSave(hd,app,banner);
-  if(S.view==='palmares') return renderPalmares(hd,app,banner);
+  if(S.view==='palmares') return renderChampions(hd,app,banner);   // ancien palmarès : un seul mur désormais
   if(S.view==='chrono') return renderChrono(hd,app,nav,banner);
   if(S.view==='quizz') return renderQuizz(hd,app,banner);
   if(S.view==='points') return renderPoints(hd,app,banner);
@@ -664,23 +708,19 @@ function tool(k,em,t,d,cls,note,tag){
 /* -------------------------- DÉCOMPTE POINTS ----------------------- */
 function renderPoints(hd,app,banner){
   hd.innerHTML=back()+'<h1>🏆 La Coupe<span class="sub">Tes parties</span></h1><span style="width:38px"></span>';
-  if(rtab()==='res'){
-    document.getElementById('nav').innerHTML=rubTabs('Parties','🏆',D.matches.length);
-    app.innerHTML = banner + coupeResults();
-    return;
-  }
+  
   var act=D.matches.filter(function(m){return m.status!=='done';}),dn=D.matches.filter(function(m){return m.status==='done';});
   var intro=(!D.matches.length)?'<div class="card" style="background:var(--gr-l);border-color:#a7f3d0;margin-bottom:12px">'+
     '<p style="margin:0;font-size:13.5px;color:#065f46;line-height:1.55"><b>🏆 Le carnet de scores de tous vos jeux.</b><br>'+
     'Belote, tarot, Uno, molkky, jeux de société, ou un jeu que vous avez inventé : crée une partie, saisis les points à chaque manche, '+
-    'et l\'app tient le classement, le cumul et le palmarès. <b>Une soirée ou une saison entière.</b></p></div>':'';
+    'et l\'app tient le classement et le cumul. <b>Une <u>partie</u> se joue en plusieurs <u>manches</u></b> : une manche = un tour, une partie = ce qui se gagne.</p></div>':'';
   var h=banner; h=intro+h;
   if(!D.matches.length){
     h+='<div class="empty"><div class="e">🏆</div><h3>Aucune partie</h3><p>Crée ta première partie avec le bouton ci-dessous 👇</p></div>';
   }else{
     if(D.matches.some(function(m){return m.rounds.length;}))
-      h+='<button class="tool t-coupe" style="padding:12px 16px" onclick="go(\'palmares\')"><span class="em" style="width:44px;height:44px;font-size:22px">🏅</span>'+
-         '<span style="flex:1;min-width:0"><b>Palmarès</b><small>Les champions, toutes parties confondues.</small></span>'+
+      h+='<button class="tool t-coupe" style="padding:12px 16px" onclick="go(\'champions\')"><span class="em" style="width:44px;height:44px;font-size:22px">🏅</span>'+
+         '<span style="flex:1;min-width:0"><b>Mur des champions</b><small>Les vainqueurs, tous jeux confondus.</small></span>'+
          '<span style="color:#d6d3d1">›</span></button>';
     /* Filtres : n'apparaissent que quand ils servent vraiment. */
     var cnts=gameCounts(D.matches);
@@ -709,7 +749,9 @@ function renderPoints(hd,app,banner){
     }
   }
   app.innerHTML=h;
-  document.getElementById('nav').innerHTML=rubTabs('Parties','🏆',D.matches.length);
+  /* Plus d'onglet « Résultats » : La Coupe est l'écran des parties, le Mur
+     des champions est le seul palmarès de l'app. */
+  document.getElementById('nav').innerHTML='';
   if(S.sheet) drawSheet();
 }
 /* ── Catégorie « jeu » ──────────────────────────────────────────────
@@ -771,6 +813,12 @@ var GAME_ICONS=[
   ['rami','🃏','cartes'], ['president','🃏','cartes'], ['poker','♠️','cartes'], ['bataille','🃏','cartes'],
   ['coinche','🃏','cartes'], ['manille','🃏','cartes'], ['bridge','🃏','cartes'], ['pouilleux','🃏','cartes'],
   ['jungle speed','🃏','cartes'], ['time\'s up','⏳','cartes'], ['dixit','🎨','cartes'],
+  ['splendor','💎','cartes'], ['7 wonders','🏛️','cartes'], ['sept merveilles','🏛️','cartes'],
+  ['citadelles','🏰','cartes'], ['aventuriers du rail','🚂','plateau'], ['ticket to ride','🚂','plateau'],
+  ['catane','🌾','plateau'], ['carcassonne','🏰','plateau'], ['azul','🔷','plateau'],
+  ['wingspan','🦅','cartes'], ['terraforming','🪐','cartes'], ['dobble','⭕','cartes'],
+  ['6 qui prend','🐮','cartes'], ['mille bornes','🚗','cartes'], ['uno flip','🎴','cartes'],
+  ['schotten','🃏','cartes'], ['skull king','☠️','cartes'], ['love letter','💌','cartes'],
   ['loup-garou','🐺','cartes'], ['loup garou','🐺','cartes'], ['sept familles','🃏','cartes'],
   /* dés et pions */
   ['yams','🎲','des'], ['yahtzee','🎲','des'], ['421','🎲','des'], ['perudo','🎲','des'],
@@ -779,6 +827,9 @@ var GAME_ICONS=[
   ['echecs','♟️','plateau'], ['échecs','♟️','plateau'], ['domino','🁢','plateau'],
   ['puissance 4','🔴','plateau'], ['awale','🌰','plateau'], ['backgammon','🎲','plateau'],
   ['bataille navale','🚢','plateau'], ['mikado','🥢','plateau'], ['jenga','🧱','plateau'],
+  ['trivial pursuit','❓','quiz'], ['scrabble duplicate','🔤','mots'], ['rubik','🧊','plateau'],
+  ['labyrinthe','🌀','plateau'], ['abalone','⚪','plateau'], ['othello','⚫','plateau'],
+  ['reversi','⚫','plateau'], ['petits chevaux','🐴','plateau'], ['nain jaune','🌟','cartes'],
   ['loto','🎰','plateau'], ['bingo','🎰','plateau'], ['pictionary','✏️','mots'],
   /* mots et lettres */
   ['scrabble','🔤','mots'], ['boggle','🔤','mots'], ['petit bac','✏️','mots'], ['mots','🔤','mots'],
@@ -793,8 +844,16 @@ var GAME_ICONS=[
   ['le micro','🎙️','quiz'], ['tic-tac','⏱️','quiz'], ['quiz','❓','quiz'], ['blind test','🎵','quiz'],
   ['karaoke','🎤','quiz'], ['karaoké','🎤','quiz'], ['trivial','❓','quiz']
 ];
-var GAME_FAM={cartes:'#fef3c7', des:'#e0e7ff', plateau:'#fce7f3', mots:'#dbeafe',
-              'plein-air':'#d1fae5', quiz:'#ede9fe', autre:'#f5f5f4'};
+/* Dégradés francs plutôt que pastels : à la taille d'une pastille, un fond
+   trop clair ne se distingue plus du blanc de la carte. */
+var GAME_FAM={
+  cartes:     'linear-gradient(135deg,#b45309,#f59e0b)',
+  des:        'linear-gradient(135deg,#3730a3,#6366f1)',
+  plateau:    'linear-gradient(135deg,#9d174d,#ec4899)',
+  mots:       'linear-gradient(135deg,#1e40af,#3b82f6)',
+  'plein-air':'linear-gradient(135deg,#065f46,#10b981)',
+  quiz:       'linear-gradient(135deg,#5b21b6,#8b5cf6)',
+  autre:      'linear-gradient(135deg,#57534e,#a8a29e)'};
 /* Mots-clés de repli : « soirée cartes » ou « tournoi de fléchettes » doivent
    trouver leur icône même si le nom exact du jeu n'est pas dans la liste. */
 var GAME_HINTS=[[/carte/,'🃏','cartes'],[/\bd[ée]s?\b/,'🎲','des'],[/quiz|question/,'❓','quiz'],
@@ -804,7 +863,23 @@ var GAME_HINTS=[[/carte/,'🃏','cartes'],[/\bd[ée]s?\b/,'🎲','des'],[/quiz|q
   [/p[ée]tanque|boulodrome/,'🎱','plein-air'],[/raquette|tennis/,'🏓','plein-air'],
   [/\bpalets?\b/,'🥏','plein-air']];
 var GAME_SORTED=null;
+/* Palette proposée quand on corrige l'icône d'une partie. */
+var ICON_CHOIX=['🃏','🎴','💎','🎲','♟️','🏰','🚂','🌾','🔤','✏️','❓','🎵','🎤','⏱️','🎙️',
+  '🪵','🎱','🏓','🎯','🎳','⚽','🏸','🥏','🏃','🏠','🕵️','🚢','🐮','🦅','🪐','🌀','⭕','☠️','🧱','🥢','🎰','🐺','🎨','⏳','🌟'];
+function setMatchIcon(id,emo){
+  var m=D.matches.filter(function(x){return x.id===id;})[0]; if(!m) return;
+  if(emo) m.icon=emo; else delete m.icon;      // vide = on redonne la main à la détection
+  persist(); render();
+}
 function gameLook(m){
+  /* Une icône choisie à la main l'emporte toujours sur la détection. */
+  if(m && typeof m==='object' && m.icon){
+    var auto=gameLookAuto(m);
+    return {emo:m.icon, bg:auto.bg, manuel:true};
+  }
+  return gameLookAuto(m);
+}
+function gameLookAuto(m){
   var n=fp(typeof m==='string'? m : ((m&&m.name)||''));
   var g=fp(typeof m==='string'? m : (gameOf(m)||''));
   /* Du nom le plus long au plus court : « bataille navale » doit l'emporter
@@ -1165,17 +1240,14 @@ function tabRank(m){
   if(S.ceremony){
     var rc=rank(m,function(){return true;});
     var champC=rc.byCumul[0];
-    var confC='<div class="confetti" style="position:absolute;inset:0;pointer-events:none;overflow:hidden">'+
-      ['🎉','🏆','⭐️','🎊','✨','👑'].map(function(e,i){return '<span style="left:'+(6+i*16)+'%;animation-delay:'+(i*.3)+'s">'+e+'</span>';}).join('')+'</div>';
-    cerem='<div class="hero" style="text-align:center;position:relative;background:linear-gradient(135deg,#b45309,#f59e0b)">'+confC+
-      '<p style="margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.92">Champion de la partie</p>'+
-      '<div class="winbig" style="font-size:44px;margin:2px 0">🏆</div>'+
-      (champC?'<div style="margin:2px 0">'+av(champC.name,'big')+'</div><h2 style="font-size:26px;margin:2px 0">👑 '+esc(champC.name)+'</h2>'+
-        '<p style="margin:0;font-size:13px;opacity:.92">'+nf(champC.points)+' pts · '+pl(champC.wins,'manche gagnée')+' — sa couronne rejoint le Mur des champions</p>':'')+
-      '<div class="row" style="margin-top:12px;gap:8px;justify-content:center">'+
-        '<button class="sm" style="background:rgba(255,255,255,.92)" onclick="share()">📤 Partager</button>'+
-        '<button class="sm" style="background:rgba(255,255,255,.92)" onclick="S.ceremony=false;go(\'champions\')">🏅 Voir le Mur</button>'+
-      '</div></div>';
+    cerem=celebration({
+      theme:'coupe', sur:'Vainqueur de la partie',
+      name: champC?champC.name:'',
+      detail: champC? '<b>'+nf(champC.points)+' points</b> · '+pl(champC.wins,'manche gagnée')+'<br>Sa couronne rejoint le Mur des champions' : '',
+      suivants: rc.byCumul.slice(1,3).map(function(p){ return {name:p.name, detail:' · '+nf(p.points)+' pts'}; }),
+      actions:'<button onclick="share()">📤 Partager</button>'+
+              '<button onclick="S.ceremony=false;go(\'champions\')">🏅 Le Mur</button>'
+    });
   }
   return cerem + tabRankBody(m);
 }
@@ -1509,9 +1581,22 @@ function delRound(id){
 }
 /* Écran Réglages d'une partie : renommer, gérer les joueurs, clore, supprimer. */
 function tabSet(m){
+  var look=gameLook(m);
   var h='<div class="card"><h2>Nom de la partie</h2>'+
     '<div class="row"><input id="rn" value="'+esc(m.name).replace(/"/g,'&quot;')+'" style="flex:1" aria-label="Nom de la partie">'+
-    '<button class="sm g" onclick="renameMatch()">Renommer</button></div></div>';
+    '<button class="sm g" onclick="renameMatch()">Renommer</button></div>'+
+    /* Aucune table ne devinera tous les jeux : Splendor est un jeu de cartes,
+       pas de dés. On laisse donc la main sur l'icône. */
+    '<h2 style="margin-top:16px">Icône</h2>'+
+    '<div class="row" style="gap:10px;align-items:center;margin-bottom:8px">'+
+      '<span class="em" style="width:44px;height:44px;font-size:22px;background:'+look.bg+'">'+look.emo+'</span>'+
+      '<span style="flex:1;font-size:12.5px;color:var(--mut)">'+(look.manuel?'Choisie à la main':'Déduite du nom du jeu')+'</span>'+
+      (look.manuel?'<button class="sm" onclick="setMatchIcon(\''+m.id+'\',\'\')">Automatique</button>':'')+
+    '</div>'+
+    '<div class="chips">'+ICON_CHOIX.map(function(e){
+      return '<button class="chip'+(look.emo===e?' on':'')+'" style="font-size:17px;padding:5px 9px;min-height:34px" '+
+        'aria-label="Choisir l\'icône '+e+'" onclick="setMatchIcon(\''+m.id+'\',\''+e+'\')">'+e+'</button>';
+    }).join('')+'</div></div>';
 
   h+='<div class="card"><h2>Joueurs de cette partie ('+activePlayers(m).length+(m.players.length>activePlayers(m).length?' + '+(m.players.length-activePlayers(m).length)+' en retrait':'')+')</h2>'+
      '<div style="display:flex;flex-direction:column;gap:7px">'+
@@ -1675,7 +1760,7 @@ function fallbackCopy(t,msg){
 function renderQuizz(hd,app,banner){
   hd.innerHTML=back()+'<h1>🎙️ Le Micro<span class="sub">Quiz animé à la voix</span></h1><span style="width:38px"></span>';
 
-  var h=banner;
+  var h=banner+microCelebration();
   if(S.qtab==='play'){
     h+=microSimpleUI();
     }else if(S.qtab==='j'){
@@ -1844,11 +1929,13 @@ function microTeam(){
    Noms volontairement drôles : c'est l'animatrice qui les prononce en jeu.
    j/n/c sont les anciennes cles (v80 et avant) : elles restent lues. */
 var MICRO_LVL=[
-  {k:'p',label:'🐣 Poussin',        n:2, txt:"la réponse est connue de presque tous les enfants : un fait de base, souvent vu à l'école"},
-  {k:'a',label:"🎧 Tête d'ado",     n:4, txt:"la réponse est connue de la plupart des jeunes : un fait courant, sans détail à retenir"},
-  {k:'h',label:'☕ Honnête cultivé', n:5, txt:"un adulte attentif y répond : le fait est répandu, mais il faut aller le chercher"},
-  {k:'b',label:'🧠 Tête bien faite', n:6, txt:"il faut une connaissance précise ou un raisonnement : on n'y répond pas par réflexe"},
-  {k:'g',label:'🔥 Grosse tête',    n:8, txt:"détail latéral, angle inattendu, précision rare — si la majorité des adultes connaît spontanément la réponse, ce n'est PAS ce niveau"}
+  /* Libellés courts : « ☕ Honnête cultivé » débordait de sa pastille et se
+     coupait au milieu d'un mot. Un palier doit tenir sur une ligne. */
+  {k:'p',label:'🐣 Poussin', n:2, txt:"la réponse est connue de presque tous les enfants : un fait de base, souvent vu à l'école"},
+  {k:'a',label:'🎧 Ado',     n:4, txt:"la réponse est connue de la plupart des jeunes : un fait courant, sans détail à retenir"},
+  {k:'h',label:'☕ Cultivé', n:5, txt:"un adulte attentif y répond : le fait est répandu, mais il faut aller le chercher"},
+  {k:'b',label:'🧠 Calé',    n:6, txt:"il faut une connaissance précise ou un raisonnement : on n'y répond pas par réflexe"},
+  {k:'g',label:'🔥 Costaud', n:8, txt:"détail latéral, angle inattendu, précision rare — si la majorité des adultes connaît spontanément la réponse, ce n'est PAS ce niveau"}
 ];
 /* Cles historiques : v80 (j/n/c) puis v81 (m/t). Relues, jamais perdues. */
 var MICRO_LVL_OLD={j:'a',n:'h',c:'g',m:'a',t:'h'};
@@ -1890,7 +1977,9 @@ function playerGrid(selIds, toggleFn, pillFn, hint){
 function pillBtn(fn,id,label){
   /* C'est un CONTRÔLE, pas une étiquette : il lui faut une taille de doigt.
      11px de texte, du padding, et une hauteur minimale au lieu du 16px d'avant. */
-  return '<span onclick="event.stopPropagation();'+fn+'(\''+id+'\')" role="button" style="font-size:11px;font-weight:800;border-radius:99px;padding:4px 10px;min-height:24px;display:inline-flex;align-items:center;background:var(--bg);border:1.5px solid var(--line);color:var(--mut)">'+esc(label)+'</span>';
+  /* La pastille vit sous un avatar de grille : elle ne doit jamais déborder
+     de sa colonne ni couper un mot au milieu. */
+  return '<span onclick="event.stopPropagation();'+fn+'(\''+id+'\')" role="button" style="font-size:11px;font-weight:800;border-radius:99px;padding:4px 8px;min-height:24px;max-width:100%;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--bg);border:1.5px solid var(--line);color:var(--mut)">'+esc(label)+'</span>';
 }
 function addPlayerFromGrid(){
   var el=document.getElementById('npg'); if(!el) return;
@@ -1923,6 +2012,17 @@ function briefCopy(){ copy(briefText(),'Lancement copié — colle-le dans ton a
    assistant. Ce generateur produit un moteur court, a barème unique (1 point),
    ou tout l'etat critique est PRONONCE — donc relisible par le modele au tour
    suivant. Le moteur complet reste disponible en mode « Partie complete ». */
+function microCelebration(){
+  var wn=S.microWin; if(!wn) return '';
+  return celebration({
+    theme:'micro', sur:'Vainqueur du Micro', name:wn.name,
+    detail:'Sa couronne rejoint le Mur des champions',
+    suivants:wn.autres||[],
+    actions:'<button onclick="microSaveToCoupe()">🏆 La Coupe</button>'+
+            '<button onclick="go(\'champions\')">🏅 Le Mur</button>'+
+            '<button onclick="S.microWin=null;render()">✕ Fermer</button>'
+  });
+}
 function microSimpleUI(){
   var sel=D.microTeam||D.lib.map(function(p){return p.id;});
   var h0='<div class="card" style="background:var(--bg)"><h2 style="font-size:14px;margin-bottom:8px">🎙️ Comment ça marche</h2>'+
@@ -2177,7 +2277,10 @@ function microWin(i){
   }
   D.micro.unshift({id:uid(), date:today(), players:players});
   reviewMoment(); persist(); S.microSheet=false; S.microDetail=false;
-  toast((players[0]?players[0].name:'Résultat')+' gagne 🏆'); render();
+  /* Le Micro se contentait d'un message fugace. Le vainqueur mérite la même
+     scène que dans les trois autres rubriques. */
+  S.microWin={name:(players[0]?players[0].name:''), autres:players.slice(1,3).map(function(p){return {name:p.name};})};
+  render();
   /* Même geste qu'au Tic-Tac : on propose, on n'impose pas. */
   try{ microSaveToCoupe(); }catch(e){}
 }
@@ -2252,12 +2355,27 @@ function microPalmares(){
 /* Période : mêmes repères que les filtres de La Coupe, appliqués aux dates.
    « tout » par défaut : on ne cache jamais l'historique sans le dire. */
 function champPeriod(){ return S.champPeriod||'tout'; }
+/* Mêmes périodes qu'à La Coupe — y compris l'intervalle de dates, qui
+   manquait ici : deux écrans qui filtrent le temps doivent le filtrer
+   de la même façon, sinon on compare des choses différentes sans le savoir. */
 function champInPeriod(d){
   var per=champPeriod(); if(per==='tout' || !d) return true;
-  var n=new Date(), y=n.getFullYear(), m=n.getMonth()+1;
   var s=String(d);
+  if(per==='dates') return (!S.champFrom || s>=S.champFrom) && (!S.champTo || s<=S.champTo);
+  var n=new Date(), y=n.getFullYear(), m=n.getMonth()+1;
   if(per==='annee') return s.slice(0,4)===String(y);
   return s.slice(0,7)===y+'-'+(m<10?'0':'')+m;
+}
+function setChampPeriod(v){ S.champPeriod=v; S.detail=null; persist(); render(); }
+function champPeriodChips(){
+  var per=[['tout','Tout'],['mois','Ce mois'],['annee','Cette année'],['dates','Dates']];
+  var h='<div class="chips" style="margin-bottom:6px">'+per.map(function(o){
+    return '<button class="chip'+(champPeriod()===o[0]?' on':'')+'" onclick="setChampPeriod(\''+o[0]+'\')">'+o[1]+'</button>';
+  }).join('')+'</div>';
+  if(champPeriod()==='dates')
+    h+='<div class="row" style="margin-bottom:8px"><input type="date" value="'+(S.champFrom||'')+'" onchange="S.champFrom=this.value;S.detail=null;render()">'+
+       '<span>→</span><input type="date" value="'+(S.champTo||'')+'" onchange="S.champTo=this.value;S.detail=null;render()"></div>';
+  return h;
 }
 /* Masquage : un joueur de passage n'a pas à rester au mur pour toujours.
    On ne supprime rien — les parties gardent leur historique. */
@@ -2553,12 +2671,18 @@ function tConfig(){
 function tBoard(t){
   var h='<button class="sm" style="margin-bottom:10px" onclick="S.tid=null;render()">‹ Tous les tournois</button>';
   if(t.status==='done'){
-    h+='<div class="hero" style="text-align:center;background:linear-gradient(135deg,#9a3412,#f97316)">'+
-      '<p style="margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.9">Vainqueur du tournoi</p>'+
-      '<h2 style="margin:6px 0 0;font-size:26px">🏆 '+esc(tEntName(t,t.winner))+'</h2>'+
-      '<p style="margin:6px 0 0;font-size:13.5px;opacity:.94">'+esc(t.game)+' · '+fr(t.date)+'</p></div>'+
-      '<button class="btn tournoi'+(t.sent?' grey':'')+'" style="margin-bottom:12px" onclick="tToCoupe(\''+t.id+'\')">'+
-      (t.sent?'✓ Déjà compté dans La Coupe':'🏆 Compter dans La Coupe')+'</button>';
+    var vict=tVictories(t);
+    var suiv=t.entrants.filter(function(e){return e.id!==t.winner;})
+      .sort(function(a,b){ return (vict[b.id]||0)-(vict[a.id]||0); })
+      .map(function(e){ return {name:tEntName(t,e.id), detail:' · '+pl(vict[e.id]||0,'victoire')}; });
+    h+=celebration({
+      theme:'tournoi', sur:'Vainqueur du tournoi', name:tEntName(t,t.winner),
+      detail:'<b>'+gameLook(t.game).emo+' '+esc(t.game)+'</b> · '+pl(vict[t.winner]||0,'match gagné')+'<br>'+fr(t.date),
+      suivants:suiv,
+      actions:'<button onclick="tToCoupe(\''+t.id+'\')">'+(t.sent?'✓ Déjà compté':'🏆 La Coupe')+'</button>'+
+              '<button onclick="go(\'champions\')">🏅 Le Mur</button>'
+    })+
+      '';
   } else {
     h+='<div class="card" style="background:var(--bg)"><b style="font-size:15px">'+gameLook(t.game).emo+' '+esc(t.game)+'</b>'+
       '<p class="mini" style="margin:3px 0 0">'+pl(t.entrants.length, t.team?'équipe':'joueur')+' · '+
@@ -2874,6 +2998,75 @@ function championsAgg(){
    une seule victoire ferait 100 %. On l'affiche, on ne classe pas dessus. */
 var CHAMP_MIN=3;
 /* Palmarès par discipline : comparer ce qui est comparable. */
+/* Le Mur reprend la logique de La Coupe : un sélecteur de vue, puis la même
+   période partout. Là où La Coupe compte des MANCHES, le Mur compte des
+   PARTIES — c'est la seule différence, et elle est écrite en toutes lettres. */
+function champMode(){ return S.champMode||'grille'; }
+function setChampMode(v){ S.champMode=v; S.detail=null; persist(); render(); }
+function champModeSelector(){
+  var modes=[['grille','▦','Grille'],['joueur','🏅','Par joueur'],['jeu','🎲','Par jeu']];
+  return '<div style="display:flex;gap:6px;margin-bottom:10px">'+modes.map(function(o){
+    var on=champMode()===o[0];
+    return '<button class="chip'+(on?' on':'')+'" style="flex:1;text-align:center;padding:8px 4px" '+
+      'onclick="setChampMode(\''+o[0]+'\')"><span style="font-size:14px">'+o[1]+'</span> '+o[2]+'</button>';
+  }).join('')+'</div>';
+}
+/* Vue « Par jeu » : un bloc par jeu, avec son icône et son podium. */
+function champParJeu(){
+  var blocs=champByGame();
+  if(!blocs.length) return '<div class="empty"><div class="e">🎲</div><h3>Rien à classer</h3><p>Les classements par jeu apparaîtront dès la première partie enregistrée.</p></div>';
+  var med=['🥇','🥈','🥉'];
+  return blocs.map(function(b){
+    var look=gameLook(b.game);
+    return '<div class="card"><div class="row" style="gap:9px;align-items:center;margin-bottom:8px">'+
+      '<span class="em" style="width:34px;height:34px;font-size:17px;background:'+look.bg+'">'+look.emo+'</span>'+
+      '<b style="flex:1;font-size:15px">'+esc(b.game)+'</b>'+
+      '<span class="mini">'+pl(b.players.reduce(function(s,p){return s+p.played;},0),'participation')+'</span></div>'+
+      b.players.slice(0,8).map(function(p,i){
+        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)">'+
+          '<span style="width:20px;font-size:13px">'+(med[i]||(i+1))+'</span>'+
+          av(p.name,'sm')+
+          '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:13.5px">'+esc(p.name)+'</span>'+
+          '<b style="width:34px;text-align:right">'+p.wins+'</b>'+
+          '<span style="width:52px;text-align:right;color:var(--mut);font-size:12px">'+pl(p.played,'partie')+'</span></div>';
+      }).join('')+
+      '<p class="mini" style="margin:8px 0 0">Victoires · parties jouées</p></div>';
+  }).join('');
+}
+/* Vue « Par joueur » : la fiche complète de chacun, sans avoir à déplier.
+   On y compte des PARTIES gagnées — jamais des manches, qui n'existent qu'à
+   l'intérieur d'une partie de La Coupe. */
+function champParJoueur(list){
+  var vis=list.filter(function(p){return !p.hidden;});
+  if(!vis.length) return '<div class="empty"><div class="e">🏅</div><h3>Personne au mur</h3><p>Les fiches apparaîtront dès la première partie jouée.</p></div>';
+  var med=['🥇','🥈','🥉'];
+  return vis.map(function(p,i){
+    var lignes=[['🏆','La Coupe',p.coupes,p.coupeParties],
+                ['🎙️','Le Micro',p.quizWins,p.quizGames],
+                ['⏱️','Tic-Tac',p.duelWins,p.duels],
+                ['🏓','Le Tournoi',p.tournoiWins,p.tournois]]
+      .filter(function(l){ return l[3]>0; });
+    return '<div class="card"><div class="row" style="gap:9px;align-items:center;margin-bottom:10px">'+
+      '<span style="width:22px;font-size:15px">'+(med[i]||(i+1))+'</span>'+
+      av(p.name,'sm')+
+      '<b style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px">'+esc(p.name)+'</b>'+
+      '<span style="font-size:19px;font-weight:800">'+p.crowns+'</span><span class="mini" style="margin:0"> 👑</span></div>'+
+      (lignes.length? lignes.map(function(l){
+        var pct=l[3]? Math.round(l[2]/l[3]*100) : 0;
+        return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0">'+
+          '<span style="width:20px;font-size:14px">'+l[0]+'</span>'+
+          '<span style="width:74px;font-size:12.5px;color:var(--mut)">'+l[1]+'</span>'+
+          '<span style="flex:1;height:7px;border-radius:99px;background:var(--bg);overflow:hidden">'+
+            '<span style="display:block;height:100%;width:'+pct+'%;background:var(--gr)"></span></span>'+
+          '<b style="width:56px;text-align:right;font-size:12.5px">'+l[2]+' / '+l[3]+'</b></div>';
+      }).join('') : '<p class="mini" style="margin:0">Aucune partie sur la période choisie.</p>')+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid var(--line)">'+
+        '<span class="mini" style="margin:0">'+pl(p.parties,'partie')+' · '+(p.rate===null?'—':p.rate+' % de victoires')+
+        (p.parties<CHAMP_MIN&&p.rate!==null?' (indicatif)':'')+'</span>'+
+        '<button class="sm" onclick="champToggleHide(\''+esc(p.name).replace(/'/g,"\\'")+'\')">🙈 Masquer</button></div>'+
+      '</div>';
+  }).join('');
+}
 function champByGame(){
   var out=[];
   var byGame={};
@@ -2947,11 +3140,9 @@ function renderChampions(hd,app,banner){
       : '💥 <b>'+esc(vis[1].name)+'</b> n\'est qu\'à '+pl(gap,'couronne')+' de <b>'+esc(vis[0].name)+'</b> — ça se joue à rien !';
     if(gap<=3) h+='<div class="card" style="background:var(--am-l);border-color:var(--am)"><p style="margin:0;font-size:13.5px;color:#92400e;line-height:1.5">'+rival+'</p></div>';
   }
-  h+='<div style="display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;-webkit-overflow-scrolling:touch">'+
-    [['mois','📅 Ce mois'],['annee','🗓 Cette année'],['tout','☰ Tout']].map(function(o){
-      return '<button class="chip'+(champPeriod()===o[0]?' on':'')+'" style="white-space:nowrap" onclick="S.champPeriod=\''+o[0]+'\';S.detail=null;render()">'+o[1]+'</button>';
-    }).join('')+'</div>'+
-    '';
+  h+=champModeSelector()+champPeriodChips();
+  if(champMode()==='jeu'){    app.innerHTML=h+champParJeu(); return; }
+  if(champMode()==='joueur'){ app.innerHTML=h+champParJoueur(list)+champLegende(); return; }
   /* Avant : trois rangées de chips (période, tri, mode) puis DEUX listes des
      mêmes joueurs — par jeu et en général. On tient tout en un seul tableau :
      couronnes, parties et taux côte à côte, tri par en-tête, jeu par jeu replié. */
@@ -2986,7 +3177,8 @@ function renderChampions(hd,app,banner){
       '</div>';
     if(open){
       h+='<div style="background:var(--bg);border-radius:12px;padding:10px 12px;margin:6px 0;font-size:13px">'+
-        '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>🏆 La Coupe</span><b>'+pl(p.coupes,'titre')+' · '+pl(p.coupeManches,'manche gagnée')+'</b></div>'+
+        '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>🏆 La Coupe</span><b>'+p.coupes+' / '+pl(p.coupeParties,'partie')+'</b></div>'+
+        (p.coupeManches? '<div style="display:flex;justify-content:space-between;padding:2px 0;opacity:.75"><span style="font-size:12px">↳ manches gagnées</span><span style="font-size:12px">'+p.coupeManches+'</span></div>':'')+
         '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>🎙️ Le Micro</span><b>'+p.quizWins+' / '+pl(p.quizGames,'partie')+'</b></div>'+
         '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>⏱️ Tic-Tac</span><b>'+p.duelWins+' / '+pl(p.duels,'duel')+'</b></div>'+
         (p.tournois? '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>🏓 Le Tournoi</span><b>'+p.tournoiWins+' / '+pl(p.tournois,'tournoi')+'</b></div>':'')+
@@ -3005,12 +3197,41 @@ function renderChampions(hd,app,banner){
         '<button class="sm g" onclick="champToggleHide(\''+esc(q.name).replace(/'/g,"\\'")+'\')">Réafficher</button></div>';
     }).join('')+'<p class="mini" style="margin:0">Masquer ne supprime rien : les parties gardent leur historique.</p></div>';
   }
-  h+='<button class="sm" style="width:100%;margin-top:10px;background:var(--card);text-align:left" onclick="S.champByGame=!S.champByGame;render()">'+
-     (S.champByGame?'▾':'›')+' Classement jeu par jeu</button>';
-  if(S.champByGame) h+=champGameBlocks();
-  h+='<p class="mini" style="text-align:center;margin-top:10px">👑 = un titre à La Coupe, une partie du Micro, un duel Tic-Tac ou un tournoi remporté.</p>';
+  h+='<p class="mini" style="text-align:center;margin-top:10px">👑 = une partie gagnée, à La Coupe, au Micro, au Tic-Tac ou au Tournoi.</p>';
   h+='<button class="btn dark" style="margin-top:10px" onclick="champShare()">📤 Partager le mur</button>';
   app.innerHTML=h;
+}
+function champLegende(){
+  return '<p class="mini" style="text-align:center;margin-top:10px">👑 = une partie gagnée, à La Coupe, au Micro, au Tic-Tac ou au Tournoi.</p>'+
+    '<button class="btn dark" style="margin-top:10px" onclick="champShare()">📤 Partager le mur</button>';
+}
+/* ── Célébration : un seul composant pour les quatre rubriques ──────
+   theme : 'coupe' | 'micro' | 'tictac' | 'tournoi'
+   suivants : [{name, detail}] pour le podium — facultatif. */
+function celebration(o){
+  var papier='<div class="papier">'+(function(){
+    var cols=['#fbbf24','#f472b6','#60a5fa','#34d399','#f87171','#c084fc','#fff'];
+    var out='';
+    for(var i=0;i<26;i++){
+      var g=(i*97)%100, d=(i%9)*0.13, dur=2.8+((i%5)*0.32), c=cols[i%cols.length];
+      out+='<i style="left:'+g+'%;background:'+c+';animation-delay:'+d.toFixed(2)+'s;animation-duration:'+dur.toFixed(2)+'s;'+
+           'transform:rotate('+((i*37)%360)+'deg)"></i>';
+    }
+    return out;
+  })()+'</div>';
+  var pod=(o.suivants&&o.suivants.length)
+    ? '<div class="podium">'+o.suivants.slice(0,2).map(function(s,i){
+        return '<div>'+(i?'🥉':'🥈')+' <b>'+esc(s.name)+'</b>'+(s.detail?'<span style="opacity:.8">'+esc(s.detail)+'</span>':'')+'</div>';
+      }).join('')+'</div>' : '';
+  return '<div class="celebr '+(o.theme||'')+'">'+
+    '<div class="rays"></div><div class="halo"></div>'+papier+
+    '<p class="sur">'+esc(o.sur||'Vainqueur')+'</p>'+
+    '<div class="qui" style="margin:10px 0 0">'+(o.name?av(o.name,'big'):'<span style="font-size:52px">🏆</span>')+'</div>'+
+    '<h2 class="nom">'+esc(o.name||'—')+'</h2>'+
+    (o.detail?'<p class="det">'+o.detail+'</p>':'')+
+    pod+
+    '<div class="actions">'+(o.actions||'')+'</div>'+
+    '</div>';
 }
 function champShare(){
   var list=championsAgg(), med=['🥇','🥈','🥉'];
@@ -4108,10 +4329,16 @@ function chGame(){
   var col = p.left<=5 ? '#e11d48' : p.left<=20 ? '#f59e0b' : '#059669';
   if(CH.winner!==null || chAlive().length<=1){
     var w = CH.winner!==null ? CH.winner : (chAlive()[0]&&chAlive()[0].name);
-    var conf='<div class="confetti" style="position:absolute;inset:0;pointer-events:none;overflow:hidden">'+
-      ['🎉','🏆','⭐️','🎊','✨','🥇'].map(function(e,i){return '<span style="left:'+(8+i*15)+'%;animation-delay:'+(i*.35)+'s">'+e+'</span>';}).join('')+'</div>';
-    return '<div class="card" style="text-align:center;padding:28px 16px;position:relative;overflow:hidden">'+conf+
-      '<div style="font-size:52px" class="winbig">🏆</div><div style="margin:4px 0">'+(w?av(w,'big'):'')+'</div><h2 style="font-size:22px;margin:4px 0 2px">'+esc(w||'—')+'</h2>'+
+    var srtC=CH.players.slice().sort(function(a,b){ return b.good-a.good || (a.bad||0)-(b.bad||0); });
+    var champC=srtC[0], totC=CH.players.reduce(function(s,x){return s+x.good+(x.bad||0);},0);
+    return celebration({
+      theme:'tictac', sur:'Dernier debout', name:w||'—',
+      detail: (champC&&champC.good? '<b>✓ '+pl(champC.good,'bonne réponse')+'</b>' : 'dernier joueur en course')+
+              (totC? ' · '+pl(totC,'question')+' en tout' : ''),
+      suivants: srtC.slice(1,3).map(function(p){ return {name:p.name, detail:' · ✓ '+p.good}; }),
+      actions:'<button onclick="chToCoupe()">🏆 La Coupe</button><button onclick="chStart()">🔄 Rejouer</button>'
+    })+
+    '<div class="card">'+
       (function(){
         /* Tableau de fin : podium, taux de réussite et comparaison — pas
            seulement le nombre de bonnes réponses. */
@@ -4128,11 +4355,10 @@ function chGame(){
             return {name:p.name, ratio:p.good/best,
               main:'<b style="color:var(--okx)">✓ '+p.good+'</b> <b style="color:var(--nox);font-weight:600">✗ '+(p.bad||0)+'</b>'+(t?' <span style="color:var(--mut);font-size:11.5px">'+Math.round(p.good/t*100)+'%</span>':'')};
           }))+
-          '</div></div>'; })()+
+          '</div>'; })()+
       '<p class="mini" style="text-align:center;color:var(--okx);margin-top:12px">✓ Enregistrée au 🏅 Mur des champions</p>'+
-      '<button class="btn tictac" style="margin-top:8px" onclick="chToCoupe()">🏆 Compter dans La Coupe</button>'+
-      '<button class="btn" style="margin-top:8px" onclick="chStart()">Rejouer</button>'+
-      '<button class="btn grey" style="margin-top:8px" onclick="chReset()">Modifier les réglages</button>';
+      '</div>'+
+      '<button class="btn grey" onclick="chReset()">Modifier les réglages</button>';
   }
 
   var alive=chAlive().length;
