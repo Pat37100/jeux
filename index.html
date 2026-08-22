@@ -448,7 +448,7 @@ function nowHM(){
 }
 function stamp(r){ return fr(r.date)+(r.time?' · '+r.time:''); }
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='104';
+var APP_VERSION='105';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -585,8 +585,8 @@ function render_(){
       '<button class="icobtn" onclick="go(\'save\')">⚙︎</button>';
     app.innerHTML=banner+
       '<div class="hero" style="padding:20px 20px 17px"><span class="dice">🎲</span>'+
-        '<p style="font-size:16px;font-weight:800;margin:0 0 6px;line-height:1.3">Le compagnon de vos jeux</p>'+
-        '<p style="font-size:13.5px;margin:0;line-height:1.5;opacity:.92">Vos cartes, vos dés, votre plateau — ou rien du tout. En Jeux compte les points, chronomètre, anime et retient qui gagne. 👑</p>'+
+        '<p style="font-size:16px;font-weight:800;margin:0 0 6px;line-height:1.3">Le compagnon de vos parties</p>'+
+        '<p style="font-size:13.5px;margin:0;line-height:1.5;opacity:.92">Des cartes, des dés, un plateau — ou rien du tout. En Jeux compte les points, chronomètre, anime et retient qui gagne. 👑</p>'+
         '<div class="pills"><span>🍿 Soirées</span><span>🍽️ À table</span><span>🚗 En voiture</span><span>🏖️ En vacances</span></div></div>'+
       '<div class="trust"><span><b>🆓</b>Gratuit</span><span><b>📶</b>Hors-ligne</span><span><b>v'+APP_VERSION+'</b>Version</span></div>'+
       (function(){
@@ -1197,7 +1197,7 @@ function renderMatch(hd,app,nav,banner){
   if(S.tab==='set')  h+=tabSet(m);
   app.innerHTML=h;
   nav.innerHTML='<nav><div class="in">'+
-    nb('rank','🏅','Résultats')+nb('play','➕','Saisir')+nb('set','⚙︎','Réglages')+'</div></nav>';
+    nb('rank','▦','Classement')+nb('play','➕','Saisir')+nb('set','⚙︎','Réglages')+'</div></nav>';
 }
 /* Onglets de rubrique : les trois rubriques partagent exactement la même
    structure « Jouer / Résultats ». Deux testeurs se perdaient parce que
@@ -1418,8 +1418,7 @@ function histGrid(m){
   return '<div class="card" style="padding:12px 0 8px">'+
     '<h2 style="padding:0 14px">▦ Le tableau de la partie</h2>'+
     '<div class="gridwrap"><table class="gtab"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>'+
-    '<p class="mini" style="text-align:center;margin:10px 14px 0">Fais glisser vers la gauche pour voir toutes les manches · '+
-    '<b style="color:var(--okx)">vert 👑</b> = manche gagnée · la barre montre l\'écart de cumul.</p>'+
+    '<p class="mini" style="text-align:center;margin:10px 14px 0"><b style="color:var(--okx)">vert 👑</b> = manche gagnée</p>'+
     '</div>';
 }
 function resSelector(mode,nb){
@@ -1470,7 +1469,7 @@ function tabRes(m){
   var nb=m.rounds.filter(keeper()).length;
   var mode=S.histMode||'grid';
   if(mode==='graph' && nb<3) mode=S.histMode='grid';
-  var head=resSelector(mode,m.rounds.length)+resPeriod(m)+resChamps(m);
+  var head=resSelector(mode,m.rounds.length)+resPeriod(m)+goalBanner(m);
   if(!nb && m.rounds.length) return head+'<div class="card" style="text-align:center;background:var(--am-l);border-color:#fde68a"><b>Aucune manche sur cette période</b><p class="mini" style="color:#b45309">Cette partie contient '+pl(m.rounds.length,'manche')+', hors du filtre.</p><button class="sm g" onclick="S.period=\'all\';render()">Voir tout</button></div>';
   return head+(mode==='rank'?tabRank(m):tabHist(m));
 }
@@ -3040,7 +3039,9 @@ function champParJoueur(list){
   var vis=list.filter(function(p){return !p.hidden;});
   if(!vis.length) return '<div class="empty"><div class="e">🏅</div><h3>Personne au mur</h3><p>Les fiches apparaîtront dès la première partie jouée.</p></div>';
   var med=['🥇','🥈','🥉'];
-  return vis.map(function(p,i){
+  var provisoire = vis.some(function(p){ return p.rate!==null && p.parties<CHAMP_MIN; });
+  return (provisoire?'<p class="mini" style="margin:0 0 8px">Encore peu de parties : les taux sont provisoires.</p>':'')+
+    vis.map(function(p,i){
     var lignes=[['🏆','La Coupe',p.coupes,p.coupeParties],
                 ['🎙️','Le Micro',p.quizWins,p.quizGames],
                 ['⏱️','Tic-Tac',p.duelWins,p.duels],
@@ -3061,8 +3062,7 @@ function champParJoueur(list){
           '<b style="width:56px;text-align:right;font-size:12.5px">'+l[2]+' / '+l[3]+'</b></div>';
       }).join('') : '<p class="mini" style="margin:0">Aucune partie sur la période choisie.</p>')+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid var(--line)">'+
-        '<span class="mini" style="margin:0">'+pl(p.parties,'partie')+' · '+(p.rate===null?'—':p.rate+' % de victoires')+
-        (p.parties<CHAMP_MIN&&p.rate!==null?' (indicatif)':'')+'</span>'+
+        '<span class="mini" style="margin:0">'+pl(p.parties,'partie')+' · '+(p.rate===null?'—':p.rate+' % de victoires')+'</span>'+
         '<button class="sm" onclick="champToggleHide(\''+esc(p.name).replace(/'/g,"\\'")+'\')">🙈 Masquer</button></div>'+
       '</div>';
   }).join('');
@@ -3124,22 +3124,23 @@ function renderChampions(hd,app,banner){
     h+='<div class="empty"><div class="e">🏅</div><h3>Le mur est encore vierge</h3><p>Joue des parties à La Coupe, au Micro, au Tic-Tac ou au Tournoi : les couronnes de chacun s\'accumuleront ici, tous jeux confondus.</p></div>';
     app.innerHTML=h; return;
   }
-  var champ=list.filter(function(p){return !p.hidden;})[0]; if(!champ) champ=list[0];
-  var conf='<div class="confetti" style="position:absolute;inset:0;pointer-events:none;overflow:hidden">'+
-    ['🎉','👑','⭐️','✨','🏆'].map(function(e,i){return '<span style="left:'+(8+i*20)+'%;animation-delay:'+(i*.35)+'s">'+e+'</span>';}).join('')+'</div>';
-  h+='<div class="hero" style="text-align:center;position:relative;background:linear-gradient(135deg,#7c3aed,#a78bfa)">'+conf+
-    '<p style="margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.9">Champion de la famille</p>'+
-    '<div style="margin:6px 0 2px">'+av(champ.name,'big')+'</div>'+
-    '<h2 style="font-size:28px;margin:2px 0">👑 '+esc(champ.name)+'</h2>'+
-    '<p style="margin:0;font-size:13px;opacity:.92">'+pl(champ.crowns,'couronne')+' au total</p></div>';
   var vis=list.filter(function(p){return !p.hidden;});
-  if(vis.length>=2 && vis[0].crowns>0){
-    var gap=vis[0].crowns-vis[1].crowns;
-    var rival = gap===0
-      ? '⚡️ Égalité parfaite au sommet entre <b>'+esc(vis[0].name)+'</b> et <b>'+esc(vis[1].name)+'</b> — la prochaine partie départage !'
-      : '💥 <b>'+esc(vis[1].name)+'</b> n\'est qu\'à '+pl(gap,'couronne')+' de <b>'+esc(vis[0].name)+'</b> — ça se joue à rien !';
-    if(gap<=3) h+='<div class="card" style="background:var(--am-l);border-color:var(--am)"><p style="margin:0;font-size:13.5px;color:#92400e;line-height:1.5">'+rival+'</p></div>';
-  }
+  var champ=vis[0]||list[0];
+  var exaequo=vis.filter(function(p){ return p.crowns===champ.crowns; });
+  /* On ne proclame un champion que s'il y en a un : la version précédente
+     couronnait le premier de la liste, puis annonçait l'égalité juste en
+     dessous. Deux messages contradictoires à trois centimètres l'un de l'autre. */
+  h+=celebration({
+    theme:'micro',
+    sur: exaequo.length>1 ? 'Égalité en tête' : 'Champion de la famille',
+    name: exaequo.length>1 ? exaequo.slice(0,2).map(function(p){return p.name;}).join(' & ') : champ.name,
+    avatar: exaequo.length<=1,
+    detail: exaequo.length>1
+      ? '<b>'+pl(champ.crowns,'couronne')+'</b> chacun — la prochaine partie départage'
+      : '<b>'+pl(champ.crowns,'couronne')+'</b>'+(vis[1]&&vis[1].crowns>0? ' · '+esc(vis[1].name)+' suit à '+pl(champ.crowns-vis[1].crowns,'couronne') : ''),
+    suivants: exaequo.length>1 ? [] : vis.slice(1,3).map(function(p){ return {name:p.name, detail:' · '+p.crowns+' 👑'}; }),
+    actions:'<button onclick="champShare()">📤 Partager</button>'
+  });
   h+=champModeSelector()+champPeriodChips();
   if(champMode()==='jeu'){    app.innerHTML=h+champParJeu(); return; }
   if(champMode()==='joueur'){ app.innerHTML=h+champParJoueur(list)+champLegende(); return; }
@@ -3154,7 +3155,10 @@ function renderChampions(hd,app,banner){
       (tri===k?'color:var(--okx)':'color:var(--mut)')+'">'+lb+(tri===k?' ▾':'')+'</span>';
   };
   var faibles=false;
+  var avecTaux=shown.filter(function(p){ return p.rate!==null; });
+  var tousFaibles = avecTaux.length>0 && avecTaux.every(function(p){ return p.parties<CHAMP_MIN; });
   h+='<div class="card">'+
+     (tousFaibles?'<p class="mini" style="margin:0 0 6px">Encore peu de parties : les taux sont provisoires.</p>':'')+
      '<div style="display:flex;align-items:center;gap:7px;padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:2px">'+
        '<span style="width:18px"></span>'+
        '<span style="flex:1;font-size:11px;font-weight:800;color:var(--mut)">JOUEUR</span>'+
@@ -3166,6 +3170,7 @@ function renderChampions(hd,app,banner){
     var open=S.detail==='champ'+fp(p.name);
     var rateTxt = p.rate===null ? '—' : p.rate+' %';
     var faible = p.parties<CHAMP_MIN && p.rate!==null; if(faible) faibles=true;
+    if(tousFaibles) faible=false;
     h+='<div onclick="S.detail=S.detail===\'champ'+fp(p.name)+'\'?null:\'champ'+fp(p.name)+'\';render()" '+
        'style="display:flex;align-items:center;gap:7px;padding:8px 0;cursor:pointer;border-bottom:1px solid var(--line)">'+
       '<span style="width:18px;font-size:13px">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1))+'</span>'+
@@ -3186,7 +3191,7 @@ function renderChampions(hd,app,banner){
       '</div>';
     }
   });
-  if(faibles) h+='<p class="mini" style="margin:8px 0 0"><b>*</b> moins de '+CHAMP_MIN+' parties : taux indicatif, hors classement.</p>';
+  if(faibles && !tousFaibles) h+='<p class="mini" style="margin:8px 0 0"><b>*</b> moins de '+CHAMP_MIN+' parties : taux indicatif, hors classement.</p>';
   h+='</div>';
   if(hiddenList.length){
     h+='<button class="sm" style="width:100%;margin-top:10px;background:var(--card);text-align:left" onclick="S.champShowHid=!S.champShowHid;render()">'+
@@ -3226,7 +3231,7 @@ function celebration(o){
   return '<div class="celebr '+(o.theme||'')+'">'+
     '<div class="rays"></div><div class="halo"></div>'+papier+
     '<p class="sur">'+esc(o.sur||'Vainqueur')+'</p>'+
-    '<div class="qui" style="margin:10px 0 0">'+(o.name?av(o.name,'big'):'<span style="font-size:52px">🏆</span>')+'</div>'+
+    (o.avatar===false?'' : '<div class="qui" style="margin:10px 0 0">'+(o.name?av(o.name,'big'):'<span style="font-size:52px">🏆</span>')+'</div>')+
     '<h2 class="nom">'+esc(o.name||'—')+'</h2>'+
     (o.detail?'<p class="det">'+o.detail+'</p>':'')+
     pod+
