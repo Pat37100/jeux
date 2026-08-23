@@ -386,6 +386,43 @@
   .sheet .in{background:var(--bg);width:100%;max-width:520px;margin:0 auto;border-radius:22px 22px 0 0;padding:16px;
     max-height:92vh;overflow-y:auto;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
   .grab{width:40px;height:5px;background:#d6d3d1;border-radius:99px;margin:0 auto 12px}
+
+  /* ── Contrôle segmenté, à la manière d'iOS : un seul rail gris, la
+        sélection est une pastille blanche qui glisse dessus. ── */
+  .seg{display:flex;background:var(--bg);border-radius:11px;padding:2px;gap:0;margin-bottom:12px;position:relative}
+  .seg button{flex:1;border:0;background:transparent;color:var(--mut);font-family:inherit;font-size:13px;
+    font-weight:600;padding:8px 4px;border-radius:9px;cursor:pointer;min-height:36px;
+    transition:background .18s ease,color .18s ease,box-shadow .18s ease;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .seg button.on{background:var(--card);color:var(--fg);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.14)}
+  .seg button:active{transform:scale(.97)}
+  /* Séparateurs fins entre segments non sélectionnés, comme sur iOS */
+  .seg button+button{position:relative}
+  .seg button.on+button::before,.seg button+button.on::before{opacity:0}
+  .seg button+button::before{content:'';position:absolute;left:0;top:22%;height:56%;width:1px;background:var(--line);opacity:1}
+
+  /* ── Appui long : la cible s'enfonce légèrement pendant l'appui ── */
+  [data-hold]{-webkit-touch-callout:none}
+  .holding{transform:scale(.96);opacity:.75;transition:transform .18s ease,opacity .18s ease}
+
+  /* ── Menu contextuel : feuille d'action iOS, actions destructives en rouge ── */
+  .amenu{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.32);display:flex;align-items:flex-end;
+    animation:fadein .18s ease both}
+  @keyframes fadein{from{opacity:0}to{opacity:1}}
+  .amenu .wrap{width:100%;max-width:520px;margin:0 auto;padding:0 8px calc(8px + env(safe-area-inset-bottom));
+    animation:sheetup .26s cubic-bezier(.2,.9,.3,1) both}
+  @keyframes sheetup{from{transform:translateY(28px);opacity:.4}to{transform:translateY(0);opacity:1}}
+  .amenu .grp{background:var(--card);border-radius:14px;overflow:hidden;margin-bottom:8px;
+    box-shadow:0 8px 30px rgba(0,0,0,.18)}
+  .amenu .ttl{padding:12px 16px 10px;font-size:12.5px;color:var(--mut);text-align:center;
+    border-bottom:1px solid var(--line);font-weight:600}
+  .amenu button{width:100%;border:0;background:transparent;color:var(--fg);font-family:inherit;font-size:16.5px;
+    padding:15px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;min-height:52px;text-align:left}
+  .amenu button+button{border-top:1px solid var(--line)}
+  .amenu button:active{background:var(--bg)}
+  .amenu button .ic{width:22px;font-size:17px;text-align:center}
+  .amenu button.danger{color:var(--nox);font-weight:600}
+  .amenu .cancel button{justify-content:center;font-weight:700}
   label.lb{font-size:11px;font-weight:700;text-transform:uppercase;color:var(--soft);display:block;margin:0 0 5px}
   .mini{font-size:12px;color:var(--soft);line-height:1.45}
   /* ---- Export PDF (impression) ---- */
@@ -448,7 +485,7 @@ function nowHM(){
 }
 function stamp(r){ return fr(r.date)+(r.time?' · '+r.time:''); }
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='105';
+var APP_VERSION='106';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -546,6 +583,97 @@ function speak(txt){ if(!sndOn()) return;
     var u=new SpeechSynthesisUtterance(txt); u.lang='fr-FR'; u.rate=1; u.pitch=1;
     window.speechSynthesis.speak(u);
   }catch(e){}
+}
+/* ═══════════════════════ GESTES ═══════════════════════════════════
+   Ce que fait iOS et que l'app ne faisait pas : rester appuyé sur un
+   élément ouvre ses actions. Un seul écouteur pour toute l'application ;
+   chaque cible se déclare avec data-hold="type:identifiant". */
+var HOLD={t:null, el:null, x:0, y:0, fired:false};
+function haptic(ms){
+  /* Safari iOS n'expose pas encore la vibration : l'appel est sans effet
+     là-bas, et fonctionne sur Android. On ne s'appuie donc jamais dessus
+     pour faire comprendre quelque chose — c'est un bonus, pas un signal. */
+  try{ if(navigator.vibrate) navigator.vibrate(ms||12); }catch(e){}
+}
+function holdCancel(){
+  if(HOLD.t){ clearTimeout(HOLD.t); HOLD.t=null; }
+  if(HOLD.el){ HOLD.el.classList.remove('holding'); HOLD.el=null; }
+}
+document.addEventListener('pointerdown', function(e){
+  var el=e.target.closest && e.target.closest('[data-hold]');
+  if(!el) return;
+  HOLD.fired=false; HOLD.x=e.clientX; HOLD.y=e.clientY; HOLD.el=el;
+  el.classList.add('holding');
+  HOLD.t=setTimeout(function(){
+    HOLD.fired=true; haptic(14);
+    var cible=el.getAttribute('data-hold');
+    holdCancel();
+    actionMenu(cible);
+  }, 480);
+}, true);
+document.addEventListener('pointermove', function(e){
+  if(!HOLD.t) return;
+  if(Math.abs(e.clientX-HOLD.x)>10 || Math.abs(e.clientY-HOLD.y)>10) holdCancel();
+}, true);
+['pointerup','pointercancel','scroll'].forEach(function(ev){
+  document.addEventListener(ev, holdCancel, true);
+});
+/* Après un appui long, le clic qui suit ne doit pas ouvrir l'élément. */
+document.addEventListener('click', function(e){
+  if(HOLD.fired){ HOLD.fired=false; e.preventDefault(); e.stopPropagation(); }
+}, true);
+
+/* Feuille d'action : titre, actions, Annuler détaché — comme iOS. */
+function showActions(titre, actions){
+  var old=document.getElementById('amenu'); if(old) old.remove();
+  var el=document.createElement('div'); el.className='amenu'; el.id='amenu';
+  el.innerHTML='<div class="wrap" onclick="event.stopPropagation()">'+
+    '<div class="grp">'+(titre?'<div class="ttl">'+esc(titre)+'</div>':'')+
+      actions.map(function(a){
+        return '<button class="'+(a.danger?'danger':'')+'" onclick="closeActions();'+a.run+'">'+
+          '<span class="ic">'+(a.icon||'')+'</span><span>'+esc(a.label)+'</span></button>';
+      }).join('')+'</div>'+
+    '<div class="grp cancel"><button onclick="closeActions()">Annuler</button></div></div>';
+  el.onclick=closeActions;
+  document.body.appendChild(el);
+}
+function closeActions(){ var el=document.getElementById('amenu'); if(el) el.remove(); }
+
+/* Le dispatcher : chaque type de cible connaît ses actions. */
+function actionMenu(cible){
+  var sep=cible.indexOf(':'), type=cible.slice(0,sep), id=cible.slice(sep+1);
+  if(type==='lib'){
+    var p=D.lib.filter(function(x){return x.id===id;})[0]; if(!p) return;
+    return showActions(p.name, [
+      {icon:'✏️', label:'Renommer',        run:"renameLib('"+id+"')"},
+      {icon:'🎭', label:'Changer l\'avatar', run:"openAv('"+id+"')"},
+      {icon:'🗑', label:'Retirer du répertoire', danger:true, run:"delLib('"+id+"')"}
+    ]);
+  }
+  if(type==='match'){
+    var m=D.matches.filter(function(x){return x.id===id;})[0]; if(!m) return;
+    var a=[{icon:'▶︎', label:'Ouvrir', run:"openMatch('"+id+"')"},
+           {icon:'✏️', label:'Renommer', run:"renameMatchPrompt('"+id+"')"}];
+    if(m.status!=='done') a.push({icon:'🏁', label:'Terminer la partie', run:"finishMatch('"+id+"')"});
+    a.push({icon:'🗑', label:'Supprimer la partie', danger:true, run:"delMatch('"+id+"')"});
+    return showActions(m.name, a);
+  }
+  if(type==='tournoi'){
+    var t=tById(id); if(!t) return;
+    return showActions(t.game, [
+      {icon:'▶︎', label:'Ouvrir', run:"S.tid='"+id+"';window.scrollTo(0,0);render()"},
+      {icon:'🗑', label:'Supprimer le tournoi', danger:true, run:"tDelete('"+id+"')"}
+    ]);
+  }
+  if(type==='round'){
+    var r=null, mm=null;
+    D.matches.forEach(function(x){ x.rounds.forEach(function(y){ if(y.id===id){ r=y; mm=x; } }); });
+    if(!r) return;
+    return showActions('Manche du '+stamp(r), [
+      {icon:'✏️', label:'Corriger les scores', run:"editRound('"+id+"')"},
+      {icon:'🗑', label:'Supprimer la manche', danger:true, run:"delRound('"+id+"')"}
+    ]);
+  }
 }
 function toast(t){var d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);
   setTimeout(function(){d.remove();},2000);}
@@ -1100,7 +1228,7 @@ function mcard(m){
   return '<div class="swipe" data-reveal="'+(actv?168:96)+'" style="--reveal:'+(actv?168:96)+'px"><div class="acts">'+
     (actv?'<button class="arch" onclick="archMatch(\''+m.id+'\')"><span class="ic">🏁</span>Terminer</button>':'')+
     '<button class="del" style="width:'+(actv?84:96)+'px" onclick="askDelMatch(\''+m.id+'\')"><span class="ic">🗑</span>Supprimer</button></div>'+
-    '<div class="front"><button class="tool on" style="width:100%" onclick="openMatch(\''+m.id+'\')"><span class="em" style="background:'+gameLook(m).bg+';font-size:20px">'+gameLook(m).emo+'</span>'+
+    '<div class="front"><button class="tool on" data-hold="match:'+m.id+'" style="width:100%" onclick="openMatch(\''+m.id+'\')"><span class="em" style="background:'+gameLook(m).bg+';font-size:20px">'+gameLook(m).emo+'</span>'+
     '<span style="flex:1;min-width:0"><b>'+esc(m.name)+badge+'</b>'+
     '<small style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+pl(m.players.length,'joueur')+' · '+pl(r.count,'manche')+
     (m.winRule==='low'?' · moins gagne':'')+
@@ -1395,7 +1523,7 @@ function histGrid(m){
   var maxPts=Math.max.apply(null,order.map(function(p){return Math.abs(p.points)||0;}))||1;
   // en-têtes : M1, M2… + total
   var head='<tr><th class="stick">Joueur / équipe</th>'+
-    rounds.map(function(rd,i){return '<th title="'+stamp(rd)+' — toucher pour corriger" style="cursor:pointer" onclick="editRound(\''+rd.id+'\')">M'+(i+1)+'<br><span style="font-size:10px;opacity:.6">'+(rd.time||'✏️')+'</span></th>';}).join('')+
+    rounds.map(function(rd,i){return '<th data-hold="round:'+rd.id+'" title="'+stamp(rd)+'" style="cursor:pointer" onclick="editRound(\''+rd.id+'\')">M'+(i+1)+'<br><span style="font-size:10px;opacity:.6">'+(rd.time||'✏️')+'</span></th>';}).join('')+
     '<th class="tot">Total</th></tr>';
   var body=order.map(function(p,pi){
     var cells=rounds.map(function(rd){
@@ -1425,8 +1553,8 @@ function resSelector(mode,nb){
   /* La vue « Liste » disait la même chose que la grille, en moins lisible. */
   var modes=[['grid','▦','Grille'],['rank','🏅','Par joueur'],['graph','📈','Courbe']];
   if(nb!==undefined && nb<3) modes=modes.filter(function(o){return o[0]!=='graph';});
-  return '<div class="row" style="gap:6px;margin-bottom:10px">'+modes.map(function(o){
-    return '<button class="chip'+(mode===o[0]?' on':'')+'" style="flex:1;text-align:center;padding:9px 4px" onclick="setResMode(\''+o[0]+'\')">'+o[1]+'<br><span style="font-size:11px;font-weight:600">'+o[2]+'</span></button>';
+  return '<div class="seg" role="tablist">'+modes.map(function(o){
+    return '<button role="tab" aria-selected="'+(mode===o[0])+'" class="'+(mode===o[0]?'on':'')+'" onclick="setResMode(\''+o[0]+'\')">'+o[1]+' '+o[2]+'</button>';
   }).join('')+'</div>';
 }
 function setResMode(v){ S.histMode=(v==='list'?'grid':v); window.scrollTo(0,0); render(); }
@@ -1710,8 +1838,10 @@ function reviewMoment(){
      SKStoreReviewController.requestReview() — max 3x/an, jamais en début d'usage. */
   D.joy=(D.joy||0)+1; persist();
 }
-function finishMatch(){
-  var m=cur(); if(!m) return;
+function finishMatch(id){
+  var m=id? D.matches.filter(function(x){return x.id===id;})[0] : cur();
+  if(!m) return;
+  if(id) S.matchId=id;
   reviewMoment();
   m.status='done'; persist();
   S.ceremony=true; S.tab='rank';
@@ -1721,14 +1851,14 @@ function finishMatch(){
   if(champ) speak(champ.name+' remporte '+m.name);
   render();
 }
-function delMatch(){
-  var idx=D.matches.findIndex(function(m){return m.id===S.matchId;});
+function delMatch(id){
+  var idx=D.matches.findIndex(function(m){return m.id===(id||S.matchId);});
   if(idx<0) return;
   var backup=JSON.parse(JSON.stringify(D.matches[idx]));
   D.matches.splice(idx,1); S.confirm=null;
   var e=document.getElementById('dmsh'); if(e)e.remove();
   persist(); go('points');
-  offerUndo('« '+backup.name+' » supprimée', function(){ D.matches.splice(Math.min(idx,D.matches.length),0,backup); });
+  offerUndo('« '+backup.name+' » supprimée', function(){ D.matches.splice(Math.min(idx,D.matches.length),0,backup); persist(); render(); });
 }
 
 /* ------------------------------ PARTAGE --------------------------- */
@@ -1961,7 +2091,7 @@ function playerGrid(selIds, toggleFn, pillFn, hint){
   var h='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'+
     D.lib.map(function(pl){
       var on=selIds.indexOf(pl.id)>=0;
-      return '<button onclick="'+toggleFn+'(\''+pl.id+'\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;border:2px solid '+(on?'var(--gr)':'var(--line)')+';background:'+(on?'var(--gr-l)':'var(--card)')+';border-radius:14px;padding:8px 4px;cursor:pointer;opacity:'+(on?'1':'.5')+';min-width:0">'+
+      return '<button data-hold="lib:'+pl.id+'" onclick="'+toggleFn+'(\''+pl.id+'\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;border:2px solid '+(on?'var(--gr)':'var(--line)')+';background:'+(on?'var(--gr-l)':'var(--card)')+';border-radius:14px;padding:8px 4px;cursor:pointer;opacity:'+(on?'1':'.5')+';min-width:0">'+
         av(pl.name,'sm')+
         '<span style="font-size:11px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(pl.name)+'</span>'+
         (on&&pillFn?pillFn(pl):'')+'</button>';
@@ -2626,9 +2756,9 @@ function tConfig(){
   var s=tSettings(), pk=tPick(), ent=tEntrants();
   var h='<div class="card"><h2><span class="stepn">1</span>Qui joue ? ('+pk.length+')</h2>'+
     playerGrid(pk,'tToggleP',null,'')+
-    '<div class="row" style="gap:6px;margin-top:12px">'+
+    '<div class="seg" style="margin-top:12px">'+
       [[0,'👤 Chacun pour soi'],[1,'👥 Par équipes']].map(function(o){
-        return '<button class="chip'+((s.team?1:0)===o[0]?' on':'')+'" style="flex:1;text-align:center" onclick="tSetTeam('+o[0]+')">'+o[1]+'</button>';
+        return '<button class="'+((s.team?1:0)===o[0]?'on':'')+'" onclick="tSetTeam('+o[0]+')">'+o[1]+'</button>';
       }).join('')+'</div>'+
     (s.team?
       '<p class="mini" style="margin:10px 0 6px">Taille des équipes</p><div class="chips">'+
@@ -2899,7 +3029,7 @@ function tHistory(){
   if(!l.length) return '<div class="empty"><div class="e">🏓</div><h3>Aucun tournoi</h3><p>Crée ton premier tournoi depuis l\'onglet Nouveau : pétanque, ping-pong, molkky… l\'app tient le tableau.</p></div>';
   return '<div class="card"><h2>Tes tournois</h2>'+l.map(function(t){
     var done=t.status==='done';
-    return '<button class="miniact" style="margin-bottom:8px" onclick="S.tid=\''+t.id+'\';window.scrollTo(0,0);render()">'+
+    return '<button class="miniact" data-hold="tournoi:'+t.id+'" style="margin-bottom:8px" onclick="S.tid=\''+t.id+'\';window.scrollTo(0,0);render()">'+
       '<span class="e">'+(done?'🏆':gameLook(t.game).emo)+'</span><span style="flex:1;min-width:0">'+
       '<b>'+esc(t.game)+'</b><small>'+fr(t.date)+' · '+pl(t.entrants.length,t.team?'équipe':'joueur')+' · '+
       (done?'vainqueur : '+esc(tEntName(t,t.winner)):'en cours')+'</small></span><span style="color:#d6d3d1">›</span></button>';
@@ -3004,10 +3134,9 @@ function champMode(){ return S.champMode||'grille'; }
 function setChampMode(v){ S.champMode=v; S.detail=null; persist(); render(); }
 function champModeSelector(){
   var modes=[['grille','▦','Grille'],['joueur','🏅','Par joueur'],['jeu','🎲','Par jeu']];
-  return '<div style="display:flex;gap:6px;margin-bottom:10px">'+modes.map(function(o){
+  return '<div class="seg" role="tablist">'+modes.map(function(o){
     var on=champMode()===o[0];
-    return '<button class="chip'+(on?' on':'')+'" style="flex:1;text-align:center;padding:8px 4px" '+
-      'onclick="setChampMode(\''+o[0]+'\')"><span style="font-size:14px">'+o[1]+'</span> '+o[2]+'</button>';
+    return '<button role="tab" aria-selected="'+on+'" class="'+(on?'on':'')+'" onclick="setChampMode(\''+o[0]+'\')">'+o[1]+' '+o[2]+'</button>';
   }).join('')+'</div>';
 }
 /* Vue « Par jeu » : un bloc par jeu, avec son icône et son podium. */
@@ -3258,7 +3387,7 @@ function renderSave(hd,app,banner){
   h+='<div class="card"><h2>Joueurs & équipes</h2>'+
     '<p class="mini" style="margin:0 0 10px">Les personnes enregistrées ici sont <b>proposées d\'office</b> dans les quatre jeux : La Coupe, le Tic-Tac, Le Micro et Le Tournoi. Tu n\'as plus qu\'à cocher qui joue au moment de démarrer.</p>';
   D.lib.forEach(function(p){
-    var row='<div class="row" style="background:var(--bg);border-radius:10px;padding:8px 10px">'+
+    var row='<div class="row" data-hold="lib:'+p.id+'" style="background:var(--bg);border-radius:10px;padding:8px 10px">'+
       '<button style="border:0;background:none;padding:0;cursor:pointer" onclick="openAv(\''+p.id+'\')">'+av(p.name)+'</button>'+
       '<span style="flex:1;font-weight:600">'+esc(p.name)+'</span>'+
       '<button class="sm" onclick="openAv(\''+p.id+'\')">Avatar</button></div>';
@@ -3541,6 +3670,25 @@ function avPhoto(inp){
     img.src=rd.result;
   };
   try{ rd.readAsDataURL(f); }catch(e){ toast('Image inaccessible — réessaie, ou choisis un personnage'); }
+}
+/* Renommer sans changer d'écran : le menu contextuel appelle ceci. */
+function renameLib(id){
+  var p=D.lib.filter(function(x){return x.id===id;})[0]; if(!p) return;
+  var v=prompt('Nouveau prénom', p.name);
+  if(v===null) return;
+  v=v.trim(); if(!v) return;
+  var avant=p.name;
+  if(D.lib.some(function(x){ return x.id!==id && fp(x.name)===fp(v); })){ toast('Ce prénom existe déjà'); return; }
+  p.name=v; persist(); render();
+  offerUndo(avant+' renommé en '+v, function(){ p.name=avant; persist(); render(); });
+}
+function renameMatchPrompt(id){
+  var m=D.matches.filter(function(x){return x.id===id;})[0]; if(!m) return;
+  var v=prompt('Nom de la partie', m.name);
+  if(v===null) return;
+  v=v.trim(); if(!v) return;
+  var avant=m.name; m.name=v; persist(); render();
+  offerUndo('Renommée en « '+v+' »', function(){ m.name=avant; persist(); render(); });
 }
 function addLib(){var v=document.getElementById('nl').value.trim();if(!v)return;
   v.split(',').forEach(function(s){s=s.trim();if(s)D.lib.push({id:uid(),name:s});});persist();render();}
