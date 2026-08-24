@@ -485,7 +485,7 @@ function nowHM(){
 }
 function stamp(r){ return fr(r.date)+(r.time?' · '+r.time:''); }
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='106';
+var APP_VERSION='107';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -2087,15 +2087,29 @@ function lvlNum(k){ return lvlOf(k).n; }
    noms libres : deux gestes différents, et des doublons de prénoms au Mur des
    champions. Désormais une seule bibliothèque, un seul geste, une pastille
    propre à chaque rubrique (niveau au Micro, temps au Tic-Tac). ---- */
+function libEdit(){ return !!S.libEdit; }
+function toggleLibEdit(){ S.libEdit=!S.libEdit; render(); }
 function playerGrid(selIds, toggleFn, pillFn, hint){
-  var h='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'+
+  var edit=libEdit();
+  /* Bouton « Modifier » à la manière d'iOS : il révèle un ⊖ rouge sur chaque
+     joueur. Un prénom mal tapé se retire là où on l'a tapé. */
+  var h = D.lib.length
+    ? '<div style="display:flex;justify-content:flex-end;margin:-4px 0 8px">'+
+      '<button onclick="toggleLibEdit()" style="border:0;background:none;color:'+(edit?'var(--nox)':'var(--gr)')+';'+
+      'font-family:inherit;font-size:13.5px;font-weight:700;padding:6px 2px;min-height:32px;cursor:pointer">'+
+      (edit?'Terminer':'Modifier')+'</button></div>'
+    : '';
+  h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'+
     D.lib.map(function(pl){
       var on=selIds.indexOf(pl.id)>=0;
-      return '<button data-hold="lib:'+pl.id+'" onclick="'+toggleFn+'(\''+pl.id+'\')" style="display:flex;flex-direction:column;align-items:center;gap:3px;border:2px solid '+(on?'var(--gr)':'var(--line)')+';background:'+(on?'var(--gr-l)':'var(--card)')+';border-radius:14px;padding:8px 4px;cursor:pointer;opacity:'+(on?'1':'.5')+';min-width:0">'+
+      var action = edit ? 'askDelLib(\''+pl.id+'\')' : toggleFn+'(\''+pl.id+'\')';
+      return '<button data-hold="lib:'+pl.id+'" onclick="'+action+'" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;border:2px solid '+(edit?'var(--line)':(on?'var(--gr)':'var(--line)'))+';background:'+(!edit&&on?'var(--gr-l)':'var(--card)')+';border-radius:14px;padding:8px 4px;cursor:pointer;opacity:'+(edit?'1':(on?'1':'.5'))+';min-width:0">'+
+        (edit? '<span aria-hidden="true" style="position:absolute;top:-7px;left:-7px;width:22px;height:22px;border-radius:50%;background:var(--nox);color:#fff;font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:center;line-height:1;box-shadow:0 1px 4px rgba(0,0,0,.25)">−</span>' : '')+
         av(pl.name,'sm')+
         '<span style="font-size:11px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(pl.name)+'</span>'+
-        (on&&pillFn?pillFn(pl):'')+'</button>';
+        (!edit&&on&&pillFn?pillFn(pl):'')+'</button>';
     }).join('')+'</div>';
+  if(edit) h+='<p class="mini" style="margin:8px 0 0">Touche un joueur pour le retirer du répertoire. Ses parties déjà jouées ne bougent pas.</p>';
   if(!D.lib.length) h+='<p class="mini" style="margin:8px 0 0">Aucun joueur pour le moment : ajoute un prénom ci-dessous.</p>';
   h+='<div class="row" style="gap:8px;margin-top:10px">'+
      '<input id="npg" placeholder="Ajouter un joueur" style="flex:1" onkeydown="if(event.key===\'Enter\')addPlayerFromGrid()">'+
@@ -3386,12 +3400,18 @@ function renderSave(hd,app,banner){
     '<p class="mini" style="margin:8px 0 0">Coupe d\'un geste tous les jeux et outils — pratique tard le soir.</p></div>';
   h+='<div class="card"><h2>Joueurs & équipes</h2>'+
     '<p class="mini" style="margin:0 0 10px">Les personnes enregistrées ici sont <b>proposées d\'office</b> dans les quatre jeux : La Coupe, le Tic-Tac, Le Micro et Le Tournoi. Tu n\'as plus qu\'à cocher qui joue au moment de démarrer.</p>';
+  if(D.lib.length) h+='<div style="display:flex;justify-content:flex-end;margin:-4px 0 8px">'+
+    '<button onclick="toggleLibEdit()" style="border:0;background:none;color:'+(libEdit()?'var(--nox)':'var(--gr)')+';'+
+    'font-family:inherit;font-size:13.5px;font-weight:700;padding:6px 2px;min-height:32px;cursor:pointer">'+
+    (libEdit()?'Terminer':'Modifier')+'</button></div>';
   D.lib.forEach(function(p){
     var row='<div class="row" data-hold="lib:'+p.id+'" style="background:var(--bg);border-radius:10px;padding:8px 10px">'+
+      (libEdit()? '<button aria-label="Retirer '+esc(p.name)+'" onclick="askDelLib(\''+p.id+'\')" style="flex:0 0 auto;border:0;background:var(--nox);color:#fff;width:26px;height:26px;border-radius:50%;font-size:18px;font-weight:800;line-height:1;cursor:pointer;font-family:inherit">−</button>' : '')+
       '<button style="border:0;background:none;padding:0;cursor:pointer" onclick="openAv(\''+p.id+'\')">'+av(p.name)+'</button>'+
       '<span style="flex:1;font-weight:600">'+esc(p.name)+'</span>'+
-      '<button class="sm" onclick="openAv(\''+p.id+'\')">Avatar</button></div>';
-    h+='<div style="margin-bottom:6px">'+swipeRow(row, delAct("delLib('"+p.id+"')",'Retirer'), 96, true)+'</div>';});
+      (libEdit()? '<button class="sm" onclick="renameLib(\''+p.id+'\')">Renommer</button>'
+                : '<button class="sm" onclick="openAv(\''+p.id+'\')">Avatar</button>')+'</div>';
+    h+='<div style="margin-bottom:6px">'+swipeRow(row, delAct("askDelLib('"+p.id+"')",'Retirer'), 96, true)+'</div>';});
   h+='<div class="row" style="margin-top:8px"><input id="nl" placeholder="Prénom ou nom d\'équipe"><button class="sm g" onclick="addLib()">Ajouter</button></div>'+
      '<p class="mini" style="margin-top:8px">Touche <b>Avatar</b> pour mettre une <b>photo</b> 📷 ou un personnage. Un participant peut être une personne <b>ou une équipe</b> (ex. « Les Bleus »). Le retirer ici ne touche pas aux parties déjà jouées.</p></div>';
   /* « Revoir la présentation » et « Forcer la mise à jour » retirés : la mise à
@@ -3692,12 +3712,49 @@ function renameMatchPrompt(id){
 }
 function addLib(){var v=document.getElementById('nl').value.trim();if(!v)return;
   v.split(',').forEach(function(s){s=s.trim();if(s)D.lib.push({id:uid(),name:s});});persist();render();}
+function libHistorique(nom){
+  var n=0;
+  D.matches.forEach(function(m){ if(m.players.some(function(p){return fp(p.name)===fp(nom);})) n++; });
+  (D.micro||[]).forEach(function(g){ if((g.players||[]).some(function(p){return fp(p.name)===fp(nom);})) n++; });
+  (D.tictac||[]).forEach(function(g){ if((g.players||[]).some(function(p){return fp(p.name)===fp(nom);})) n++; });
+  (D.tournois||[]).forEach(function(t){ if((t.entrants||[]).some(function(e){
+    return (e.members||[]).some(function(mid){ var q=D.lib.filter(function(x){return x.id===mid;})[0]; return q&&fp(q.name)===fp(nom); });
+  })) n++; });
+  return n;
+}
+function askDelLib(id){
+  var p=D.lib.filter(function(x){return x.id===id;})[0]; if(!p) return;
+  var n=libHistorique(p.name);
+  if(!n){ delLib(id); return; }        // jamais joué : c'est une faute de frappe
+  showActions(p.name+' — '+pl(n,'partie')+' à son actif', [
+    {icon:'🗑', label:'Retirer du répertoire', danger:true, run:"delLib('"+id+"')"}
+  ]);
+}
 function delLib(id){
   var idx=D.lib.findIndex(function(p){return p.id===id;});
   if(idx<0) return;
   var backup=JSON.parse(JSON.stringify(D.lib[idx]));
-  D.lib.splice(idx,1); persist(); render();
-  offerUndo(backup.name+' retiré', function(){ D.lib.splice(Math.min(idx,D.lib.length),0,backup); persist(); render(); });
+  /* On mémorise aussi les sélections en cours : un joueur retiré doit
+     disparaître des quatre jeux, et revenir partout si on annule. */
+  var sel={
+    micro:(D.microTeam||[]).slice(),
+    tictac:(D.chrono&&D.chrono.pick||[]).slice(),
+    tournoi:(D.tset&&D.tset.pick||[]).slice(),
+    equipes:(D.tset&&D.tset.teams)?JSON.parse(JSON.stringify(D.tset.teams)):null
+  };
+  var ote=function(a){ return (a||[]).filter(function(x){ return x!==id; }); };
+  D.lib.splice(idx,1);
+  if(D.microTeam) D.microTeam=ote(D.microTeam);
+  if(D.chrono) D.chrono.pick=ote(D.chrono.pick);
+  if(D.tset){ D.tset.pick=ote(D.tset.pick); if(D.tset.teams) D.tset.teams=null; }
+  persist(); render();
+  offerUndo(backup.name+' retiré', function(){
+    D.lib.splice(Math.min(idx,D.lib.length),0,backup);
+    if(D.microTeam) D.microTeam=sel.micro;
+    if(D.chrono) D.chrono.pick=sel.tictac;
+    if(D.tset){ D.tset.pick=sel.tournoi; D.tset.teams=sel.equipes; }
+    persist(); render();
+  });
 }
 function shareBackup(){var t=JSON.stringify(D);
   if(navigator.share){navigator.share({text:t}).catch(function(){});}else copy(t,'Sauvegarde copiée');}
