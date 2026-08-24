@@ -403,11 +403,7 @@
   .seg button.on+button::before,.seg button+button.on::before{opacity:0}
   .seg button+button::before{content:'';position:absolute;left:0;top:22%;height:56%;width:1px;background:var(--line);opacity:1}
 
-  /* ── Appui long : la cible s'enfonce légèrement pendant l'appui ── */
-  [data-hold]{-webkit-touch-callout:none}
-  .holding{transform:scale(.96);opacity:.75;transition:transform .18s ease,opacity .18s ease}
-
-  /* ── Menu contextuel : feuille d'action iOS, actions destructives en rouge ── */
+  /* ── Feuille d'action iOS : actions destructives en rouge, Annuler détaché ── */
   .amenu{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.32);display:flex;align-items:flex-end;
     animation:fadein .18s ease both}
   @keyframes fadein{from{opacity:0}to{opacity:1}}
@@ -487,7 +483,7 @@ function nowHM(){
 }
 function stamp(r){ return fr(r.date)+(r.time?' · '+r.time:''); }
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='111';
+var APP_VERSION='112';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -586,45 +582,11 @@ function speak(txt){ if(!sndOn()) return;
     window.speechSynthesis.speak(u);
   }catch(e){}
 }
-/* ═══════════════════════ GESTES ═══════════════════════════════════
-   Ce que fait iOS et que l'app ne faisait pas : rester appuyé sur un
-   élément ouvre ses actions. Un seul écouteur pour toute l'application ;
-   chaque cible se déclare avec data-hold="type:identifiant". */
-var HOLD={t:null, el:null, x:0, y:0, fired:false};
+/* Retour haptique : sans effet sur Safari iOS, actif sur Android. Jamais
+   porteur d'information — c'est un bonus, pas un signal. */
 function haptic(ms){
-  /* Safari iOS n'expose pas encore la vibration : l'appel est sans effet
-     là-bas, et fonctionne sur Android. On ne s'appuie donc jamais dessus
-     pour faire comprendre quelque chose — c'est un bonus, pas un signal. */
   try{ if(navigator.vibrate) navigator.vibrate(ms||12); }catch(e){}
 }
-function holdCancel(){
-  if(HOLD.t){ clearTimeout(HOLD.t); HOLD.t=null; }
-  if(HOLD.el){ HOLD.el.classList.remove('holding'); HOLD.el=null; }
-}
-document.addEventListener('pointerdown', function(e){
-  var el=e.target.closest && e.target.closest('[data-hold]');
-  if(!el) return;
-  HOLD.fired=false; HOLD.x=e.clientX; HOLD.y=e.clientY; HOLD.el=el;
-  el.classList.add('holding');
-  HOLD.t=setTimeout(function(){
-    HOLD.fired=true; haptic(14);
-    var cible=el.getAttribute('data-hold');
-    holdCancel();
-    actionMenu(cible);
-  }, 480);
-}, true);
-document.addEventListener('pointermove', function(e){
-  if(!HOLD.t) return;
-  if(Math.abs(e.clientX-HOLD.x)>10 || Math.abs(e.clientY-HOLD.y)>10) holdCancel();
-}, true);
-['pointerup','pointercancel','scroll'].forEach(function(ev){
-  document.addEventListener(ev, holdCancel, true);
-});
-/* Après un appui long, le clic qui suit ne doit pas ouvrir l'élément. */
-document.addEventListener('click', function(e){
-  if(HOLD.fired){ HOLD.fired=false; e.preventDefault(); e.stopPropagation(); }
-}, true);
-
 /* Feuille d'action : titre, actions, Annuler détaché — comme iOS. */
 function showActions(titre, actions){
   var old=document.getElementById('amenu'); if(old) old.remove();
@@ -641,42 +603,6 @@ function showActions(titre, actions){
 }
 function closeActions(){ var el=document.getElementById('amenu'); if(el) el.remove(); }
 
-/* Le dispatcher : chaque type de cible connaît ses actions. */
-function actionMenu(cible){
-  var sep=cible.indexOf(':'), type=cible.slice(0,sep), id=cible.slice(sep+1);
-  if(type==='lib'){
-    var p=D.lib.filter(function(x){return x.id===id;})[0]; if(!p) return;
-    return showActions(p.name, [
-      {icon:'✏️', label:'Renommer',        run:"renameLib('"+id+"')"},
-      {icon:'🎭', label:'Changer l\'avatar', run:"openAv('"+id+"')"},
-      {icon:'🗑', label:'Retirer du répertoire', danger:true, run:"delLib('"+id+"')"}
-    ]);
-  }
-  if(type==='match'){
-    var m=D.matches.filter(function(x){return x.id===id;})[0]; if(!m) return;
-    var a=[{icon:'▶︎', label:'Ouvrir', run:"openMatch('"+id+"')"},
-           {icon:'✏️', label:'Renommer', run:"renameMatchPrompt('"+id+"')"}];
-    if(m.status!=='done') a.push({icon:'🏁', label:'Terminer la partie', run:"finishMatch('"+id+"')"});
-    a.push({icon:'🗑', label:'Supprimer la partie', danger:true, run:"delMatch('"+id+"')"});
-    return showActions(m.name, a);
-  }
-  if(type==='tournoi'){
-    var t=tById(id); if(!t) return;
-    return showActions(t.game, [
-      {icon:'▶︎', label:'Ouvrir', run:"S.tid='"+id+"';window.scrollTo(0,0);render()"},
-      {icon:'🗑', label:'Supprimer le tournoi', danger:true, run:"tDelete('"+id+"')"}
-    ]);
-  }
-  if(type==='round'){
-    var r=null, mm=null;
-    D.matches.forEach(function(x){ x.rounds.forEach(function(y){ if(y.id===id){ r=y; mm=x; } }); });
-    if(!r) return;
-    return showActions('Manche du '+stamp(r), [
-      {icon:'✏️', label:'Corriger les scores', run:"editRound('"+id+"')"},
-      {icon:'🗑', label:'Supprimer la manche', danger:true, run:"delRound('"+id+"')"}
-    ]);
-  }
-}
 function toast(t){var d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);
   setTimeout(function(){d.remove();},2000);}
 
@@ -1193,7 +1119,7 @@ function mcard(m){
   return '<div class="swipe" data-reveal="'+(actv?168:96)+'" style="--reveal:'+(actv?168:96)+'px"><div class="acts">'+
     (actv?'<button class="arch" onclick="archMatch(\''+m.id+'\')"><span class="ic">🏁</span>Terminer</button>':'')+
     '<button class="del" style="width:'+(actv?84:96)+'px" onclick="askDelMatch(\''+m.id+'\')"><span class="ic">🗑</span>Supprimer</button></div>'+
-    '<div class="front"><button class="tool on" data-hold="match:'+m.id+'" style="width:100%" onclick="openMatch(\''+m.id+'\')"><span class="em" style="background:'+gameLook(m).bg+';font-size:20px">'+gameLook(m).emo+'</span>'+
+    '<div class="front"><button class="tool on" style="width:100%" onclick="openMatch(\''+m.id+'\')"><span class="em" style="background:'+gameLook(m).bg+';font-size:20px">'+gameLook(m).emo+'</span>'+
     '<span style="flex:1;min-width:0"><b>'+esc(m.name)+badge+'</b>'+
     '<small style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+pl(m.players.length,'joueur')+' · '+pl(r.count,'manche')+
     (m.winRule==='low'?' · moins gagne':'')+
@@ -1409,7 +1335,12 @@ function tabPlay(m){
   var rAll=rank(m,function(){return true;});
   var cumOf={}; rAll.byCumul.forEach(function(p){cumOf[p.id]=p;});
   var step=S.step||1;
-  var h=goalBanner(m)+(editing?'<div class="card" style="background:var(--am-l);border-color:var(--am)"><b style="color:#92400e">✏️ Correction d\'une manche</b><p class="mini" style="color:#b45309;margin:4px 0 8px">Modifie les scores puis valide — la manche sera remplacée, pas ajoutée.</p><button class="sm" style="width:100%" onclick="cancelEdit()">Annuler la correction</button></div>':'')+
+  var h=goalBanner(m)+(editing?'<div class="card" style="background:var(--am-l);border-color:var(--am)"><b style="color:#92400e">✏️ Correction d\'une manche</b>'+
+      '<p class="mini" style="color:#b45309;margin:4px 0 8px">Modifie les scores puis valide — la manche sera remplacée, pas ajoutée.</p>'+
+      '<div class="row" style="gap:8px"><button class="sm" style="flex:1" onclick="cancelEdit()">Annuler</button>'+
+      /* Corriger et supprimer au même endroit : c'est la seule fois où on
+         s'occupe d'une manche précise. */
+      '<button class="sm" style="flex:1;color:var(--nox);font-weight:700" onclick="delRound(\''+S.editing+'\')">🗑 Supprimer cette manche</button></div></div>':'')+
     /* Barre unique : la date (repliée, on la change rarement) + le pas des boutons.
        Avant : une carte entière pour la date + une ligne pour le pas, avant le 1er joueur. */
     '<div class="row" style="margin-bottom:10px;gap:6px;align-items:center">'+
@@ -1516,7 +1447,7 @@ function histGrid(m){
   var maxPts=Math.max.apply(null,order.map(function(p){return Math.abs(p.points)||0;}))||1;
   // en-têtes : M1, M2… + total
   var head='<tr><th class="stick">Joueur / équipe</th>'+
-    rounds.map(function(rd,i){return '<th data-hold="round:'+rd.id+'" title="'+stamp(rd)+'" style="cursor:pointer" onclick="editRound(\''+rd.id+'\')">M'+(i+1)+'<br><span style="font-size:10px;opacity:.6">'+(rd.time||'✏️')+'</span></th>';}).join('')+
+    rounds.map(function(rd,i){return '<th title="'+stamp(rd)+'" style="cursor:pointer" onclick="editRound(\''+rd.id+'\')">M'+(i+1)+'<br><span style="font-size:10px;opacity:.6">'+(rd.time||'✏️')+'</span></th>';}).join('')+
     '<th class="tot">Total</th></tr>';
   var body=order.map(function(p,pi){
     var cells=rounds.map(function(rd){
@@ -2107,7 +2038,7 @@ function playerGrid(selIds, toggleFn, pillFn, hint){
     D.lib.map(function(pl){
       var on=selIds.indexOf(pl.id)>=0;
       var action = edit ? 'askDelLib(\''+pl.id+'\')' : toggleFn+'(\''+pl.id+'\')';
-      return '<button data-hold="lib:'+pl.id+'" onclick="'+action+'" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;border:2px solid '+(edit?'var(--line)':(on?'var(--gr)':'var(--line)'))+';background:'+(!edit&&on?'var(--gr-l)':'var(--card)')+';border-radius:14px;padding:8px 4px;cursor:pointer;opacity:'+(edit?'1':(on?'1':'.5'))+';min-width:0">'+
+      return '<button onclick="'+action+'" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;border:2px solid '+(edit?'var(--line)':(on?'var(--gr)':'var(--line)'))+';background:'+(!edit&&on?'var(--gr-l)':'var(--card)')+';border-radius:14px;padding:8px 4px;cursor:pointer;opacity:'+(edit?'1':(on?'1':'.5'))+';min-width:0">'+
         (edit? '<span aria-hidden="true" style="position:absolute;top:-7px;left:-7px;width:22px;height:22px;border-radius:50%;background:var(--nox);color:#fff;font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:center;line-height:1;box-shadow:0 1px 4px rgba(0,0,0,.25)">−</span>' : '')+
         av(pl.name,'sm')+
         '<span style="font-size:11px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(pl.name)+'</span>'+
@@ -3068,7 +2999,7 @@ function tHistory(){
   if(!l.length) return '<div class="empty"><div class="e">🏓</div><h3>Aucun tournoi</h3><p>Crée ton premier tournoi depuis l\'onglet Nouveau : pétanque, ping-pong, molkky… l\'app tient le tableau.</p></div>';
   return '<div class="card"><h2>Tes tournois</h2>'+l.map(function(t){
     var done=t.status==='done';
-    return '<button class="miniact" data-hold="tournoi:'+t.id+'" style="margin-bottom:8px" onclick="S.tid=\''+t.id+'\';window.scrollTo(0,0);render()">'+
+    return '<button class="miniact" style="margin-bottom:8px" onclick="S.tid=\''+t.id+'\';window.scrollTo(0,0);render()">'+
       '<span class="e">'+(done?'🏆':gameLook(t.game).emo)+'</span><span style="flex:1;min-width:0">'+
       '<b>'+esc(t.game)+'</b><small>'+fr(t.date)+' · '+pl(t.entrants.length,t.team?'équipe':'joueur')+' · '+
       (done?'vainqueur : '+esc(tEntName(t,t.winner)):'en cours')+'</small></span><span style="color:#d6d3d1">›</span></button>';
@@ -3431,7 +3362,7 @@ function renderSave(hd,app,banner){
     'font-family:inherit;font-size:13.5px;font-weight:700;padding:6px 2px;min-height:32px;cursor:pointer">'+
     (libEdit()?'Terminer':'Modifier')+'</button></div>';
   D.lib.forEach(function(p){
-    var row='<div class="row" data-hold="lib:'+p.id+'" style="background:var(--bg);border-radius:10px;padding:8px 10px">'+
+    var row='<div class="row" style="background:var(--bg);border-radius:10px;padding:8px 10px">'+
       (libEdit()? '<button aria-label="Retirer '+esc(p.name)+'" onclick="askDelLib(\''+p.id+'\')" style="flex:0 0 auto;border:0;background:var(--nox);color:#fff;width:26px;height:26px;border-radius:50%;font-size:18px;font-weight:800;line-height:1;cursor:pointer;font-family:inherit">−</button>' : '')+
       '<button style="border:0;background:none;padding:0;cursor:pointer" onclick="openAv(\''+p.id+'\')">'+av(p.name)+'</button>'+
       '<span style="flex:1;font-weight:600">'+esc(p.name)+'</span>'+
@@ -3751,14 +3682,7 @@ function renameLib(id){
     p.name=avant; renamePartout(v, avant); persist(); render();
   });
 }
-function renameMatchPrompt(id){
-  var m=D.matches.filter(function(x){return x.id===id;})[0]; if(!m) return;
-  var v=prompt('Nom de la partie', m.name);
-  if(v===null) return;
-  v=v.trim(); if(!v) return;
-  var avant=m.name; m.name=v; persist(); render();
-  offerUndo('Renommée en « '+v+' »', function(){ m.name=avant; persist(); render(); });
-}
+
 function addLib(){var v=document.getElementById('nl').value.trim();if(!v)return;
   v.split(',').forEach(function(s){s=s.trim();if(s)D.lib.push({id:uid(),name:s});});persist();render();}
 function libHistorique(nom){
