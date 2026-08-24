@@ -487,7 +487,7 @@ function nowHM(){
 }
 function stamp(r){ return fr(r.date)+(r.time?' · '+r.time:''); }
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='109';
+var APP_VERSION='110';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -1130,41 +1130,7 @@ function microResults(){
     }).join('')+'</div>';
   return h;
 }
-function coupeResults(){
-  var done=D.matches.filter(function(m){return m.rounds&&m.rounds.length;});
-  if(!done.length) return resEmpty('🏆','Aucun résultat',
-    'Crée une partie et saisis une manche : les classements apparaîtront ici.',
-    '<button class="btn" style="max-width:260px;margin:0 auto" onclick="setRtab(\'play\')">Voir mes parties</button>');
-  var agg={};
-  done.forEach(function(m){
-    var r=rank(m,function(){return true;}); if(!r.count) return;
-    var lead=leaders(r.byCumul,'points',m.winRule);
-    m.players.forEach(function(p){
-      var k=fp(p.name); if(!k) return;
-      if(!agg[k]) agg[k]={name:p.name,wins:0,games:0,manches:0};
-      agg[k].games++;
-      var st=r.byCumul.filter(function(x){return x.id===p.id;})[0];
-      if(st) agg[k].manches+=st.wins;
-      if(lead.indexOf(p.id)>=0) agg[k].wins++;
-    });
-  });
-  var list=[]; for(var k in agg) list.push(agg[k]);
-  if(!list.length) return resEmpty('🏆','Aucun résultat','Saisis une manche pour voir les classements.','');
-  list.sort(function(a,b){return b.wins-a.wins || b.manches-a.manches;});
-  var topW=list[0].wins;
-  var byM=list.slice().sort(function(a,b){return b.manches-a.manches;});
-  var winners=list.filter(function(p){return p.wins===topW && topW>0;}).map(function(p){return p.name;});
-  var bestM=byM.filter(function(p){return p.manches===byM[0].manches && p.manches>0;}).map(function(p){return p.name;});
-  var h=statPair('🏆 Le plus de parties gagnées', nmList(winners), topW?topW+' partie'+(topW>1?'s':''):'—',
-                 '🥇 Le plus de manches gagnées', nmList(bestM), byM[0].manches?pl(byM[0].manches,'manche'):'—');
-  h+='<div class="card"><h2>🏅 Classement</h2>'+rankRows(list.map(function(p){
-      return {name:p.name, top:(p.wins===topW&&topW>0), badge:(p.wins===topW&&topW>0?' 👑':''),
-        sub:pl(p.games,'partie')+' · '+p.manches+' manche'+(p.manches>1?'s':'')+' gagnée'+(p.manches>1?'s':''),
-        val:p.wins, unit:'partie'+(p.wins>1?'s':'')};
-    }))+'</div>';
-  h+=champGameBlocks();
-  return h;
-}
+
 function podiumBoard(rows){
   if(!rows||!rows.length) return '';
   var med=['\u1F947','\u1F948','\u1F949'];
@@ -1609,7 +1575,18 @@ function resChamps(m){
       return '<div class="champ a"><div class="l">👑 Plus de victoires</div><div class="v '+b.cls+'" title="'+esc(b.full)+'">'+b.v+'</div>'+
       '<div class="s">'+(lw.length?pl(r.byWins.filter(function(p){return lw.indexOf(p.id)>=0;})[0].wins,'victoire')+(b.n>1?' · à égalité':''):'—')+'</div></div>'; })()+'</div>';
 }
+/* La partie s'étale-t-elle sur plusieurs mois ? Sinon, filtrer par date
+   n'a aucun sens et le filtre reste caché. */
+function matchLong(m){
+  if(!m.rounds || m.rounds.length<2) return false;
+  var d=m.rounds.map(function(r){return String(r.date||'');}).filter(Boolean).sort();
+  return d.length>1 && d[0].slice(0,7)!==d[d.length-1].slice(0,7);
+}
 function resPeriod(m){
+  if(!matchLong(m)){
+    if(S.period!=='all'){ S.period='all'; }
+    return '';
+  }
   var per=[['all','Tout'],['month','Ce mois'],['year','Cette année'],['custom','Dates']];
   var n=m.rounds.filter(keeper()).length;
   var h='<div class="chips" style="margin-bottom:6px">'+per.map(function(p){
@@ -3419,12 +3396,6 @@ function champShare(){
 function renderSave(hd,app,banner){
   hd.innerHTML=back()+'<h1>Réglages<span class="sub">Joueurs, sons, sauvegarde</span></h1><span style="width:38px"></span>';
   var h=banner+(canSave?'<div class="ok">✓ L\'historique est enregistré sur cet iPhone. Il sera là au prochain lancement.</div>':'');
-  h+='<div class="card"><h2>🔊 Sons</h2>'+
-    '<div class="row" style="gap:8px">'+
-      '<button class="chip'+(D.sound!==false?' on':'')+'" style="flex:1;text-align:center" onclick="D.sound=true;persist();render()">🔊 Activés</button>'+
-      '<button class="chip'+(D.sound===false?' on':'')+'" style="flex:1;text-align:center" onclick="D.sound=false;persist();render()">🔇 Tout couper</button>'+
-    '</div>'+
-    '<p class="mini" style="margin:8px 0 0">Coupe d\'un geste tous les jeux et outils — pratique tard le soir.</p></div>';
   h+='<div class="card"><h2>Joueurs & équipes</h2>'+
     '<p class="mini" style="margin:0 0 10px">Les personnes enregistrées ici sont <b>proposées d\'office</b> dans les quatre jeux : La Coupe, le Tic-Tac, Le Micro et Le Tournoi. Tu n\'as plus qu\'à cocher qui joue au moment de démarrer.</p>';
   if(D.lib.length) h+='<div style="display:flex;justify-content:flex-end;margin:-4px 0 8px">'+
@@ -3443,15 +3414,16 @@ function renderSave(hd,app,banner){
      '<p class="mini" style="margin-top:8px">Touche <b>Avatar</b> pour mettre une <b>photo</b> 📷 ou un personnage. Un participant peut être une personne <b>ou une équipe</b> (ex. « Les Bleus »). Le retirer ici ne touche pas aux parties déjà jouées.</p></div>';
   /* « Revoir la présentation » et « Forcer la mise à jour » retirés : la mise à
      jour se fait seule depuis la v88, et personne ne rejoue un tutoriel. */
-  h+='<div class="card"><h2>Voix & effets</h2>'+
-     '<div class="row">'+
-     '<button class="chip'+(D.voice?' on':'')+'" style="flex:1;text-align:center" onclick="setVoice(true)">🔊 Annonce vocale</button>'+
-     '<button class="chip'+(!D.voice?' on':'')+'" style="flex:1;text-align:center" onclick="setVoice(false)">🔇 Silencieux</button></div>'+
-     '<label class="lb" style="margin-top:12px">Effets sonores <span style="font-weight:400;color:#78716c">(buzzer, fanfares, tirage, éliminations)</span></label>'+
-     '<div class="row">'+
-     '<button class="chip'+(D.fx!==0?' on':'')+'" style="flex:1;text-align:center" onclick="D.fx=1;persist();buzzTest();render()">🎉 Activés</button>'+
-     '<button class="chip'+(D.fx===0?' on':'')+'" style="flex:1;text-align:center" onclick="D.fx=0;persist();render()">🔕 Coupés</button></div>'+
-     '<p class="mini" style="margin-top:8px">Quand elle est activée, l\'app annonce à voix haute qui doit jouer et qui gagne (Tic-Tac, tirage au sort). Pratique en voiture ou en balade.</p></div>';
+  /* Deux interrupteurs, pas trois : ce que l'app DIT, et ce qu'elle JOUE. */
+  h+='<div class="card"><h2>🔊 Sons</h2>'+
+     '<label class="lb">Annonce vocale <span style="font-weight:400;color:var(--mut)">(qui joue, qui gagne)</span></label>'+
+     '<div class="seg">'+
+     '<button class="'+(D.voice?'on':'')+'" onclick="setVoice(true)">Activée</button>'+
+     '<button class="'+(!D.voice?'on':'')+'" onclick="setVoice(false)">Coupée</button></div>'+
+     '<label class="lb" style="margin-top:12px">Effets sonores <span style="font-weight:400;color:var(--mut)">(buzzer, fanfares, tirage)</span></label>'+
+     '<div class="seg">'+
+     '<button class="'+(D.fx!==0?'on':'')+'" onclick="D.fx=1;D.sound=true;persist();buzzTest();render()">Activés</button>'+
+     '<button class="'+(D.fx===0?'on':'')+'" onclick="D.fx=0;D.sound=false;persist();render()">Coupés</button></div></div>';
   var nb=D.matches.length+D.micro.length+D.tictac.length;
   var lastB=D.lastBackup?fr(D.lastBackup):null;
   h+='<div class="card"><h2>💛 Ton avis compte</h2>'+
@@ -3836,88 +3808,10 @@ function restore(){
    puis par victoires de manches. Joueurs agrégés par nom (insensible à la
    casse et aux accents). */
 var PAL={year:String(new Date().getFullYear())};
-function palKeep(y){
-  if(y==='all') return function(){return true;};
-  if(y==='d1'||y==='d7'||y==='d30'){
-    var n=y==='d1'?1:y==='d7'?7:30;
-    var lim=new Date(Date.now()-(n-1)*864e5).toISOString().slice(0,10);
-    return function(r){return r.date>=lim;};
-  }
-  return function(r){return r.date.slice(0,4)===y;};
-}
-function palYears(){
-  var ys={};
-  D.matches.forEach(function(m){m.rounds.forEach(function(r){ys[r.date.slice(0,4)]=1;});});
-  return Object.keys(ys).sort().reverse();
-}
-function palData(year){
-  var agg={};
-  function slot(name){
-    var k=fp(name);
-    if(!agg[k]) agg[k]={name:name,titles:0,wins:0,played:0,matches:0};
-    return agg[k];
-  }
-  if(year===undefined) year=PAL.year;
-  var keep=palKeep(year);
-  D.matches.forEach(function(m){
-    var r=rank(m,keep);
-    if(!r.count) return;
-    var seen={};
-    m.players.forEach(function(p){
-      var st=r.byCumul.filter(function(x){return x.id===p.id;})[0];
-      if(!st||!st.played) return;
-      var s=slot(p.name); if(!seen[fp(p.name)]){s.matches++;seen[fp(p.name)]=1;}
-      s.wins+=st.wins; s.played+=st.played;
-    });
-    var lead=leaders(r.byCumul,'points',m.winRule);
-    m.players.forEach(function(p){ if(lead.indexOf(p.id)>=0) slot(p.name).titles++; });
-  });
-  var list=[]; for(var k in agg) list.push(agg[k]);
-  list.sort(function(a,b){return b.titles-a.titles||b.wins-a.wins||b.played-a.played;});
-  return list;
-}
-function renderPalmares(hd,app,banner){
-  hd.innerHTML=back()+'<h1>🏅 Palmarès<span class="sub">Toutes parties confondues</span></h1><span style="width:38px"></span>';
-  var ys=palYears();
-  if(['all','d1','d7','d30'].indexOf(PAL.year)<0 && ys.indexOf(PAL.year)<0) PAL.year=ys[0]||'all';
-  var list=palData(PAL.year);
-  function pchip(v,lb){return '<button class="chip'+(PAL.year===v?' on':'')+'" onclick="PAL.year=\''+v+'\';render()">'+lb+'</button>';}
-  var isChamp=['d7','d30','all'].indexOf(PAL.year)>=0||ys.indexOf(PAL.year)>=0;
-  var h=banner+
-    '<div style="display:flex;gap:6px;margin-bottom:8px">'+
-      '<button class="chip'+(PAL.year==='d1'?' on':'')+'" style="flex:1;text-align:center" onclick="PAL.year=\'d1\';render()">🥂 Soirée</button>'+
-      '<button class="chip'+(isChamp?' on':'')+'" style="flex:1;text-align:center" onclick="PAL.year=\''+(ys[0]||'all')+'\';render()">🏆 Championnat</button>'+
-    '</div>';
-  if(PAL.year==='d1'){
-    h+='<p class="mini" style="margin:0 0 12px">La coupe d\'un soir : le classement de la soirée en cours.</p>';
-  }else{
-    h+='<div class="chips" style="margin-bottom:12px">'+
-      pchip('d7','7 jours')+pchip('d30','30 jours')+
-      ys.map(function(y){return pchip(y,'Saison '+y);}).join('')+pchip('all','Depuis le début')+'</div>';
-  }
-  if(!list.length){
-    h+='<div class="empty"><div class="e">🏅</div><h3>Rien sur cette période</h3><p>Joue des manches et le palmarès se remplit.</p></div>';
-  }else{
-    var champ=list[0];
-    var conf='<div class="confetti" style="position:absolute;inset:0;pointer-events:none;overflow:hidden">'+
-      ['🎉','🏆','⭐️','✨'].map(function(e,i){return '<span style="left:'+(10+i*24)+'%;animation-delay:'+(i*.4)+'s">'+e+'</span>';}).join('')+'</div>';
-    h+='<div class="hero" style="text-align:center;position:relative">'+conf+
-       '<p style="margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.85">Champion '+({all:'toutes saisons',d1:'de la soirée',d7:'des 7 jours',d30:'des 30 jours'}[PAL.year]||('saison '+PAL.year))+'</p>'+
-       '<div style="margin:6px 0 2px">'+av(champ.name,'big')+'</div>'+
-       '<h2 style="font-size:28px;margin:2px 0 2px">👑 '+esc(champ.name)+'</h2>'+
-       '<p style="margin:0">'+pl(champ.titles,'titre')+' · '+pl(champ.wins,'manche gagnée')+'</p></div>';
-    h+='<div class="card"><h2>Classement</h2>';
-    list.forEach(function(p,i){
-      h+='<div class="rank'+(i===0?' lead first':'')+'"><div class="pos">'+(i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1))+'</div>'+
-         av(p.name,'sm')+'<div class="nm" style="margin-left:8px"><b>'+esc(p.name)+'</b><small>'+pl(p.matches,'partie')+' · '+pl(p.played,'manche')+'</small></div>'+
-         '<div class="pts"><b>'+p.titles+'</b><small>titre'+(p.titles>1?'s':'')+'</small></div>'+
-         '<div class="pts" style="margin-left:10px"><b>'+p.wins+'</b><small>manches</small></div></div>';
-    });
-    h+='</div><button class="btn dark" onclick="palShare()">📤 Envoyer le palmarès</button>';
-  }
-  app.innerHTML=h;
-  document.getElementById('nav').innerHTML='';
-}
+
+
+
+
 /* ---- EXPORT PDF (via impression navigateur -> Enregistrer en PDF) ---- */
 function microShare(){
   var agg=microAgg(), med=['🥇','🥈','🥉'];
@@ -3925,13 +3819,7 @@ function microShare(){
   agg.forEach(function(p,i){ t+=(med[i]||'   ')+' '+p.name+' — '+pl(p.wins,'victoire')+' / '+pl(p.games,'partie')+'\n'; });
   if(navigator.share){navigator.share({text:t}).catch(function(){});} else copy(t,'Palmarès du Micro copié');
 }
-function palShare(){
-  var list=palData(PAL.year), med=['🥇','🥈','🥉'];
-  var lb={all:'',d1:'de la soirée ',d7:'des 7 jours ',d30:'des 30 jours '}[PAL.year]; if(lb===undefined) lb=PAL.year+' ';
-  var t='🏅 Palmarès '+lb+'— En Jeux\n\n';
-  list.forEach(function(p,i){t+=(med[i]||'   ')+' '+p.name+' — '+pl(p.titles,'titre')+' · '+pl(p.wins,'manche')+'\n';});
-  if(navigator.share){navigator.share({text:t}).catch(function(){});} else copy(t,'Palmarès copié');
-}
+
 
 /* =============================== CHRONO ===========================
    Duel de temps : chaque joueur a son compte à rebours,
