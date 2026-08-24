@@ -364,10 +364,12 @@
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
   .plr{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:9px;margin-bottom:9px}
   .plr.win{border-color:var(--gr-b);background:var(--gr-l)}
-  .plr .n{flex:1;font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:4px}
-  .plr .stp{width:42px;height:42px;border-radius:12px;border:0;font-size:20px;background:var(--bg);color:var(--mut);cursor:pointer;flex-shrink:0}
+  .plr .n{flex:1 1 0;min-width:0;font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:4px}
+  .plr .stp{width:46px;height:46px;border-radius:13px;border:0;background:var(--bg);color:var(--mut);cursor:pointer;
+    flex-shrink:0;padding:0;line-height:1;display:inline-flex;align-items:center;justify-content:center;
+    font-family:inherit;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
   .plr .stp.p{background:var(--gr-l);color:var(--gr)}
-  .plr input{width:64px;text-align:center;font-size:20px;font-weight:700;padding:8px 2px;font-variant-numeric:tabular-nums}
+  .plr input{width:62px;min-width:0;text-align:center;font-size:20px;font-weight:700;padding:8px 2px;font-variant-numeric:tabular-nums}
   .empty{text-align:center;padding:48px 16px}
   .empty .e{font-size:40px}.empty h3{margin:10px 0 4px;font-size:17px}
   .empty p{color:var(--mut);font-size:14px;margin:0 0 16px}
@@ -485,7 +487,7 @@ function nowHM(){
 }
 function stamp(r){ return fr(r.date)+(r.time?' · '+r.time:''); }
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='107';
+var APP_VERSION='108';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -846,10 +848,7 @@ function renderPoints(hd,app,banner){
   if(!D.matches.length){
     h+='<div class="empty"><div class="e">🏆</div><h3>Aucune partie</h3><p>Crée ta première partie avec le bouton ci-dessous 👇</p></div>';
   }else{
-    if(D.matches.some(function(m){return m.rounds.length;}))
-      h+='<button class="tool t-coupe" style="padding:12px 16px" onclick="go(\'champions\')"><span class="em" style="width:44px;height:44px;font-size:22px">🏅</span>'+
-         '<span style="flex:1;min-width:0"><b>Mur des champions</b><small>Les vainqueurs, tous jeux confondus.</small></span>'+
-         '<span style="color:#d6d3d1">›</span></button>';
+    /* Le Mur a sa propre entrée sur l'accueil : le rappeler ici faisait doublon. */
     /* Filtres : n'apparaissent que quand ils servent vraiment. */
     var cnts=gameCounts(D.matches);
     if(D.matches.length>=5 && cnts.length>=2){
@@ -1455,9 +1454,9 @@ function tabPlay(m){
     h+='<div class="plr'+(on?' win':'')+'"><span class="n" style="display:flex;align-items:center;gap:7px;min-width:0">'+av(p.name,'sm')+
       '<span style="min-width:0"><span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name)+(on?' 👑':'')+'</span>'+
       '<small style="display:block;font-size:11px;color:#78716c">total '+nf(c.points)+' · '+pl(c.played,'manche')+'</small></span></span>'+
-      '<button class="stp" aria-label="Retirer '+step+' points à '+esc(p.name)+'" onclick="bump(\''+p.id+'\',-'+step+')">−'+(step>1?step:'')+'</button>'+
+      '<button class="stp" style="font-size:'+(step>9?16:step>1?18:22)+'px" aria-label="Retirer '+step+' points à '+esc(p.name)+'" onclick="bump(\''+p.id+'\',-'+step+')">−'+(step>1?step:'')+'</button>'+
       '<input inputmode="decimal" placeholder="—" value="'+(S.inputs[p.id]!==undefined?S.inputs[p.id]:'')+'" oninput="S.inputs[\''+p.id+'\']=this.value" onchange="render()">'+
-      '<button class="stp p" aria-label="Ajouter '+step+' points à '+esc(p.name)+'" onclick="bump(\''+p.id+'\','+step+')">+'+(step>1?step:'')+'</button></div>';
+      '<button class="stp p" style="font-size:'+(step>9?16:step>1?18:22)+'px" aria-label="Ajouter '+step+' points à '+esc(p.name)+'" onclick="bump(\''+p.id+'\','+step+')">+'+(step>1?step:'')+'</button></div>';
   });
   h+='<p class="mini" style="margin:4px 0 12px">Laisse vide si un joueur n\'a pas joué cette manche.</p>'+
      '<button class="btn" onclick="saveRound()" aria-label="Enregistrer la manche">'+(editing?'✓ Valider la correction':'Enregistrer la manche')+'</button>';
@@ -1546,7 +1545,7 @@ function histGrid(m){
   return '<div class="card" style="padding:12px 0 8px">'+
     '<h2 style="padding:0 14px">▦ Le tableau de la partie</h2>'+
     '<div class="gridwrap"><table class="gtab"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>'+
-    '<p class="mini" style="text-align:center;margin:10px 14px 0"><b style="color:var(--okx)">vert 👑</b> = manche gagnée</p>'+
+
     '</div>';
 }
 function resSelector(mode,nb){
