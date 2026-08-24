@@ -487,7 +487,7 @@ function nowHM(){
 }
 function stamp(r){ return fr(r.date)+(r.time?' · '+r.time:''); }
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='110';
+var APP_VERSION='111';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -2644,6 +2644,7 @@ function tPropagate(rounds){
 function tWinnerOf(m){
   if(m.bye) return m.a||m.b||null;            // exemption déclarée à la construction
   if(!m.a || !m.b) return null;               // match encore incomplet : personne ne monte
+  if(m.forfait) return m.forfait===m.a ? m.b : m.a;   // forfait : l'autre passe
   if(m.sa===null||m.sb===null||m.sa===undefined||m.sb===undefined) return null;
   if(m.sa===m.sb) return null;
   return m.sa>m.sb ? m.a : m.b;
@@ -2704,6 +2705,14 @@ function tEntName(t,id){
 }
 
 /* ---- Saisie d'un score ---- */
+function tForfait(tid, mid, qui){
+  var t=tById(tid); if(!t) return;
+  var m=tAllMatches(t).filter(function(x){return x.id===mid;})[0]; if(!m||!m.a||!m.b) return;
+  m.forfait = (m.forfait===qui) ? null : qui;   // re-toucher annule le forfait
+  m.sa=null; m.sb=null;
+  if(t.bracket) tPropagate(t.bracket);
+  tCheckEnd(t); S.tEdit=null; persist(); render();
+}
 function tScore(tid, mid, side, v){
   var t=tById(tid); if(!t) return;
   var m=tAllMatches(t).filter(function(x){return x.id===mid;})[0]; if(!m) return;
@@ -2877,11 +2886,23 @@ function tMatchRow(t,m,lbl){
      fréquente, les deux scores saisis à l'envers. */
   var confirme = w
     ? '<div style="display:flex;align-items:center;gap:6px;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:13px;color:var(--okx);font-weight:700">'+
-      tDot(t,w,18)+'<span>'+esc(tEntName(t,w))+' l\'emporte '+Math.max(m.sa,m.sb)+' – '+Math.min(m.sa,m.sb)+'</span></div>'
+      tDot(t,w,18)+'<span>'+esc(tEntName(t,w))+(m.forfait
+        ? ' passe — '+esc(tEntName(t,m.forfait))+' déclare forfait'
+        : ' l\'emporte '+Math.max(m.sa,m.sb)+' – '+Math.min(m.sa,m.sb))+'</span></div>'
     : '';
+  /* Absent le jour du match : on le déclare, au lieu d'inventer un score. */
+  var forfaits='<div style="display:flex;gap:6px;margin-top:8px">'+
+    [[m.a,'a'],[m.b,'b']].map(function(o){
+      var actif=m.forfait===o[0];
+      return '<button class="chip'+(actif?' on':'')+'" style="flex:1;text-align:center;font-size:11.5px;padding:6px 4px" '+
+        'onclick="tForfait(\''+t.id+'\',\''+m.id+'\',\''+o[0]+'\')">'+(actif?'✓ ':'')+'Forfait '+esc(tEntName(t,o[0]))+'</button>';
+    }).join('')+'</div>';
   return '<div style="border:'+(w?'2px solid var(--gr-b)':'1px solid var(--line)')+';border-radius:12px;padding:9px 11px;margin-bottom:9px;'+(w?'background:var(--gr-l)':'')+'">'+
     (lbl?'<p class="mini" style="margin:0 0 4px;font-weight:700">'+lbl+'</p>':'')+
-    side(m.a,m.sa,'sa')+side(m.b,m.sb,'sb')+confirme+
+    (m.forfait?'':side(m.a,m.sa,'sa')+side(m.b,m.sb,'sb'))+
+    (m.forfait?'<div style="display:flex;align-items:center;gap:9px;padding:5px 0">'+tDot(t,w,26)+
+      '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:800">'+esc(tEntName(t,w))+'</span><span style="font-size:15px">👑</span></div>':'')+
+    confirme+forfaits+
     (tie?'<p class="mini" style="margin:4px 0 0;color:var(--nox);font-weight:700">Égalité impossible : il faut départager.</p>':'')+
     (moitie?'<p class="mini" style="margin:4px 0 0;color:var(--nox);font-weight:700">Il manque un score.</p>':'')+
     '</div>';
@@ -3078,7 +3099,7 @@ function tVictories(t){
   var v={};
   tAllMatches(t).forEach(function(m){
     var w=tWinnerOf(m);
-    if(w && !m.bye) v[w]=(v[w]||0)+1;      // une exemption n'est pas une victoire
+    if(w && !m.bye && !m.forfait) v[w]=(v[w]||0)+1;   // ni exemption ni forfait ne sont des victoires
   });
   return v;
 }
@@ -3117,7 +3138,14 @@ function championsAgg(){
   // Tic-Tac
   D.tictac.forEach(function(d){
     if(!champInPeriod(d.date)) return;
-    d.players.forEach(function(p){ var s=slot(p.name); if(s){ s.duels++; if(d.winner&&fp(d.winner)===fp(p.name)) s.duelWins++; } });
+    d.players.forEach(function(p){ var s=slot(p.name); if(!s) return;
+      s.duels++;
+      /* Plusieurs ex æquo : chacun sa couronne, comme à La Coupe. */
+      var gagne = d.winners && d.winners.length
+        ? d.winners.some(function(x){ return fp(x)===fp(p.name); })
+        : (d.winner && fp(d.winner)===fp(p.name));
+      if(gagne) s.duelWins++;
+    });
   });
   /* Le total unique mélangeait des victoires incomparables : une partie de
      Uno entière valait autant qu'une manche de Tic-Tac de 30 secondes.
@@ -3691,15 +3719,37 @@ function avPhoto(inp){
   try{ rd.readAsDataURL(f); }catch(e){ toast('Image inaccessible — réessaie, ou choisis un personnage'); }
 }
 /* Renommer sans changer d'écran : le menu contextuel appelle ceci. */
+/* Applique un changement de nom à tout ce qui garde une copie du prénom :
+   les joueurs d'une partie, les quiz du Micro, les duels du Tic-Tac.
+   Le Tournoi, lui, relit la bibliothèque : il n'a rien à corriger. */
+function renamePartout(avant, apres){
+  var n=0;
+  D.matches.forEach(function(m){ m.players.forEach(function(p){
+    if(fp(p.name)===fp(avant)){ p.name=apres; n++; } }); });
+  (D.micro||[]).forEach(function(g){ (g.players||[]).forEach(function(p){
+    if(fp(p.name)===fp(avant)){ p.name=apres; n++; } }); });
+  (D.tictac||[]).forEach(function(g){
+    (g.players||[]).forEach(function(p){ if(fp(p.name)===fp(avant)){ p.name=apres; n++; } });
+    if(g.winner && fp(g.winner)===fp(avant)) g.winner=apres;
+    if(g.winners) g.winners=g.winners.map(function(x){ return fp(x)===fp(avant)?apres:x; });
+  });
+  (D.champHide||[]).forEach(function(x,i){ if(fp(x)===fp(avant)) D.champHide[i]=apres; });
+  return n;
+}
 function renameLib(id){
   var p=D.lib.filter(function(x){return x.id===id;})[0]; if(!p) return;
   var v=prompt('Nouveau prénom', p.name);
   if(v===null) return;
   v=v.trim(); if(!v) return;
   var avant=p.name;
+  if(fp(avant)===fp(v)){ p.name=v; persist(); render(); return; }
   if(D.lib.some(function(x){ return x.id!==id && fp(x.name)===fp(v); })){ toast('Ce prénom existe déjà'); return; }
-  p.name=v; persist(); render();
-  offerUndo(avant+' renommé en '+v, function(){ p.name=avant; persist(); render(); });
+  p.name=v;
+  var n=renamePartout(avant, v);
+  persist(); render();
+  offerUndo(avant+' renommé en '+v+(n?' ('+pl(n,'partie')+' mise à jour)':''), function(){
+    p.name=avant; renamePartout(v, avant); persist(); render();
+  });
 }
 function renameMatchPrompt(id){
   var m=D.matches.filter(function(x){return x.id===id;})[0]; if(!m) return;
@@ -4098,7 +4148,13 @@ function chFinishNow(){
   if(!CH||CH.winner!==null) return;
   chStopTick(); CH.running=false;
   var alive=chAlive();
-  var best=alive.slice().sort(function(a,b){ return b.good-a.good || b.left-a.left; })[0];
+  var tri=alive.slice().sort(function(a,b){ return b.good-a.good || b.left-a.left; });
+  var best=tri[0];
+  /* Même critère que le tri : à bonnes réponses ET temps restant égaux,
+     il n'y a pas de vainqueur unique — on le dit au lieu de trancher. */
+  CH.exaequo = best ? tri.filter(function(p){ return p.good===best.good && p.left===best.left; })
+                          .map(function(p){ return p.name; })
+                    : [];
   CH.winner = best ? best.name : ((CH.players[0]&&CH.players[0].name)||null);
   D.live=null; persist();
   /* Le Mur des champions recense tout ce qui se joue dans l'app :
@@ -4112,7 +4168,8 @@ function chSaveDuel(silent){ reviewMoment(); D.live=null;
   var w = CH.winner!==null ? CH.winner : (chAlive()[0]&&chAlive()[0].name);
   D.tictac.unshift({ id:uid(), date:today(),
     players: CH.players.map(function(p){return {name:p.name, good:p.good, bad:(p.bad||0)};}),
-    winner: w||null });
+    winner: w||null,
+    winners: (CH.exaequo&&CH.exaequo.length>1)? CH.exaequo.slice() : null });
   CH.saved=true; persist(); if(!silent) toast('Partie enregistrée 🏆'); render();
 }
 /* Passerelle Tic-Tac -> La Coupe : les ✓ deviennent les points d'une manche.
@@ -4456,11 +4513,17 @@ function chGame(){
     var w = CH.winner!==null ? CH.winner : (chAlive()[0]&&chAlive()[0].name);
     var srtC=CH.players.slice().sort(function(a,b){ return b.good-a.good || (a.bad||0)-(b.bad||0); });
     var champC=srtC[0], totC=CH.players.reduce(function(s,x){return s+x.good+(x.bad||0);},0);
+    var ex=(CH.exaequo&&CH.exaequo.length>1)? CH.exaequo : null;
     return celebration({
-      theme:'tictac', sur:'Dernier debout', name:w||'—',
-      detail: (champC&&champC.good? '<b>✓ '+pl(champC.good,'bonne réponse')+'</b>' : 'dernier joueur en course')+
-              (totC? ' · '+pl(totC,'question')+' en tout' : ''),
-      suivants: srtC.slice(1,3).map(function(p){ return {name:p.name, detail:' · ✓ '+p.good}; }),
+      theme:'tictac',
+      sur: ex? 'Égalité parfaite' : 'Dernier debout',
+      name: ex? ex.slice(0,2).join(' & ') : (w||'—'),
+      avatar: !ex,
+      detail: ex
+        ? '<b>✓ '+pl(champC.good,'bonne réponse')+'</b> chacun, au même temps — personne ne l\'emporte'
+        : (champC&&champC.good? '<b>✓ '+pl(champC.good,'bonne réponse')+'</b>' : 'dernier joueur en course')+
+          (totC? ' · '+pl(totC,'question')+' en tout' : ''),
+      suivants: ex? [] : srtC.slice(1,3).map(function(p){ return {name:p.name, detail:' · ✓ '+p.good}; }),
       actions:'<button onclick="chToCoupe()">🏆 La Coupe</button><button onclick="chStart()">🔄 Rejouer</button>'
     })+
     '<div class="card">'+
