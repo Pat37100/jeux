@@ -483,7 +483,7 @@ function nowHM(){
 }
 function stamp(r){ return fr(r.date)+(r.time?' · '+r.time:''); }
 function today(){var d=new Date(),p=function(n){return(n<10?'0':'')+n;};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
-var APP_VERSION='114';
+var APP_VERSION='115';
 function fr(d){return d?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
 function nf(n){return (Math.round(n*100)/100).toLocaleString('fr-FR');}
 function pl(n,w){return n+' '+w+(n>1?'s':'');}
@@ -2009,6 +2009,40 @@ function microLvl(id){
   if(MICRO_LVL_OLD[v]) v=MICRO_LVL_OLD[v];        // migration silencieuse
   return v||'h';
 }
+/* Carte « Niveau des questions », commune au Micro et au Tic-Tac.
+   num       : numéro de l'étape
+   commun    : clé du niveau commun ('' au Micro, qui n'en a pas)
+   setCommun : nom de la fonction appelée par les pastilles du haut
+   ids       : joueurs concernés
+   lvlDe     : fonction (id) → clé du niveau de ce joueur
+   propre    : fonction (id) → clé propre au joueur, ou null s'il suit le commun
+   cycle     : nom de la fonction appelée en touchant la pastille d'un joueur */
+function levelCard(num, titre, commun, setCommun, ids, lvlDe, propre, cycle){
+  var h='<div class="card"><h2><span class="stepn">'+num+'</span>'+titre+'</h2>';
+  if(commun!==null){
+    h+='<p class="mini" style="margin:0 0 6px">Pour tout le monde</p><div class="chips">'+
+      MICRO_LVL.map(function(L){
+        return '<button class="chip'+(commun===L.k?' on':'')+'" onclick="'+setCommun+'(\''+L.k+'\')">'+L.label+'</button>';
+      }).join('')+'</div>';
+  }
+  if(ids.length){
+    h+='<p class="mini" style="margin:'+(commun!==null?'14':'0')+'px 0 6px">'+
+       (commun!==null?'Un niveau différent pour quelqu\'un ?':'Le niveau de chacun')+'</p>';
+    h+=ids.map(function(id){
+      var p=D.lib.filter(function(x){return x.id===id;})[0]; if(!p) return '';
+      var pr=propre?propre(id):lvlDe(id);
+      return '<div class="row" style="background:var(--bg);border-radius:10px;padding:7px 10px;margin-bottom:6px">'+
+        av(p.name,'sm')+
+        '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:14px">'+esc(p.name)+'</span>'+
+        '<button class="chip'+(pr?' on':'')+'" style="flex:0 0 auto" onclick="'+cycle+'(\''+id+'\')">'+
+          (pr? lvlOf(lvlDe(id)).label : 'Comme tout le monde')+'</button></div>';
+    }).join('');
+  }
+  h+='<div style="margin-top:10px;background:var(--bg);border-radius:10px;padding:8px 10px">'+
+    MICRO_LVL.map(function(L){ return '<div style="font-size:12px;padding:2px 0"><b>'+L.label+'</b> — '+esc(L.txt)+'</div>'; }).join('')+
+    '</div></div>';
+  return h;
+}
 function lvlOf(k){ return MICRO_LVL.filter(function(x){return x.k===k;})[0]||MICRO_LVL[2]; }
 function cycleMicroLvl(id){
   var order=MICRO_LVL.map(function(x){return x.k;}), cur=microLvl(id);
@@ -2114,14 +2148,14 @@ function microSimpleUI(){
     '<p class="mini" style="margin:8px 0 0">En Jeux n\'envoie rien et ne stocke rien en ligne : tout se passe entre toi et ton assistant.</p></div>';
   var ids=sel.filter(function(id){ return D.lib.some(function(p){return p.id===id;}); });
   var h=h0+'<div class="card"><h2><span class="stepn">1</span>Qui joue ? ('+ids.length+')</h2>'+
-    playerGrid(sel,'microToggleP',function(pl){ return pillBtn('cycleMicroLvl',pl.id,lvlOf(microLvl(pl.id)).label); },
-      'Touche la pastille sous un prénom pour changer son niveau. L\'ordre des questions suit l\'ordre d\'affichage.')+
-    '<div style="margin-top:10px;background:var(--bg);border-radius:10px;padding:8px 10px">'+
-      MICRO_LVL.map(function(L){ return '<div style="font-size:12px;padding:2px 0"><b>'+L.label+'</b> — '+esc(L.txt)+'</div>'; }).join('')+
-    '</div></div>';
+    playerGrid(sel,'microToggleP',null,'L\'ordre des questions suit l\'ordre d\'affichage.')+
+    '</div>';
+  /* Le niveau est un choix de partie au même titre que « qui joue » : il a
+     sa propre étape, et non plus une pastille sous un avatar. */
+  h+=levelCard(2,'Niveau des questions',null,null,ids,microLvl,function(){return 1;},'cycleMicroLvl');
 
   var th=microThemeObjs();
-  h+='<div class="card"><h2><span class="stepn">2</span>Fin de la partie</h2>'+
+  h+='<div class="card"><h2><span class="stepn">3</span>Fin de la partie</h2>'+
     '<div style="display:flex;flex-direction:column;gap:7px">'+
     '<button class="chip'+(microFin()==='points'?' on':'')+'" style="text-align:left;padding:10px 12px;white-space:normal" onclick="setMicroFin(\'points\')">'+
       '<b>🎯 Premier à '+MICRO_BUT+' points</b><br><span style="font-weight:400;font-size:11.5px;opacity:.85">La partie s\'arrête dès qu\'un joueur atteint '+MICRO_BUT+'.</span></button>'+
@@ -2135,7 +2169,7 @@ function microSimpleUI(){
         }).join('')+'</div>'
       : '')+
     '<p class="mini" style="margin:8px 0 0">Pas de partie au chronomètre : l\'animateur n\'a pas d\'horloge en conversation vocale, il estimerait la durée au lieu de la mesurer. Un nombre de questions, lui, se compte à voix haute.</p></div>';
-  h+='<div class="card"><h2><span class="stepn">3</span>Sujets <span style="font-weight:400;font-size:12px;color:var(--mut)">('+(th.length?th.length+' choisi'+(th.length>1?'s':''):'tous')+')</span></h2>'+
+  h+='<div class="card"><h2><span class="stepn">4</span>Sujets <span style="font-weight:400;font-size:12px;color:var(--mut)">('+(th.length?th.length+' choisi'+(th.length>1?'s':''):'tous')+')</span></h2>'+
     '<div class="chips">'+
       '<button class="chip'+(th.length?'':' on')+'" onclick="clearMicroThemes()">🌍 Tous sujets</button>'+
       THEMES.map(function(t){
@@ -2145,12 +2179,12 @@ function microSimpleUI(){
       ? 'Toutes les questions porteront sur ces sujets, sans exception — c\'est écrit comme une règle stricte dans le texte généré.'
       : 'Aucun sujet imposé : l\'animateur change de domaine à chaque question.')+'</p></div>';
 
-  h+='<div class="card"><h2><span class="stepn">4</span>Ton assistant IA</h2>'+
+  h+='<div class="card"><h2><span class="stepn">5</span>Ton assistant IA</h2>'+
     '<div class="chips">'+AI_APPS.map(function(a){
       return '<button class="chip'+((D.aiApp||'claude')===a.id?' on':'')+'" onclick="setAiApp(\''+a.id+'\')">'+a.label+'</button>';
     }).join('')+'</div></div>';
 
-  h+='<div class="card"><h2><span class="stepn">5</span>Consigne libre <span style="font-weight:400;font-size:12px;color:var(--mut)">(facultatif)</span></h2>'+
+  h+='<div class="card"><h2><span class="stepn">6</span>Consigne libre <span style="font-weight:400;font-size:12px;color:var(--mut)">(facultatif)</span></h2>'+
     '<input placeholder="ex. « des questions sur la Bretagne », « pas de sport »" value="'+(D.microCustom||'').replace(/"/g,'&quot;')+'" onchange="D.microCustom=this.value;persist();render()"></div>';
 
   var noms=ids.map(function(id){ return (D.lib.filter(function(p){return p.id===id;})[0]||{}).name; }).filter(Boolean);
@@ -4093,11 +4127,7 @@ function chLvl(id){
   return s.qLvl||'h';
 }
 function chSetLvl(k){ chSettings().qLvl=k; persist(); if(CH) qbankNext(); else render(); }
-function chSetLvlFor(id,k){
-  var s=chSettings(); if(!s.qLvlBy) s.qLvlBy={};
-  if(k==='*') delete s.qLvlBy[id]; else s.qLvlBy[id]=k;
-  persist(); if(CH) qbankNext(); else render();
-}
+
 /* Le niveau de celui qui a la main : c'est lui qui décide de la question. */
 function chLvlActif(){
   if(CH && CH.players && CH.players[CH.active]){
@@ -4109,33 +4139,7 @@ function chLvlActif(){
 }
 /* Réglages d'un joueur : temps ET niveau au même endroit, plutôt que deux
    pastilles minuscules sous un avatar de 70 pixels. */
-function chPlayerSheet(id){
-  var p=D.lib.filter(function(x){return x.id===id;})[0]; if(!p) return;
-  var s=chSettings(), sp=chSecsOf(id);
-  var el=document.getElementById('amenu'); if(el) el.remove();
-  var d=document.createElement('div'); d.className='amenu'; d.id='amenu';
-  var chip=function(on,run,txt){
-    return '<button class="chip'+(on?' on':'')+'" onclick="'+run+'">'+txt+'</button>';
-  };
-  d.innerHTML='<div class="wrap" onclick="event.stopPropagation()">'+
-    '<div class="grp" style="padding:14px 16px 16px">'+
-      '<div class="row" style="gap:9px;align-items:center;margin-bottom:12px">'+av(p.name,'sm')+
-        '<b style="flex:1;font-size:16px">'+esc(p.name)+'</b></div>'+
-      '<p class="mini" style="margin:0 0 6px">Temps de départ</p><div class="chips">'+
-        chip(!sp,"chSetSecFor('"+id+"',0);chPlayerSheet('"+id+"')",'Temps commun')+
-        [30,45,60,90,120].map(function(v){
-          return chip(sp===v,"chSetSecFor('"+id+"',"+v+");chPlayerSheet('"+id+"')", v<60?v+'s':(v%60?Math.floor(v/60)+'\u2032'+(v%60):(v/60)+' min'));
-        }).join('')+'</div>'+
-      '<p class="mini" style="margin:12px 0 6px">Niveau des questions</p><div class="chips">'+
-        chip(!(s.qLvlBy&&s.qLvlBy[id]),"chSetLvlFor('"+id+"','*');chPlayerSheet('"+id+"')",'Niveau commun')+
-        MICRO_LVL.map(function(L){
-          return chip(s.qLvlBy&&s.qLvlBy[id]===L.k,"chSetLvlFor('"+id+"','"+L.k+"');chPlayerSheet('"+id+"')", L.label);
-        }).join('')+'</div>'+
-    '</div>'+
-    '<div class="grp cancel"><button onclick="closeActions()">Terminé</button></div></div>';
-  d.onclick=closeActions;
-  document.body.appendChild(d);
-}
+
 function qbankMatch(tol){
   var cats=chBankCats(), target=CH_LVL_N[chLvlActif()]||3;
   return qbankAll().filter(function(x){
@@ -4250,8 +4254,8 @@ function chConfig(){
   var presets=[30,45,60,90,120];
   var pk=chPick();
   var h='<div class="card"><h2><span class="stepn">1</span>Qui joue ? ('+pk.length+')</h2>'+
-    playerGrid(pk,'chToggleP',function(pl){ return pillBtn('chPlayerSheet',pl.id,chSecsLabel(pl.id)); },
-      'Touche la pastille sous un prénom pour lui donner un temps ou un niveau à lui.')+
+    playerGrid(pk,'chToggleP',function(pl){ return pillBtn('cycleChSecs',pl.id,chSecsLabel(pl.id)); },
+      'Touche la pastille sous un prénom pour lui donner un temps différent.')+
     '</div>';
   var pr=s.pass||'wrong';
   h+='<div class="card"><h2><span class="stepn">2</span>Temps commun</h2>'+
@@ -4291,13 +4295,6 @@ function chConfig(){
          chThemeList().map(function(t){
            return '<button class="chip'+(qTh.indexOf(t.id)>=0?' on':'')+'" onclick="chToggleTheme(\''+t.id+'\')">'+t.label+'</button>';
          }).join('')+'</div>'+
-       '<p class="mini" style="margin:0 0 6px">Niveau des questions</p>'+
-       '<div class="chips">'+MICRO_LVL.map(function(L){
-         return '<button class="chip'+(chLvl()===L.k?' on':'')+'" onclick="chSetLvl(\''+L.k+'\')">'+L.label+'</button>';
-       }).join('')+'</div>'+
-       '<div style="margin-top:10px;background:var(--bg);border-radius:10px;padding:8px 10px">'+
-         MICRO_LVL.map(function(L){ return '<div style="font-size:12px;padding:2px 0"><b>'+L.label+'</b> — '+esc(L.txt)+'</div>'; }).join('')+
-       '</div>'+
        (function(){
          var tot=qbankCount(), ined=qbankInedites();
          if(!tot) return '<p class="mini" style="margin:8px 0 0">Aucune question exactement à ce niveau sur ces sujets : l\'app élargira au cran le plus proche.</p>';
@@ -4309,6 +4306,10 @@ function chConfig(){
   var lb=function(v){ return v<60?v+'s':(v%60?Math.floor(v/60)+'′'+(v%60):(v/60)+' min'); };
   var passLb={wrong:'après une erreur',good:'après une bonne réponse',both:'au choix pendant le jeu'}[s.pass||'wrong'];
   var thSel=chThemes().map(function(id){ var t=themeById(id); return t?t.label:''; }).filter(Boolean);
+  if(qOn) h+=levelCard(5,'Niveau des questions',chSettings().qLvl||'h','chSetLvl',pk,
+    function(id){ return chLvl(id); },
+    function(id){ var b=chSettings().qLvlBy; return b&&b[id]?1:0; },
+    'cycleChLvl');
   h+='<button class="btn tictac" style="font-size:17px" onclick="chStart()">⏱️ Démarrer la partie</button>';
   /* L'historique des duels n'est plus doublonné ici : le Mur des champions
      est le seul palmarès de l'app (chDelDuel reste appelable depuis là). */
@@ -4351,22 +4352,21 @@ function cycleChSecs(id){
   if(nx) s.custom[id]=nx; else delete s.custom[id];
   persist(); render();
 }
-function chSetSecFor(id,v){
-  var s=chSettings(); if(!s.custom) s.custom={};
-  if(v) s.custom[id]=v; else delete s.custom[id];
-  persist(); render();
-}
+
 /* La pastille annonce les deux réglages du joueur : temps et niveau. */
-function chSecsLabel(id){
-  var v=chSecsOf(id), s=chSettings();
-  var k=(s.qLvlBy&&s.qLvlBy[id]);
-  var tps=v? v+'s' : '';
-  /* Place comptée sous un avatar : le niveau seul s'écrit en toutes lettres,
-     mais dès qu'un temps l'accompagne on garde l'émoji. */
-  if(tps && k) return tps+' '+lvlOf(k).label.split(' ')[0];
-  if(k) return lvlOf(k).label;
-  if(tps) return tps;
-  return 'régler';
+function chSecsLabel(id){ var v=chSecsOf(id); return v? v+'s' : 'défaut'; }
+/* Le niveau d'un joueur tourne d'une pression, comme au Micro. */
+function cycleChLvl(id){
+  var s=chSettings(); if(!s.qLvlBy) s.qLvlBy={};
+  var order=MICRO_LVL.map(function(x){return x.k;});
+  var cur=s.qLvlBy[id];
+  if(!cur) s.qLvlBy[id]=order[0];
+  else {
+    var i=order.indexOf(cur)+1;
+    if(i>=order.length) delete s.qLvlBy[id];    // retour à « comme tout le monde »
+    else s.qLvlBy[id]=order[i];
+  }
+  persist(); if(CH) qbankNext(); else render();
 }
 function chSetSecs(v){ chSettings().secs=Math.min(1800,Math.max(5,v||60)); persist(); render(); }
 function chSetPass(v){ chSettings().pass=v; persist(); render(); }
